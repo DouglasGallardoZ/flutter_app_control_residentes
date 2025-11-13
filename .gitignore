@@ -1,0 +1,47 @@
+# Archivos y directorios generados por Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+/build/
+
+# IDE
+.idea/
+.vscode/
+
+# Dependencias de paquetes Dart/pub
+pubspec.lock
+
+# Archivos de caché del sistema operativo
+.DS_Store
+Thumbs.db
+
+# --- Específicos de Android ---
+android/local.properties
+android/.gradle
+android/build/
+android/app/build/
+android/app/.cxx/
+android/app/.externalNativeBuild/
+# Módulos de Android Studio
+*.iml
+
+# --- Específicos de iOS/macOS ---
+ios/.symlinks/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/App.framework/
+ios/Flutter/App.podspec
+ios/Flutter/engine/
+ios/Runner.xcodeproj/project.xcworkspace/
+ios/Runner.xcodeproj/xcuserdata/
+ios/Runner.xcworkspace/xcuserdata/
+# Paquetes de dependencia de CocoaPods
+ios/Pods/
+# Carthage
+Carthage/
+
+# --- Paquetes/Plugins de Dart Nativo ---
+# Excluye bibliotecas nativas compiladas
+**/*.a
+**/*.so
+**/*.dll

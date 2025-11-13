@@ -1,0 +1,34 @@
+name: guardin
+description: "Una innovadora aplicación Flutter que redefine la seguridad en urbanizaciones, permitiendo a los residentes gestionar accesos con reconocimiento facial y códigos QR, ¡haciendo que entrar a casa sea tan inteligente como seguro!"
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.1.0
+  shared_preferences: ^2.0.0
+  qr_flutter: ^4.0.0
+  mobile_scanner: ^7.0.0
+  camera: 0.11.2+1
+  uuid: ^4.0.0
+  intl: 0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icons/dreamflow_icon.jpg
+  remove_alpha_ios: true
