@@ -48,7 +48,7 @@ class _AccessHistoryScreenState extends State<AccessHistoryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Historial de accesos'),
-        automaticallyImplyLeading: false,
+        // automaticallyImplyLeading: true,
       ),
       body: Column(
         children: [
