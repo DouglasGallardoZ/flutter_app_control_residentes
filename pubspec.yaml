@@ -4,19 +4,22 @@ publish_to: "none"
 version: 1.0.0
 
 environment:
-  sdk: ^3.6.0
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
-  google_fonts: ^6.1.0
-  shared_preferences: ^2.0.0
-  qr_flutter: ^4.0.0
-  mobile_scanner: ^7.0.0
-  camera: 0.11.2+1
-  uuid: ^4.0.0
-  intl: 0.20.2
+  flutter_bloc: ^9.1.1
+  get_it: ^9.2.0
+  dio: ^5.5.0
+  qr_flutter: ^4.1.0
+  share_plus: ^12.0.1
+  google_fonts: ^6.3.3
+
+  # Firebase
+  firebase_core: ^4.2.1
+  firebase_auth: ^6.1.2
+  cloud_firestore: ^6.1.0
 
 dev_dependencies:
   flutter_test:

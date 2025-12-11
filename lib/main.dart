@@ -1,23 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:guardin/theme.dart';
-import 'package:guardin/screens/login_screen.dart';
+import 'app.dart';
+import 'injection.dart';
+import 'core/config/brand_theme.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'GuardIn - Control de Acceso',
-      debugShowCheckedModeBanner: false,
-      theme: lightTheme,
-      darkTheme: darkTheme,
-      themeMode: ThemeMode.light,
-      home: const LoginScreen(),
-    );
-  }
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await inject();
+  runApp(const App(brand: defaultBrand));
 }
