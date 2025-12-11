@@ -11,7 +11,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Map<String, dynamic>> login({required String id, required String password}) async {
     // Buscar por identificación
     final snap = await db.db.collection('users').where('id', isEqualTo: id).limit(1).get();
-    if (snap.docs.isEmpty) throw Exception('Error: propietario/residente/miembro no existe (CV-10)');
+    if (snap.docs.isEmpty) throw Exception('Error: Usuario no existe (CV-10)');
     final data = snap.docs.first.data();
     final email = data['email'] ?? '';
     if (email.isEmpty) throw Exception('Error: usuario sin correo asociado');

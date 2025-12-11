@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "986323670638",
+    "project_id": "app-control-residentes-343e8",
+    "storage_bucket": "app-control-residentes-343e8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:986323670638:android:3c4895546aad9163cbb87f",
+        "android_client_info": {
+          "package_name": "com.example.flutter_app_control_residentes"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB38y7LH9DxZjQzTYIFvKocNxOSAU06vJ8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
