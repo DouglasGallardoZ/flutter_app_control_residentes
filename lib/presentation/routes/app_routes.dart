@@ -1,44 +1,83 @@
 import 'package:flutter/material.dart';
 import '../pages/login_page.dart';
-import '../pages/admin_dashboard_page.dart';
 import '../pages/resident_dashboard_page.dart';
-import '../pages/family_dashboard_page.dart';
 import '../pages/qr_self_page.dart';
 import '../pages/qr_visit_page.dart';
 import '../pages/access_history_page.dart';
-import '../pages/qr_view_page.dart';
+import '../pages/profile_page.dart';
+// Si luego agregas AdminDashboardPage o FamilyDashboardPage, también los importas aquí.
 
 class AppRoutes {
-  static const initial = '/login';
-  static const login = '/login';
-  static const adminDashboard = '/admin/dashboard';
-  static const residentDashboard = '/resident/dashboard';
-  static const familyDashboard = '/family/dashboard';
-  static const qrSelf = '/qr/self';
-  static const qrVisit = '/qr/visit';
-  static const qrView = '/qr/view';
-  static const accessHistory = '/history';
+  // Definición de nombres de rutas
+  static const String login = '/login';
+  static const String residentDashboard = '/residentDashboard';
+  static const String qrSelf = '/qrSelf';
+  static const String qrVisit = '/qrVisit';
+  static const String accessHistory = '/accessHistory';
+  static const String profile = '/profile';
 
-  static Map<String, WidgetBuilder> get routes => {
-        // initial: (_) => const LoginPage(),
-        login: (_) => const LoginPage(),
-        adminDashboard: (_) => const AdminDashboardPage(),
-        residentDashboard: (_) => const ResidentDashboardPage(),
-        familyDashboard: (_) => const FamilyDashboardPage(),
-        qrSelf: (_) => const QrSelfPage(),
-        qrVisit: (_) => const QrVisitPage(),
-      };
+  static const String adminDashboard = '/adminDashboard';
+  static const String familyDashboard = '/familyDashboard';
 
-  static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
+  /// Método centralizado para generar rutas con validación de argumentos
+  static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
-      case qrView:
-        final args = settings.arguments as Map<String, dynamic>;
-        return MaterialPageRoute(builder: (_) => QrViewPage(value: args['value'] as String));
+      case login:
+        return MaterialPageRoute(builder: (_) => const LoginPage());
+
+      case residentDashboard:
+        final args = settings.arguments as String?;
+        if (args == null) {
+          return _errorRoute('Falta argumento userId en ResidentDashboard');
+        }
+        return MaterialPageRoute(builder: (_) => ResidentDashboardPage(userId: args));
+
+      case qrSelf:
+        final args = settings.arguments as String?;
+        if (args == null) {
+          return _errorRoute('Falta argumento userId en QrSelfPage');
+        }
+        return MaterialPageRoute(builder: (_) => QrSelfPage(userId: args));
+
+      case qrVisit:
+        final args = settings.arguments as String?;
+        if (args == null) {
+          return _errorRoute('Falta argumento userId en QrVisitPage');
+        }
+        return MaterialPageRoute(builder: (_) => QrVisitPage(userId: args));
+
       case accessHistory:
-        final args = settings.arguments as Map<String, dynamic>;
-        return MaterialPageRoute(builder: (_) => AccessHistoryPage(userId: args['userId'] as String));
+        final args = settings.arguments as String?;
+        if (args == null) {
+          return _errorRoute('Falta argumento userId en AccessHistoryPage');
+        }
+        return MaterialPageRoute(builder: (_) => AccessHistoryPage(userId: args));
+
+      case profile:
+        final args = settings.arguments as String?;
+        if (args == null) {
+          return _errorRoute('Falta argumento userId en ProfilePage');
+        }
+        return MaterialPageRoute(builder: (_) => ProfilePage(userId: args));
+
+      // Ejemplo de rutas futuras
+      case adminDashboard:
+        return _errorRoute('AdminDashboard aún no implementado');
+      case familyDashboard:
+        return _errorRoute('FamilyDashboard aún no implementado');
+
       default:
-        return null;
+        return _errorRoute('Ruta desconocida: ${settings.name}');
     }
+  }
+
+  /// Ruta de error genérica
+  static Route<dynamic> _errorRoute(String message) {
+    return MaterialPageRoute(
+      builder: (_) => Scaffold(
+        appBar: AppBar(title: const Text('Error')),
+        body: Center(child: Text(message)),
+      ),
+    );
   }
 }

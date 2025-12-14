@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../blocs/history/access_history_bloc.dart';
-import '../blocs/history/access_history_state.dart';
-import '../blocs/history/access_history_event.dart';
+import '../../application/blocs/history/access_history_bloc.dart';
+import '../../application/blocs/history/access_history_state.dart';
+import '../../application/blocs/history/access_history_event.dart';
 
 class AccessHistoryPage extends StatelessWidget {
   final String userId;

@@ -17,17 +17,17 @@ class AccessLog {
     this.referencedBy,
   });
 
-  factory AccessLog.fromMap(Map<String, dynamic> m) => AccessLog(
-        personId: m['personId'],
-        personName: m['personName'] ?? '',
-        roleLabel: m['roleLabel'] ?? 'residente',
-        timestamp: DateTime.parse(m['timestamp']),
-        success: m['success'] ?? false,
-        reason: m['reason'],
-        referencedBy: m['referencedBy'],
+  factory AccessLog.fromMap(Map<String, dynamic> map) => AccessLog(
+        personId: map['personId'],
+        personName: map['personName'] ?? '',
+        roleLabel: map['roleLabel'] ?? 'residente',
+        timestamp: DateTime.parse(map['timestamp']),
+        success: map['success'] ?? false,
+        reason: map['reason'],
+        referencedBy: map['referencedBy'],
       );
 
-  /// ✅ Nuevo getter para mostrar detalle
+  /// getter para mostrar detalle
   String get detailMessage {
     if (success) return 'Acceso exitoso';
     return 'Acceso rechazado: ${reason ?? 'motivo desconocido'}';

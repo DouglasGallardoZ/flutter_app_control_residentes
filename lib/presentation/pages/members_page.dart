@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../widgets/form_fields.dart';
 import '../../domain/entities/account.dart';
-import '../blocs/account/account_bloc.dart';
-import '../blocs/account/account_event.dart';
-import '../blocs/account/account_state.dart';
+import '../../application/blocs/account/account_bloc.dart';
+import '../../application/blocs/account/account_event.dart';
+import '../../application/blocs/account/account_state.dart';
 
 class MembersPage extends StatefulWidget {
   const MembersPage({super.key});

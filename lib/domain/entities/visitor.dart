@@ -5,6 +5,12 @@ class Visitor {
 
   Visitor({required this.id, required this.name});
 
-  factory Visitor.fromMap(Map<String, dynamic> m) => Visitor(id: m['id'], name: m['name']);
-  Map<String, dynamic> toMap() => {'id': id, 'name': name};
+  factory Visitor.fromMap(Map<String, dynamic> map) => Visitor(
+    id: map['id'], 
+    name: map['name']
+  );
+  Map<String, dynamic> toMap() => {
+    'id': id, 
+    'name': name
+  };
 }

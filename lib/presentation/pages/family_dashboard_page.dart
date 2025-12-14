@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../routes/app_routes.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../blocs/session/session_cubit.dart';
+import '../../application/blocs/session/session_cubit.dart';
 
 class FamilyDashboardPage extends StatelessWidget {
   const FamilyDashboardPage({super.key});

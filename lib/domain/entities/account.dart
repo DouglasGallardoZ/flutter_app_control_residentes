@@ -16,13 +16,13 @@ class Account {
     this.name,
   });
 
-  factory Account.fromMap(Map<String, dynamic> m) => Account(
-        uid: m['uid'] ?? '',
-        id: m['id'] ?? '',
-        role: m['role'] ?? 'resident',
-        status: m['status'] ?? 'activo',
-        email: m['email'],
-        name: m['name'],
+  factory Account.fromMap(Map<String, dynamic> map) => Account(
+        uid: map['uid'] ?? '',
+        id: map['id'] ?? '',
+        role: map['role'] ?? 'resident',
+        status: map['status'] ?? 'activo',
+        email: map['email'],
+        name: map['name'],
       );
 
   Map<String, dynamic> toMap() => {
