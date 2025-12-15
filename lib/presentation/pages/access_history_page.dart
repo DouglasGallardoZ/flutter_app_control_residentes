@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/blocs/history/access_history_bloc.dart';
 import '../../application/blocs/history/access_history_event.dart';
 import '../../application/blocs/history/access_history_state.dart';
+import '../../application/blocs/auth/auth_bloc.dart';
+import '../../application/blocs/auth/auth_state.dart';
 import '../widgets/app_scaffold.dart';
 
 class AccessHistoryPage extends StatefulWidget {
@@ -25,8 +27,66 @@ class _AccessHistoryPageState extends State<AccessHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Try to recover route arguments for navigation between tabs
+    final routeArgs = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final maybeResidenceId = routeArgs?['residenceId'] as String?;
+    final maybeUserName = routeArgs?['userName'] as String?;
+    final maybeUserId = routeArgs?['userId'] as String?;
+    // Fallback to AuthBloc if available
+      final authState = context.read<AuthBloc>().state;
+      String? authUserId;
+      String? authResidence;
+      String? authName;
+      if (authState is AuthSuccess) {
+        authUserId = (authState.user['id'] ?? authState.user['uid']) as String?;
+        authResidence = authState.user['residence'] as String?;
+        authName = authState.user['name'] as String?;
+      }
+
     return AppScaffold(
       title: 'Historial de Accesos',
+      currentIndex: 2,
+      onTabSelected: (i) {
+        switch (i) {
+          case 0:
+            final uid = maybeUserId ?? authUserId;
+            final rid = maybeResidenceId ?? authResidence;
+            final uname = maybeUserName ?? authName;
+            if (uid != null && rid != null && uname != null) {
+              Navigator.pushReplacementNamed(context, '/residentDashboard', arguments: {'userId': uid, 'residenceId': rid, 'userName': uname});
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Inicio')));
+            }
+            break;
+          case 1:
+            final uid2 = maybeUserId ?? authUserId;
+            final uname2 = maybeUserName ?? authName;
+            if (uid2 != null && uname2 != null) {
+              Navigator.pushReplacementNamed(context, '/qrSelf', arguments: {'userId': uid2, 'userName': uname2});
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Mi QR')));
+            }
+            break;
+          case 2: break;
+          case 3:
+            final uid3 = maybeUserId ?? authUserId;
+            final rid3 = maybeResidenceId ?? authResidence;
+            if (uid3 != null && rid3 != null) {
+              Navigator.pushReplacementNamed(context, '/familyDashboard', arguments: {'userId': uid3, 'residenceId': rid3});
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Familia')));
+            }
+            break;
+          case 4:
+            final uid4 = maybeUserId ?? authUserId;
+            if (uid4 != null) {
+              Navigator.pushReplacementNamed(context, '/profile', arguments: {'userId': uid4});
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Perfil')));
+            }
+            break;
+        }
+      },
       body: Column(
         children: [
           Padding(

@@ -1,5 +1,4 @@
 import '../../../domain/entities/qr_code.dart';
-  
 abstract class QrState {}
 class QrInitial extends QrState {}
 class QrLoading extends QrState {}

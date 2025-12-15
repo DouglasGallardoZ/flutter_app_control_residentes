@@ -43,12 +43,22 @@ class _LoginPageState extends State<LoginPage> {
                     if (state is AuthSuccess) {
                       final role = state.user['role'];
                       final userId = (state.user['id'] ?? state.user['uid']) as String;
+                      final residenceId = state.user['residence'];
+                      final userName = state.user['name'];
 
                       // Reemplaza la pila para que no haya back al dashboard
                       if (role == 'admin') {
                         Navigator.pushReplacementNamed(context, AppRoutes.adminDashboard, arguments: userId);
                       } else if (role == 'resident') {
-                        Navigator.pushReplacementNamed(context, AppRoutes.residentDashboard, arguments: userId);
+                        Navigator.pushReplacementNamed(
+                          context, 
+                          AppRoutes.residentDashboard, 
+                          arguments: {
+                            'userId': userId,
+                            'residenceId': residenceId,
+                            'userName': userName,
+                          }
+                        );
                       } else {
                         Navigator.pushReplacementNamed(context, AppRoutes.familyDashboard, arguments: userId);
                       }

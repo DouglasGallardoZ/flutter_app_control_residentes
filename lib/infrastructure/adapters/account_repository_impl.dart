@@ -17,6 +17,7 @@ class AccountRepositoryImpl implements AccountRepository {
       'status': account.status,
       'email': account.email,
       'name': account.name,
+      'residence': account.residence,
     }, SetOptions(merge: true));
     return account;
   }
@@ -33,6 +34,7 @@ class AccountRepositoryImpl implements AccountRepository {
       status: m['status'] ?? 'activo',
       email: m['email'],
       name: m['name'],
+      residence: m['residence'],
     );
   }
 

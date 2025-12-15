@@ -1,16 +1,21 @@
 // lib/domain/entities/visitor.dart
 class Visitor {
-  final String id;
+  final String id;           // identificación
   final String name;
+  final String? phone;
+  final int visitCount;
+  final DateTime? lastVisitAt;
 
-  Visitor({required this.id, required this.name});
+  const Visitor({
+    required this.id,
+    required this.name,
+    this.phone,
+    this.visitCount = 0,
+    this.lastVisitAt,
+  });
 
-  factory Visitor.fromMap(Map<String, dynamic> map) => Visitor(
-    id: map['id'], 
-    name: map['name']
+  Visitor incVisit(DateTime when) => Visitor(
+    id: id, name: name, phone: phone,
+    visitCount: visitCount + 1, lastVisitAt: when,
   );
-  Map<String, dynamic> toMap() => {
-    'id': id, 
-    'name': name
-  };
 }

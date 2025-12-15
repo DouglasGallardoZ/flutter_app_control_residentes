@@ -4,6 +4,7 @@ class Account {
   final String id; // identificación
   final String role; // admin | resident | family
   final String status; // activo | bloqueado | eliminada
+  final String? residence;
   final String? email;
   final String? name;
 
@@ -12,6 +13,7 @@ class Account {
     required this.id,
     required this.role,
     required this.status,
+    this.residence,
     this.email,
     this.name,
   });
@@ -23,6 +25,7 @@ class Account {
         status: map['status'] ?? 'activo',
         email: map['email'],
         name: map['name'],
+        residence: map['residence'],
       );
 
   Map<String, dynamic> toMap() => {
@@ -32,5 +35,6 @@ class Account {
         'status': status,
         'email': email,
         'name': name,
+        'residence': residence,
       };
 }

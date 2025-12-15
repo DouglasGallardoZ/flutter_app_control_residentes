@@ -7,7 +7,9 @@ import '../../presentation/theme/theme_controller.dart';
 
 class ResidentDashboardPage extends StatefulWidget {
   final String userId;
-  const ResidentDashboardPage({super.key, required this.userId});
+  final String residenceId;
+  final String userName;
+  const ResidentDashboardPage({super.key, required this.userId, required this.residenceId, required this.userName});
 
   @override
   State<ResidentDashboardPage> createState() => _ResidentDashboardPageState();
@@ -29,10 +31,10 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
       onTabSelected: (i) {
         setState(() => tabIndex = i);
         switch (i) {
-          case 1: Navigator.pushNamed(context, AppRoutes.qrSelf, arguments: widget.userId); break;
-          case 2: Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: widget.userId); break;
-          case 3: Navigator.pushNamed(context, AppRoutes.familyDashboard, arguments: widget.userId); break;
-          case 4: Navigator.pushNamed(context, AppRoutes.profile, arguments: widget.userId); break;
+          case 1: Navigator.pushNamed(context, AppRoutes.qrSelf, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId, 'userName': widget.userName}); break;
+          case 2: Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId}); break;
+          case 3: Navigator.pushNamed(context, AppRoutes.familyDashboard, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId}); break;
+          case 4: Navigator.pushNamed(context, AppRoutes.profile, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId}); break;
         }
       },
       body: ListView(
@@ -82,16 +84,16 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
             ),
             children: [
               _QuickCard(icon: Icons.qr_code_2, label: 'Mi QR', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.qrSelf, arguments: widget.userId);
+                Navigator.pushNamed(context, AppRoutes.qrSelf, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId, 'userName': widget.userName});
               }),
               _QuickCard(icon: Icons.group_add, label: 'QR Visita', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.qrVisit, arguments: widget.userId);
+                Navigator.pushNamed(context, AppRoutes.qrVisit, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId});
               }),
               _QuickCard(icon: Icons.history, label: 'Historial', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: widget.userId);
+                Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId});
               }),
               _QuickCard(icon: Icons.family_restroom, label: 'Familia', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.familyDashboard, arguments: widget.userId);
+                Navigator.pushNamed(context, AppRoutes.familyDashboard, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId});
               }),
             ],
           ),

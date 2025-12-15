@@ -1,15 +1,9 @@
 abstract class QrEvent {}
-class GenerateSelfQr extends QrEvent {
+
+class GenerateSelfQrConfigured extends QrEvent {
   final String accountId;
-  final DateTime expiresAt;
+  final DateTime validFrom;
+  final int durationHours;
   final int? maxUses;
-  GenerateSelfQr(this.accountId, this.expiresAt, {this.maxUses});
-}
-class GenerateVisitQr extends QrEvent {
-  final String accountId;
-  final String visitorId;
-  final String visitorName;
-  final DateTime expiresAt;
-  final int? maxUses;
-  GenerateVisitQr(this.accountId, this.visitorId, this.visitorName, this.expiresAt, {this.maxUses});
+  GenerateSelfQrConfigured(this.accountId, this.validFrom, this.durationHours, {this.maxUses});
 }

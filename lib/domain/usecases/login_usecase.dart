@@ -17,6 +17,7 @@ class LoginUseCase {
       'id': acc.id,
       'role': acc.role,
       'name': acc.name,
+      'residence': acc.residence,
     };
   }
 }

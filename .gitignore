@@ -45,3 +45,5 @@ Carthage/
 **/*.a
 **/*.so
 **/*.dll
+
+target

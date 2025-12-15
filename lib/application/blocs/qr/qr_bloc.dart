@@ -6,33 +6,18 @@ import 'qr_state.dart';
 class QrBloc extends Bloc<QrEvent, QrState> {
   final GenerateQrUseCase usecase;
   QrBloc(this.usecase) : super(QrInitial()) {
-    on<GenerateSelfQr>((e, emit) async {
+    on<GenerateSelfQrConfigured>((e, emit) async {
       emit(QrLoading());
       try {
         final qr = await usecase.self(
-          accountId: e.accountId, 
-          expiresAt: e.expiresAt, 
-          maxUses: e.maxUses
-        );
-        emit(QrReady(qr));
-      } catch (ex) {
-        emit(QrError('No se pudo generar el QR'));
-      }
-    });
-
-    on<GenerateVisitQr>((e, emit) async {
-      emit(QrLoading());
-      try {
-        final qr = await usecase.visit(
           accountId: e.accountId,
-          visitorId: e.visitorId,
-          visitorName: e.visitorName,
-          expiresAt: e.expiresAt,
+          validFrom: e.validFrom,
+          durationHours: e.durationHours,
           maxUses: e.maxUses,
         );
         emit(QrReady(qr));
-      } catch (ex) {
-        emit(QrError('No se pudo generar el QR de visita'));
+      } catch (_) {
+        emit(QrError('No se pudo generar el QR'));
       }
     });
   }
