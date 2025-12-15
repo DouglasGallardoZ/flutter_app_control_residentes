@@ -8,6 +8,8 @@ import 'domain/ports/auth_repository.dart';
 import 'domain/usecases/generate_qr_usecase.dart';
 import 'domain/usecases/load_access_history_usecase.dart';
 import 'presentation/routes/app_routes.dart';
+import 'presentation/theme/app_theme.dart';
+import 'presentation/theme/theme_controller.dart'; // 👈 Importa el controlador
 import 'injection.dart';
 
 class App extends StatelessWidget {
@@ -21,11 +23,19 @@ class App extends StatelessWidget {
         BlocProvider<QrBloc>(create: (_) => QrBloc(sl<GenerateQrUseCase>())),
         BlocProvider<AccessHistoryBloc>(create: (_) => AccessHistoryBloc(sl<LoadAccessHistoryUseCase>())),
       ],
-      child: MaterialApp(
-        title: 'Control de accesos',
-        initialRoute: AppRoutes.login,
-        onGenerateRoute: AppRoutes.onGenerateRoute,
-        debugShowCheckedModeBanner: false,
+      child: ValueListenableBuilder<ThemeMode>(
+        valueListenable: ThemeController.mode,
+        builder: (ctx, mode, _) {
+          return MaterialApp(
+            title: 'Acceso Residencial',
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: mode, 
+            initialRoute: AppRoutes.login,
+            onGenerateRoute: AppRoutes.onGenerateRoute,
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     );
   }

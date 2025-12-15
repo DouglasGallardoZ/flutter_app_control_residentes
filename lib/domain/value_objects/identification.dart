@@ -1,8 +1,12 @@
+// lib/domain/value_objects/identification.dart
 class Identification {
   final String value;
   Identification(this.value) {
-    if (!RegExp(r'^\d{10}$').hasMatch(value)) {
-      throw ArgumentError('Identificación inválida');
+    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length != 10) {
+      throw ArgumentError('Identificación inválida: debe tener 10 dígitos');
     }
   }
+  @override
+  String toString() => value;
 }
