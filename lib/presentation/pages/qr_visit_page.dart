@@ -13,6 +13,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_state.dart';
 import 'qr_display_page.dart';
+import '../widgets/navigation_helpers.dart';
 
 class QrVisitPage extends StatefulWidget {
   final String userId;
@@ -197,7 +198,7 @@ class _QrVisitPageState extends State<QrVisitPage> {
             Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'userId': widget.userId});
             break;
           case 3:
-            Navigator.pushNamed(context, AppRoutes.familyDashboard, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId});
+            Navigator.pushNamed(context, AppRoutes.members, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId});
             break;
           case 4:
             Navigator.pushNamed(context, AppRoutes.profile, arguments: {'userId': widget.userId});
@@ -232,11 +233,11 @@ class _QrVisitPageState extends State<QrVisitPage> {
                 padding: const EdgeInsets.all(16),
                 children: [
                   // Header similar to web TSX: back button, centered title, placeholder at right
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back)),
-                    Expanded(child: Center(child: Text('QR de Visitante', style: theme.textTheme.titleLarge))),
-                    const SizedBox(width: 48),
-                  ]),
+                  // Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  //   IconButton(onPressed: () => navigateToHome(context, routeUserId: widget.userId, routeResidenceId: widget.residenceId), icon: const Icon(Icons.arrow_back)),
+                  //   Expanded(child: Center(child: Text('QR de Visitante', style: theme.textTheme.titleLarge))),
+                  //   const SizedBox(width: 48),
+                  // ]),
                   const SizedBox(height: 12),
                   Center(child: Icon(Icons.person_add_alt_1, size: 64, color: theme.colorScheme.secondary)),
                   const SizedBox(height: 8),

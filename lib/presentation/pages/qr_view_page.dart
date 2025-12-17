@@ -44,7 +44,7 @@ class QrViewPage extends StatelessWidget {
             break;
           case 3:
             final uid3 = maybeUserId ?? authUserId;
-            if (uid3 != null) Navigator.pushReplacementNamed(context, '/familyDashboard', arguments: {'userId': uid3});
+            if (uid3 != null) Navigator.pushReplacementNamed(context, '/members', arguments: {'userId': uid3});
             break;
           case 4:
             final uid4 = maybeUserId ?? authUserId;

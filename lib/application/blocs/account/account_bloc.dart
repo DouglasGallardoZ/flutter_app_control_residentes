@@ -25,5 +25,15 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
         emit(AccountError('Error al actualizar correo'));
       }
     });
+
+    on<LoadFamilyMembersRequested>((e, emit) async {
+      emit(AccountLoading());
+      try {
+        final members = await repo.listByResidenceAndRole(e.residenceId, 'family');
+        emit(AccountMembersLoaded(members));
+      } catch (ex) {
+        emit(AccountError('Error al cargar miembros'));
+      }
+    });
   }
 }

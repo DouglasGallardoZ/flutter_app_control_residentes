@@ -114,16 +114,16 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-                            Text('Credenciales de prueba:', style: TextStyle(fontWeight: FontWeight.w600)),
-                            SizedBox(height: 6),
-                            Text('Admin: 1234567890 / admin123'),
-                            Text('Residente: 0987654321 / resident123'),
-                            Text('Familiar: 1122334455 / family123'),
-                          ]),
-                        ),
+                        // Align(
+                        //   alignment: Alignment.centerLeft,
+                        //   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+                        //     Text('Credenciales de prueba:', style: TextStyle(fontWeight: FontWeight.w600)),
+                        //     SizedBox(height: 6),
+                        //     Text('Admin: 1234567890 / admin123'),
+                        //     Text('Residente: 0987654321 / resident123'),
+                        //     Text('Familiar: 1122334455 / family123'),
+                        //   ]),
+                        // ),
                       ]),
                     );
                   },

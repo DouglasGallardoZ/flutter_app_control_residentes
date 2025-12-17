@@ -1,5 +1,6 @@
 // lib/presentation/routes/app_routes.dart
 import 'package:flutter/material.dart';
+import 'package:guardin/presentation/pages/members_page.dart';
 import '../pages/login_page.dart';
 import '../pages/resident_dashboard_page.dart';
 import '../pages/qr_self_page.dart';
@@ -14,6 +15,7 @@ class AppRoutes {
   static const String qrVisit = '/qrVisit';
   static const String accessHistory = '/accessHistory';
   static const String profile = '/profile';
+    static const String members = '/members';
 
   static const String adminDashboard = '/adminDashboard';
   static const String familyDashboard = '/familyDashboard';
@@ -68,6 +70,13 @@ class AppRoutes {
         final userId = args?['userId'] as String?;
         if (userId == null) return _errorRoute('Falta argumento userId en ProfilePage');
         return MaterialPageRoute(builder: (_) => ProfilePage(userId: userId));
+      }
+
+      case members: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final userId = args?['userId'] as String?;
+        if (userId == null) return _errorRoute('Falta argumento userId en MembersPage');
+        return MaterialPageRoute(builder: (_) => MembersPage());
       }
 
       case adminDashboard:

@@ -7,6 +7,7 @@ class Account {
   final String? residence;
   final String? email;
   final String? name;
+  final String? relationship; // parentesco para miembros de familia
 
   Account({
     required this.uid,
@@ -16,6 +17,7 @@ class Account {
     this.residence,
     this.email,
     this.name,
+    this.relationship,
   });
 
   factory Account.fromMap(Map<String, dynamic> map) => Account(
@@ -25,7 +27,8 @@ class Account {
         status: map['status'] ?? 'activo',
         email: map['email'],
         name: map['name'],
-        residence: map['residence'],
+      residence: map['residence'],
+      relationship: map['relationship'],
       );
 
   Map<String, dynamic> toMap() => {
@@ -35,6 +38,7 @@ class Account {
         'status': status,
         'email': email,
         'name': name,
-        'residence': residence,
+      'residence': residence,
+      'relationship': relationship,
       };
 }

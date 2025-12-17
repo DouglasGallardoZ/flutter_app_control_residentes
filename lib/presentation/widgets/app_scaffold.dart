@@ -23,9 +23,9 @@ class AppScaffold extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        // Evita mostrar flecha de atrás en pantallas raíz
-        automaticallyImplyLeading: !isRoot,
-        leading: isRoot ? null : null,
+        // Siempre ocultamos la flecha de navegación atrás en las pantallas
+        automaticallyImplyLeading: false,
+        leading: null,
         actions: actions,
       ),
       body: body,

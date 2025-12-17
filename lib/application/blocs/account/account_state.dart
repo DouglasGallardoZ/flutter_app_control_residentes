@@ -17,3 +17,9 @@ class AccountError extends AccountState {
   final String message;
   AccountError(this.message);
 }
+
+class AccountMembersLoaded extends AccountState {
+  final List<
+      dynamic> members; // using dynamic to avoid import cycles; members are Account-like maps or entities
+  AccountMembersLoaded(this.members);
+}

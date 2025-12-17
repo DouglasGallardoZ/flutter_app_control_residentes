@@ -8,6 +8,7 @@ import '../widgets/app_scaffold.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_state.dart';
+import '../widgets/navigation_helpers.dart';
 
 class QrDisplayPage extends StatefulWidget {
   final String userName;
@@ -113,7 +114,7 @@ class _QrDisplayPageState extends State<QrDisplayPage> {
           case 3:
             final uid3 = maybeUserId ?? authUserId;
             final rid3 = maybeResidenceId ?? authResidence;
-            if (uid3 != null && rid3 != null) Navigator.pushReplacementNamed(context, '/familyDashboard', arguments: {'userId': uid3, 'residenceId': rid3});
+            if (uid3 != null && rid3 != null) Navigator.pushReplacementNamed(context, '/members', arguments: {'userId': uid3, 'residenceId': rid3});
             break;
           case 4:
             final uid4 = maybeUserId ?? authUserId;
@@ -175,7 +176,12 @@ class _QrDisplayPageState extends State<QrDisplayPage> {
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => navigateToHome(
+                context,
+                routeUserId: maybeUserId ?? authUserId ?? widget.userId,
+                routeResidenceId: maybeResidenceId ?? authResidence,
+                routeUserName: routeArgs?['userName'] as String? ?? authName ?? widget.userName,
+              ),
               child: Text('Generar Otro Código', style: TextStyle(color: theme.colorScheme.primary)),
             ),
           ),

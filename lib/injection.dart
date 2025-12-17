@@ -18,6 +18,7 @@ import 'domain/ports/visitor_repository.dart';
 
 import 'domain/usecases/login_usecase.dart';
 import 'domain/usecases/register_account_usecase.dart';
+import 'domain/usecases/load_family_members_usecase.dart';
 import 'domain/usecases/generate_qr_usecase.dart';
 import 'domain/usecases/load_access_history_usecase.dart';
 import 'domain/usecases/manage_visitor_usecase.dart';
@@ -40,6 +41,7 @@ Future<void> inject() async {
   // Use cases
   sl.registerLazySingleton(() => LoginUseCase(sl(), sl()));
   sl.registerLazySingleton(() => RegisterAccountUseCase(sl()));
+  sl.registerLazySingleton(() => LoadFamilyMembersUseCase(sl()));
   sl.registerLazySingleton(() => GenerateQrUseCase(sl()));
   sl.registerLazySingleton(() => LoadAccessHistoryUseCase(sl()));
   sl.registerLazySingleton(() => GenerateVisitQrUseCase(sl()));

@@ -12,3 +12,8 @@ class UpdateEmailSubmitted extends AccountEvent {
   final String newEmail;
   UpdateEmailSubmitted(this.id, this.newEmail);
 }
+
+class LoadFamilyMembersRequested extends AccountEvent {
+  final String residenceId;
+  LoadFamilyMembersRequested(this.residenceId);
+}

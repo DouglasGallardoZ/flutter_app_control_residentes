@@ -72,7 +72,7 @@ class _AccessHistoryPageState extends State<AccessHistoryPage> {
             final uid3 = maybeUserId ?? authUserId;
             final rid3 = maybeResidenceId ?? authResidence;
             if (uid3 != null && rid3 != null) {
-              Navigator.pushReplacementNamed(context, '/familyDashboard', arguments: {'userId': uid3, 'residenceId': rid3});
+              Navigator.pushReplacementNamed(context, '/members', arguments: {'userId': uid3, 'residenceId': rid3});
             } else {
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Familia')));
             }
