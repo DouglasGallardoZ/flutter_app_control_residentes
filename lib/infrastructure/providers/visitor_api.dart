@@ -5,7 +5,22 @@ class VisitorApi {
 
   VisitorApi(this.dio);
 
-  /// Listar visitantes por residencia
+  /// Obtener visitantes registrados de una vivienda (nuevo endpoint)
+  /// GET /visitantes/{persona_id}
+  Future<Map<String, dynamic>> getVisitantesVivienda({
+    required int personaId,
+  }) async {
+    try {
+      final response = await dio.get(
+        '/qr/visitantes/$personaId',
+      );
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Listar visitantes por residencia (endpoint legado)
   Future<Map<String, dynamic>> listByResidence({
     required int personaId,
     int page = 1,

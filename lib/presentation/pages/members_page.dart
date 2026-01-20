@@ -36,7 +36,7 @@ class _MembersPageState extends State<MembersPage> {
     String? authResidence;
     String? authName;
     if (authState is AuthSuccess) {
-      authUserId = (authState.user['id'] ?? authState.user['uid']) as String?;
+      authUserId = (authState.user['id'] ?? authState.user['uid'])?.toString();
       authResidence = authState.user['residence'] as String?;
       authName = authState.user['name'] as String?;
     }

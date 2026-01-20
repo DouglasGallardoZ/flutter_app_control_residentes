@@ -7,6 +7,8 @@ class ManageVisitorUseCase {
 
   Future<List<Visitor>> list(String residenceId) => repo.listByResidence(residenceId);
 
+  Future<List<Visitor>> getVisitantesVivienda() => repo.getVisitantesVivienda();
+
   Future<Visitor> registerOrUpdate({
     required String residenceId,
     required String id,

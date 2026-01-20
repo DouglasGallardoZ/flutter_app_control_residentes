@@ -21,6 +21,19 @@ class VisitorBloc extends Bloc<VisitorEvent, VisitorState> {
       }
     });
 
+    on<LoadVisitantesVivienda>((e, emit) async {
+      emit(VisitorLoading());
+      try {
+        final list = await usecase.getVisitantesVivienda();
+        final helper = list.isEmpty
+          ? 'No hay visitantes registrados para esta vivienda.'
+          : 'Seleccione un visitante de la lista.';
+        emit(VisitorLoaded(all: list, filtered: list, selected: null, helper: helper));
+      } catch (_) {
+        emit(VisitorError('Error al cargar visitantes'));
+      }
+    });
+
     on<SearchVisitors>((e, emit) {
       final st = state;
       if (st is VisitorLoaded) {
@@ -47,3 +60,4 @@ class VisitorBloc extends Bloc<VisitorEvent, VisitorState> {
     });
   }
 }
+

@@ -5,4 +5,5 @@ abstract class VisitorRepository {
   Future<List<Visitor>> listByResidence(String residenceId);
   Future<Visitor?> findById(String id, String residenceId);
   Future<Visitor> upsert(String residenceId, Visitor visitor);
+  Future<List<Visitor>> getVisitantesVivienda();
 }

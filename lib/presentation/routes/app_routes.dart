@@ -28,16 +28,20 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const LoginPage());
 
       case residentDashboard: {
+        // Ya no requiere argumentos - obtiene datos del AuthBloc y QrBloc
         final args = settings.arguments as Map<String, dynamic>?;
         final personaId = args?['personaId'] as int?;
         final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
-        final userName = args?['userName'] as String?;
-        if (personaId == null || identificacion == null || residenceId == null || userName == null) {
-          return _errorRoute('Faltan argumentos en ResidentDashboard');
+        // Solo usar argumentos si vienen, sino dejar que la página los obtenga del BLoC
+        if (personaId != null && identificacion != null && residenceId != null) {
+          return MaterialPageRoute(
+            builder: (_) => ResidentDashboardPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId),
+          );
         }
+        // Fallback: retornar sin argumentos y dejar que la página use los BLoCs
         return MaterialPageRoute(
-          builder: (_) => ResidentDashboardPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId, userName: userName,),
+          builder: (_) => const ResidentDashboardPage(personaId: 0, identificacion: '', residenceId: ''),
         );
       }
 
@@ -46,9 +50,8 @@ class AppRoutes {
         final personaId = args?['personaId'] as int?;
         final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
-        final userName = args?['userName'] as String?;
-        if (personaId == null || identificacion == null || userName == null) return _errorRoute('Faltan argumentos en QrSelfPage');
-        return MaterialPageRoute(builder: (_) => QrSelfPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId, userName: userName));
+        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en QrSelfPage');
+        return MaterialPageRoute(builder: (_) => QrSelfPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId));
       }
 
       case qrVisit: {
@@ -65,29 +68,38 @@ class AppRoutes {
       }
 
       case accessHistory: {
+        // Ya no requiere argumentos estrictamente
         final args = settings.arguments as Map<String, dynamic>?;
         final personaId = args?['personaId'] as int?;
         final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
-        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AccessHistoryPage');
-        return MaterialPageRoute(builder: (_) => AccessHistoryPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId));
+        if (personaId != null && identificacion != null) {
+          return MaterialPageRoute(builder: (_) => AccessHistoryPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId));
+        }
+        return MaterialPageRoute(builder: (_) => const AccessHistoryPage(personaId: 0, identificacion: '', residenceId: ''));
       }
 
       case profile: {
+        // Ya no requiere argumentos estrictamente
         final args = settings.arguments as Map<String, dynamic>?;
         final personaId = args?['personaId'] as int?;
         final identificacion = args?['identificacion'] as String?;
-        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en ProfilePage');
-        return MaterialPageRoute(builder: (_) => ProfilePage(personaId: personaId, identificacion: identificacion));
+        if (personaId != null && identificacion != null) {
+          return MaterialPageRoute(builder: (_) => ProfilePage(personaId: personaId, identificacion: identificacion));
+        }
+        return MaterialPageRoute(builder: (_) => const ProfilePage(personaId: 0, identificacion: ''));
       }
 
       case members: {
+        // Ya no requiere argumentos estrictamente
         final args = settings.arguments as Map<String, dynamic>?;
         final personaId = args?['personaId'] as int?;
         final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
-        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en MembersPage');
-        return MaterialPageRoute(builder: (_) => MembersPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId));
+        if (personaId != null && identificacion != null) {
+          return MaterialPageRoute(builder: (_) => MembersPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId));
+        }
+        return MaterialPageRoute(builder: (_) => const MembersPage(personaId: 0, identificacion: '', residenceId: ''));
       }
 
       case adminDashboard: {

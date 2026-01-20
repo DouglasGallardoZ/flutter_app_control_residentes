@@ -49,15 +49,10 @@ class _LoginPageState extends State<LoginPage> {
                   listener: (ctx, state) {
                     if (state is AuthSuccess) {
                       final rol = state.user['rol'];
-                      final personaId = state.user['personaId'] as int;
-                      final identificacion = state.user['identificacion'] as String;
+                      final personaId = int.tryParse(state.user['id']?.toString() ?? '') ?? 0;
+                      final identificacion = state.user['identificacion'] as String? ?? '';
                       final vivienda = state.user['vivienda'] as Map<String, dynamic>?;
-                      final nombres = state.user['nombres'] as String?;
-                      final apellidos = state.user['apellidos'] as String?;
-                      final nombreCompleto =
-                          nombres != null && apellidos != null
-                              ? '$nombres $apellidos'
-                              : 'Usuario';
+                      final nombreCompleto = state.user['name'] as String? ?? 'Usuario';
 
                       // Navegar según rol
                       if (rol == 'residente') {

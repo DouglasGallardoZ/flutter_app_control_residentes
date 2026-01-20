@@ -5,6 +5,9 @@ class LoadVisitors extends VisitorEvent {
   final String residenceId;
   LoadVisitors(this.residenceId);
 }
+class LoadVisitantesVivienda extends VisitorEvent {
+  // Carga visitantes desde el nuevo endpoint GET /visitantes/{persona_id}
+}
 class SearchVisitors extends VisitorEvent {
   final String query;
   SearchVisitors(this.query);

@@ -19,8 +19,7 @@ class QrSelfPage extends StatefulWidget {
   final int personaId;
   final String identificacion;
   final String? residenceId;
-  final String userName;
-  const QrSelfPage({super.key, required this.personaId, required this.identificacion, this.residenceId, required this.userName});
+  const QrSelfPage({super.key, required this.personaId, required this.identificacion, this.residenceId});
 
   @override
   State<QrSelfPage> createState() => _QrSelfPageState();
@@ -80,7 +79,7 @@ class _QrSelfPageState extends State<QrSelfPage> {
     );
   }
 
-  Future<void> _confirmAndGenerate() async {
+  Future<void> _confirmAndGenerate(int personaId) async {
     if (startDate == null) return _error('La fecha de inicio es obligatoria');
     if (startTime == null) return _error('La hora de inicio es obligatoria');
     if (durationHours == null || durationHours! <= 0) return _error('La duración debe ser mayor a 0 horas');
@@ -102,7 +101,11 @@ class _QrSelfPageState extends State<QrSelfPage> {
             const SizedBox(height: 12),
             const Text('¿Confirmas la generación del código QR con los siguientes datos?'),
             const SizedBox(height: 12),
-            _DetailRow(label: 'Para:', value: widget.userName),
+            Builder(builder: (builderCtx) {
+              final authState = builderCtx.read<AuthBloc>().state;
+              final authUserName = (authState is AuthSuccess) ? (authState.user['name'] as String? ?? 'Usuario') : 'Usuario';
+              return _DetailRow(label: 'Para:', value: authUserName);
+            }),
             _DetailRow(label: 'Inicio:', value: _fmtShortES(validFrom!, includeWeek: true)),
             _DetailRow(label: 'Fin:', value: _fmtShortES(validUntil!, includeWeek: true)),
             _DetailRow(label: 'Duración:', value: '${durationHours} horas'),
@@ -122,7 +125,7 @@ class _QrSelfPageState extends State<QrSelfPage> {
     );
 
     if (ok == true) {
-      context.read<QrBloc>().add(GenerateSelfQrConfigured(widget.personaId, validFrom!, durationHours!));
+      context.read<QrBloc>().add(GenerateSelfQrConfigured(personaId, validFrom!, durationHours!));
       setState(() => qrGenerated = true);
       // _toastSuccess('Generando código QR...');
     }
@@ -135,34 +138,46 @@ class _QrSelfPageState extends State<QrSelfPage> {
     final theme = Theme.of(context);
     final separatorColor = theme.brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade300;
 
+    final authState = context.read<AuthBloc>().state;
+    
+    // Extraer datos del AuthBloc - SIEMPRE deben estar disponibles después del login
+    int personaId = 0;
+    String identificacion = '';
+    String residenceId = '';
+    
+    if (authState is AuthSuccess) {
+      // SIEMPRE usar datos del AuthBloc (son la fuente de verdad)
+      personaId = int.tryParse(authState.user['id']?.toString() ?? '') ?? 0;
+      identificacion = (authState.user['identificacion'] ?? 
+                       authState.user['identification'] ?? 
+                       authState.user['dni'] ?? '') as String;
+      residenceId = (authState.user['residence'] ?? '') as String;
+    }
+    
+    // Los parámetros del widget son FALLBACK
+    if (residenceId.isEmpty && (widget.residenceId?.isNotEmpty ?? false)) residenceId = widget.residenceId!;
+    if (identificacion.isEmpty && widget.identificacion.isNotEmpty) identificacion = widget.identificacion;
+    if (personaId == 0 && widget.personaId != 0) personaId = widget.personaId;
+
     return AppScaffold(
       title: 'Mi Código QR',
       isRoot: true,
       currentIndex: 1,
       onTabSelected: (i) {
-        final authState = context.read<AuthBloc>().state;
-        String? authResidence;
-        if (authState is AuthSuccess) {
-          authResidence = authState.user['residence'] as String?;
-        }
         switch (i) {
           case 0:
-            if (authResidence != null && widget.userName.isNotEmpty) {
-              Navigator.pushReplacementNamed(context, AppRoutes.residentDashboard, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': authResidence, 'userName': widget.userName});
-            } else {
-              Navigator.pushReplacementNamed(context, AppRoutes.residentDashboard, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': authResidence ?? '', 'userName': widget.userName});
-            }
+            Navigator.pushReplacementNamed(context, AppRoutes.residentDashboard, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId ?? ''});
             break;
           case 1:
             break;
           case 2:
-            Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion});
+            Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'personaId': personaId, 'identificacion': identificacion});
             break;
           case 3:
-            Navigator.pushNamed(context, AppRoutes.members, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion});
+            Navigator.pushNamed(context, AppRoutes.members, arguments: {'personaId': personaId, 'identificacion': identificacion});
             break;
           case 4:
-            Navigator.pushNamed(context, AppRoutes.profile, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion});
+            Navigator.pushNamed(context, AppRoutes.profile, arguments: {'personaId': personaId, 'identificacion': identificacion});
             break;
         }
       },
@@ -170,12 +185,28 @@ class _QrSelfPageState extends State<QrSelfPage> {
         listener: (ctx, state) {
           if (state is QrReady && qrGenerated) {
             ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Código QR generado exitosamente'), behavior: SnackBarBehavior.floating));
+            
+            // Obtener datos del usuario del AuthBloc
+            final authData = getUserDataFromAuth(ctx);
+            
+            // Guardar contexto de navegación en QrBloc para self QR
+            ctx.read<QrBloc>().add(SaveQrNavigationContext(
+              personaId: personaId,
+              identificacion: identificacion,
+              residenceId: residenceId ?? '',
+              userName: authData.userName,
+              qrValue: state.qr.value,
+              validFrom: validFrom!,
+              validUntil: validUntil!,
+              durationHours: durationHours!,
+            ));
+            
             Navigator.of(ctx).push(
               MaterialPageRoute(
                 builder: (_) => QrDisplayPage(
-                  userName: widget.userName,
-                  personaId: widget.personaId,
-                  identificacion: widget.identificacion,
+                  userName: authData.userName,
+                  personaId: personaId,
+                  identificacion: identificacion,
                   validFrom: validFrom!,
                   validUntil: validUntil!,
                   durationHours: durationHours!,
@@ -214,7 +245,11 @@ class _QrSelfPageState extends State<QrSelfPage> {
                       const SizedBox(width: 8),
                       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         const Text('Nombre', style: TextStyle(fontWeight: FontWeight.w600)),
-                        Text(widget.userName),
+                        Builder(builder: (builderCtx) {
+                          final authState = builderCtx.read<AuthBloc>().state;
+                          final authUserName = (authState is AuthSuccess) ? (authState.user['name'] as String? ?? 'Usuario') : 'Usuario';
+                          return Text(authUserName);
+                        }),
                       ]),
                     ]),
                     const SizedBox(height: 12),
@@ -311,7 +346,7 @@ class _QrSelfPageState extends State<QrSelfPage> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: _confirmAndGenerate,
+                        onPressed: () => _confirmAndGenerate(personaId),
                         icon: const Icon(Icons.qr_code),
                         label: const Text('Generar Mi QR'),
                       ),

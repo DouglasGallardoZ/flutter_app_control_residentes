@@ -36,15 +36,15 @@ class _AccessHistoryPageState extends State<AccessHistoryPage> {
     final maybePersonaId = routeArgs?['personaId'] as int? ?? widget.personaId;
     final maybeIdentificacion = routeArgs?['identificacion'] as String? ?? widget.identificacion;
     // Fallback to AuthBloc if available
-      final authState = context.read<AuthBloc>().state;
-      String? authUserId;
-      String? authResidence;
-      String? authName;
-      if (authState is AuthSuccess) {
-        authUserId = (authState.user['id'] ?? authState.user['uid']) as String?;
-        authResidence = authState.user['residence'] as String?;
-        authName = authState.user['name'] as String?;
-      }
+    final authState = context.read<AuthBloc>().state;
+    String? authUserId;
+    String? authResidence;
+    String? authName;
+    if (authState is AuthSuccess) {
+      authUserId = (authState.user['id'] ?? authState.user['uid'])?.toString();
+      authResidence = authState.user['residence'] as String?;
+      authName = authState.user['name'] as String?;
+    }
 
     return AppScaffold(
       title: 'Historial de Accesos',

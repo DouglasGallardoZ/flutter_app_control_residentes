@@ -7,6 +7,8 @@ import '../../application/blocs/visitor/visitor_state.dart';
 import '../../application/blocs/qr_visit/qr_visit_bloc.dart';
 import '../../application/blocs/qr_visit/qr_visit_event.dart';
 import '../../application/blocs/qr_visit/qr_visit_state.dart';
+import '../../application/blocs/qr/qr_bloc.dart';
+import '../../application/blocs/qr/qr_event.dart';
 import '../widgets/app_scaffold.dart';
 import '../routes/app_routes.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -16,6 +18,8 @@ import 'qr_display_page.dart';
 import '../widgets/navigation_helpers.dart';
 import '../../injection.dart';
 import '../../domain/usecases/manage_visitor_usecase.dart';
+import '../../infrastructure/providers/visitor_api.dart';
+import '../../infrastructure/adapters/visitor_repository_impl.dart';
 
 class QrVisitPage extends StatefulWidget {
   final int personaId;
@@ -28,8 +32,7 @@ class QrVisitPage extends StatefulWidget {
 }
 
 class _QrVisitPageState extends State<QrVisitPage> {
-  final GlobalKey qrBoundaryKey = GlobalKey();
-
+  final GlobalKey qrBoundaryKey = GlobalKey();  late ScrollController _scrollController;
   String mode = 'saved'; // saved | new
   final searchCtrl = TextEditingController();
   final nameCtrl = TextEditingController();
@@ -55,6 +58,7 @@ class _QrVisitPageState extends State<QrVisitPage> {
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
   }
 
   @override
@@ -62,7 +66,20 @@ class _QrVisitPageState extends State<QrVisitPage> {
     searchCtrl.dispose();
     nameCtrl.dispose();
     idCtrl.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _clearSelection() {
+    setState(() {
+      mode = 'saved';
+      nameCtrl.clear();
+      idCtrl.clear();
+      searchCtrl.clear();
+      startDate = null;
+      startTime = null;
+      durationHours = null;
+    });
   }
 
   String _fmtShortES(DateTime dt, {bool includeWeek = true}) {
@@ -94,7 +111,7 @@ class _QrVisitPageState extends State<QrVisitPage> {
     if (res != null) setState(() => startTime = res);
   }
 
-  Future<void> _confirmDialog() async {
+  Future<void> _confirmDialog(BuildContext builderCtx) async {
     if ((mode == 'new' && (nameCtrl.text.trim().isEmpty || idCtrl.text.trim().isEmpty))) {
       return _error('Complete nombre e identificación');
     }
@@ -137,12 +154,16 @@ class _QrVisitPageState extends State<QrVisitPage> {
             _DetailRow(label: 'Duración:', value: '${durationHours} horas'),
             const SizedBox(height: 16),
             Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-              OutlinedButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+              Flexible(
+                child: OutlinedButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+              ),
               const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: () => Navigator.pop(context, true),
-                icon: const Icon(Icons.check_circle),
-                label: const Text('Confirmar y Generar'),
+              Flexible(
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(context, true),
+                  icon: const Icon(Icons.check_circle),
+                  label: const Text('Confirmar y Generar'),
+                ),
               ),
             ]),
           ]),
@@ -152,7 +173,7 @@ class _QrVisitPageState extends State<QrVisitPage> {
 
     if (ok == true) {
       // Solo generar QR - El API registrará automáticamente al visitante
-      context.read<QrVisitBloc>().add(GenerateVisitQrRequested(widget.personaId, visitorId, visitorName, validFrom!, durationHours!));
+      builderCtx.read<QrVisitBloc>().add(GenerateVisitQrRequested(widget.personaId, visitorId, visitorName, validFrom!, durationHours!));
       setState(() {
         qrGenerated = true;
         successBadge = mode == 'new' ? 'Visitante registrado automáticamente' : null;
@@ -169,18 +190,31 @@ class _QrVisitPageState extends State<QrVisitPage> {
     final separatorColor = theme.brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade300;
 
     return BlocProvider<VisitorBloc>(
-      create: (_) => VisitorBloc(sl<ManageVisitorUseCase>()),
-      child: AppScaffold(
-        title: 'QR de Visitante',
-      isRoot: true,
-      currentIndex: 1,
-      onTabSelected: (i) {
-        final authState = context.read<AuthBloc>().state;
-        String? authName;
-        if (authState is AuthSuccess) authName = authState.user['name'] as String?;
+      create: (_) {
+        // Crear VisitorRepository manualmente con el personaId correcto
+        final visitorApi = sl<VisitorApi>();
+        final visitorRepo = VisitorRepositoryImpl(api: visitorApi, personaId: widget.personaId);
+        final usecase = ManageVisitorUseCase(visitorRepo);
+        return VisitorBloc(usecase);
+      },
+      child: PopScope(
+        canPop: true,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) {
+            Navigator.pushReplacementNamed(context, '/residentDashboard');
+          }
+        },
+        child: AppScaffold(
+          title: 'QR de Visitante',
+        isRoot: true,
+        currentIndex: 1,
+        onTabSelected: (i) {
+          final authState = context.read<AuthBloc>().state;
+          String? authName;
+          if (authState is AuthSuccess) authName = authState.user['name'] as String?;
 
-        switch (i) {
-          case 0:
+          switch (i) {
+            case 0:
             Navigator.pushReplacementNamed(
               context,
               AppRoutes.residentDashboard,
@@ -206,24 +240,43 @@ class _QrVisitPageState extends State<QrVisitPage> {
         }
       },
       body: BlocListener<QrVisitBloc, QrVisitState>(
-        listener: (ctx, qrState) {
+        listener: (listenerCtx, qrState) {
           if (qrState is QrVisitReady && qrGenerated) {
             // Recargar lista de visitantes después de generar QR
-            // (El API ya registró al nuevo visitante)
-            context.read<VisitorBloc>().add(LoadVisitors(widget.residenceId));
+            listenerCtx.read<VisitorBloc>().add(LoadVisitors(widget.residenceId));
             
-            // Navigate to display page
+            // Obtener datos del usuario del AuthBloc
+            final authData = getUserDataFromAuth(listenerCtx);
+            
+            // Guardar contexto de navegación en QrBloc
+            listenerCtx.read<QrBloc>().add(SaveQrNavigationContext(
+              personaId: widget.personaId,
+              identificacion: widget.identificacion,
+              residenceId: widget.residenceId,
+              userName: authData.userName,
+              qrValue: qrState.qr.value,
+              validFrom: qrState.qr.validFrom,
+              validUntil: qrState.qr.expiresAt,
+              durationHours: qrState.qr.durationHours ?? durationHours ?? 0,
+              visitName: nameCtrl.text.isNotEmpty ? nameCtrl.text : 'Visitante',
+              visitIdentificacion: idCtrl.text.isNotEmpty ? idCtrl.text : '',
+            ));
+            
+            // Navigate to display page sin argumentos
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => QrDisplayPage(
-                  userName: nameCtrl.text.isNotEmpty ? nameCtrl.text : 'Visitante',
+                  userName: authData.userName,
                   personaId: widget.personaId,
                   identificacion: widget.identificacion,
                   validFrom: qrState.qr.validFrom,
                   validUntil: qrState.qr.expiresAt,
                   durationHours: qrState.qr.durationHours ?? durationHours ?? 0,
                   qrValue: qrState.qr.value,
+                  // Datos de la visita
+                  visitName: nameCtrl.text.isNotEmpty ? nameCtrl.text : 'Visitante',
+                  visitIdentificacion: idCtrl.text.isNotEmpty ? idCtrl.text : '',
                 ),
               ),
             );
@@ -232,23 +285,20 @@ class _QrVisitPageState extends State<QrVisitPage> {
         },
         child: BlocBuilder<VisitorBloc, VisitorState>(
           builder: (ctx, vstState) {
-            // Load visitors on first build
+            // Load visitors on first build using the new endpoint
             if (vstState is VisitorInitial) {
-              ctx.read<VisitorBloc>().add(LoadVisitors(widget.residenceId));
+              ctx.read<VisitorBloc>().add(LoadVisitantesVivienda());
             }
             
             return BlocBuilder<QrVisitBloc, QrVisitState>(
-              builder: (ctx, qrState) {
-                return ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                  // Header similar to web TSX: back button, centered title, placeholder at right
-                  // Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  //   IconButton(onPressed: () => navigateToHome(context, routeUserId: widget.userId, routeResidenceId: widget.residenceId), icon: const Icon(Icons.arrow_back)),
-                  //   Expanded(child: Center(child: Text('QR de Visitante', style: theme.textTheme.titleLarge))),
-                  //   const SizedBox(width: 48),
-                  // ]),
-                  const SizedBox(height: 12),
+              builder: (qrCtx, qrState) {
+                return SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                   Center(child: Icon(Icons.person_add_alt_1, size: 64, color: theme.colorScheme.secondary)),
                   const SizedBox(height: 8),
                   Text('Código QR de Visitante', style: theme.textTheme.titleMedium),
@@ -299,7 +349,7 @@ class _QrVisitPageState extends State<QrVisitPage> {
                     TextField(
                       controller: searchCtrl,
                       onChanged: (query) {
-                        context.read<VisitorBloc>().add(SearchVisitors(query));
+                        ctx.read<VisitorBloc>().add(SearchVisitors(query));
                       },
                       decoration: const InputDecoration(
                         prefixIcon: Icon(Icons.search),
@@ -309,37 +359,55 @@ class _QrVisitPageState extends State<QrVisitPage> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Lista de visitantes
-                    if (vstState is VisitorLoaded && vstState.filtered.isNotEmpty)
-                      SizedBox(
-                        height: 220,
+                    // Lista de visitantes - mostrar solo si no hay selección
+                    if (vstState is VisitorLoaded && vstState.filtered.isNotEmpty && vstState.selected == null)
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 250),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: theme.dividerColor),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         child: ListView.separated(
+                          shrinkWrap: true,
                           itemCount: vstState.filtered.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          separatorBuilder: (_, __) => Divider(height: 1, color: theme.dividerColor),
                           itemBuilder: (_, i) {
                             final v = vstState.filtered[i];
-                            final selected = vstState.selected?.id == v.id;
                             return InkWell(
                               onTap: () {
-                                context.read<VisitorBloc>().add(SelectVisitor(v));
+                                ctx.read<VisitorBloc>().add(SelectVisitor(v));
                                 nameCtrl.text = v.name;
                                 idCtrl.text = v.id;
+                                // Scroll hacia el card de confirmación
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  _scrollController.animateTo(
+                                    _scrollController.position.maxScrollExtent,
+                                    duration: const Duration(milliseconds: 500),
+                                    curve: Curves.easeInOut,
+                                  );
+                                });
                               },
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: selected ? theme.colorScheme.primary : theme.dividerColor),
-                                ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                 child: Row(children: [
-                                  CircleAvatar(child: Text(v.name.isNotEmpty ? v.name[0].toUpperCase() : '?')),
+                                  CircleAvatar(
+                                    radius: 16,
+                                    backgroundColor: theme.colorScheme.primary.withOpacity(0.2),
+                                    child: Text(
+                                      v.name.isNotEmpty ? v.name[0].toUpperCase() : '?',
+                                      style: TextStyle(
+                                        color: theme.colorScheme.primary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
                                   const SizedBox(width: 12),
-                                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                    Text(v.name, style: theme.textTheme.titleMedium),
-                                    Text('${v.id}', style: theme.textTheme.bodySmall),
-                                    Text('${v.visitCount} ${v.visitCount == 1 ? 'visita' : 'visitas'}', style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
+                                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
+                                    Text(v.name, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+                                    Text(v.id, style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
                                   ])),
-                                  if (selected) const Icon(Icons.check_circle, color: Color(0xFF10B981)),
+                                  Icon(Icons.arrow_forward_ios, size: 16, color: theme.colorScheme.primary),
                                 ]),
                               ),
                             );
@@ -350,8 +418,17 @@ class _QrVisitPageState extends State<QrVisitPage> {
                       Column(children: [
                         const Icon(Icons.groups, size: 36, color: Colors.grey),
                         const SizedBox(height: 4),
-                        Text(vstState is VisitorLoaded ? 'No se encontraron visitantes' : 'Cargando visitantes...', style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor)),
-                        TextButton(onPressed: () => setState(() => mode = 'new'), child: Text('Registrar primer visitante', style: TextStyle(color: theme.colorScheme.primary))),
+                        Text(
+                          vstState is VisitorLoaded 
+                            ? 'No hay visitantes registrados en esta vivienda'
+                            : 'Cargando visitantes...', 
+                          style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Selecciona "Nuevo Visitante" para registrar a alguien', 
+                          style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+                        ),
                       ]),
                   ],
 
@@ -379,23 +456,58 @@ class _QrVisitPageState extends State<QrVisitPage> {
                             const SizedBox(height: 4),
                             Text('${idCtrl.text.length}/10 dígitos', style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
                           ] else ...[
-                            Row(children: const [
-                              Icon(Icons.person_outline, color: Colors.grey),
-                              SizedBox(width: 8),
-                              Text('Visitante Seleccionado', style: TextStyle(fontWeight: FontWeight.w600)),
+                            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                              Expanded(
+                                child: Row(children: const [
+                                  Icon(Icons.person_outline, color: Colors.grey),
+                                  SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text('Visitante Seleccionado', style: TextStyle(fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
+                                  ),
+                                ]),
+                              ),
+                              TextButton.icon(
+                                onPressed: _clearSelection,
+                                icon: const Icon(Icons.edit),
+                                label: const Text('Cambiar'),
+                              ),
                             ]),
                             const SizedBox(height: 8),
-                            Row(children: [
-                              CircleAvatar(radius: 18, child: Text(nameCtrl.text.isNotEmpty ? nameCtrl.text[0].toUpperCase() : '?')),
-                              const SizedBox(width: 12),
-                              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text(nameCtrl.text, style: theme.textTheme.titleMedium),
-                                Text(idCtrl.text, style: theme.textTheme.bodySmall),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
+                              ),
+                              child: Row(children: [
+                                CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: theme.colorScheme.primary,
+                                  child: Text(
+                                    nameCtrl.text.isNotEmpty ? nameCtrl.text[0].toUpperCase() : '?',
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  Text(nameCtrl.text, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                  Text(idCtrl.text, style: theme.textTheme.bodySmall),
+                                  if (vstState is VisitorLoaded && vstState.selected?.lastVisitAt != null)
+                                    Text(
+                                      'Registrado: ${_fmtShortES(vstState.selected!.lastVisitAt!, includeWeek: false)}',
+                                      style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+                                    ),
+                                ])),
                               ]),
-                            ]),
+                            ),
                           ],
 
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
+                          if (mode != 'new') ...[
+                            Text('Configurar vigencia del acceso', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 12),
+                          ],
                           // Fecha
                           Align(alignment: Alignment.centerLeft, child: Text('Fecha de Inicio', style: theme.textTheme.labelLarge)),
                           const SizedBox(height: 6),
@@ -432,27 +544,31 @@ class _QrVisitPageState extends State<QrVisitPage> {
                             onChanged: (v) => setState(() => durationHours = (v == 0) ? null : v),
                           ),
 
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
                           if (validFrom != null && validUntil != null)
                             Container(
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: theme.colorScheme.surface,
+                                color: theme.colorScheme.primaryContainer.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: theme.dividerColor),
+                                border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
                               ),
                               padding: const EdgeInsets.all(16),
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text('Periodo de Validez', style: theme.textTheme.titleMedium),
+                                Text('Periodo de Validez', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: theme.colorScheme.primary)),
+                                const SizedBox(height: 12),
+                                Row(children: [
+                                  Icon(Icons.access_time, size: 18, color: theme.colorScheme.primary),
+                                  const SizedBox(width: 8),
+                                  const Text('Inicio: ', style: TextStyle(fontWeight: FontWeight.w600)),
+                                  Expanded(child: Text(_fmtShortES(validFrom!, includeWeek: true))),
+                                ]),
                                 const SizedBox(height: 8),
                                 Row(children: [
-                                  const Text('Inicio: ', style: TextStyle(fontWeight: FontWeight.w600)),
-                                  Text(_fmtShortES(validFrom!, includeWeek: true)),
-                                ]),
-                                const SizedBox(height: 4),
-                                Row(children: [
+                                  Icon(Icons.access_time_filled, size: 18, color: theme.colorScheme.primary),
+                                  const SizedBox(width: 8),
                                   const Text('Fin: ', style: TextStyle(fontWeight: FontWeight.w600)),
-                                  Text(_fmtShortES(validUntil!, includeWeek: true)),
+                                  Expanded(child: Text(_fmtShortES(validUntil!, includeWeek: true))),
                                 ]),
                               ]),
                             ),
@@ -461,7 +577,7 @@ class _QrVisitPageState extends State<QrVisitPage> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: _confirmDialog,
+                              onPressed: () => _confirmDialog(ctx),
                               icon: const Icon(Icons.qr_code),
                               label: const Text('Generar QR de Visitante'),
                             ),
@@ -545,19 +661,18 @@ class _QrVisitPageState extends State<QrVisitPage> {
                             successBadge = null;
                           });
                         },
-                        child: Text('Generar Otro Código', style: TextStyle(color: theme.colorScheme.primary)),
+                        child: Text('Volver', style: TextStyle(color: theme.colorScheme.primary)),
                       ),
                     ),
                   ],
-                ],
-              );
+                  ]),
+                ));
               },
             );
           },
         ),
       ),
-      ),
-    );
+    )));
   }
 }
 

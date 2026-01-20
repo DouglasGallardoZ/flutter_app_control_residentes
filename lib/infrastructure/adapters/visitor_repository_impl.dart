@@ -81,4 +81,26 @@ class VisitorRepositoryImpl implements VisitorRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<List<Visitor>> getVisitantesVivienda() async {
+    try {
+      final response = await api.getVisitantesVivienda(personaId: personaId);
+      final visitantes = response['visitantes'] as List<dynamic>? ?? [];
+      return visitantes.map((item) {
+        final map = item as Map<String, dynamic>;
+        return Visitor(
+          id: map['identificacion']?.toString() ?? '',
+          name: '${map['nombres'] ?? ''} ${map['apellidos'] ?? ''}'.trim(),
+          phone: null,
+          visitCount: 0,
+          lastVisitAt: map['fecha_creado'] != null
+              ? DateTime.tryParse(map['fecha_creado'].toString())
+              : null,
+        );
+      }).toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

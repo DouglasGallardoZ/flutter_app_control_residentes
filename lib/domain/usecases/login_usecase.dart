@@ -27,20 +27,28 @@ class LoginUseCase {
         throw Exception('Cuenta no encontrada en la base de datos');
       }
 
-      // 3. Retornar información del usuario enriquecida
+      // 3. Retornar información del usuario enriquecida (normalizada)
       return {
+        // Firebase
         'uid': loginResult['uid'],
         'email': loginResult['email'],
         'idToken': loginResult['idToken'],
-        'personaId': account.personaId,
+        // User Data (normalizado para acceso consistente)
+        'id': account.personaId,
         'identificacion': account.identificacion,
+        'identification': account.identificacion,  // alias
+        'dni': account.identificacion,  // alias
+        'name': account.nombreCompleto,  // normalizado
         'nombres': account.nombres,
         'apellidos': account.apellidos,
         'nombreCompleto': account.nombreCompleto,
         'rol': account.rol,
         'estado': account.estado,
         'correo': account.correo,
+        'email': loginResult['email'],
         'celular': account.celular,
+        // Residence
+        'residence': '${account.vivienda.manzana}-${account.vivienda.villa}',
         'vivienda': {
           'manzana': account.vivienda.manzana,
           'villa': account.vivienda.villa,

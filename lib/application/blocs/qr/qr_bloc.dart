@@ -20,5 +20,25 @@ class QrBloc extends Bloc<QrEvent, QrState> {
         emit(QrError('No se pudo generar el QR'));
       }
     });
+
+    on<SaveQrNavigationContext>((e, emit) {
+      emit(QrNavigationContextReady(
+        personaId: e.personaId,
+        identificacion: e.identificacion,
+        residenceId: e.residenceId,
+        userName: e.userName,
+        qrValue: e.qrValue,
+        validFrom: e.validFrom,
+        validUntil: e.validUntil,
+        durationHours: e.durationHours,
+        visitName: e.visitName,
+        visitIdentificacion: e.visitIdentificacion,
+      ));
+    });
+
+    on<ClearQrNavigationContext>((e, emit) {
+      emit(QrInitial());
+    });
   }
 }
+

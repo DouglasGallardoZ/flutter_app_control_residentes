@@ -15,13 +15,11 @@ class ResidentDashboardPage extends StatefulWidget {
   final int personaId;
   final String identificacion;
   final String residenceId;
-  final String userName;
   const ResidentDashboardPage({
     super.key,
     required this.personaId,
     required this.identificacion,
     required this.residenceId,
-    required this.userName,
   });
 
   @override
@@ -39,15 +37,31 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
     final separatorColor = isDark ? Colors.grey.shade800 : Colors.grey.shade300;
 
     final authState = context.read<AuthBloc>().state;
-    String? authName;
-    String? authResidence;
+    
+    // Extraer datos del AuthBloc - SIEMPRE deben estar disponibles después del login
+    String displayName = 'Usuario';
+    int personaId = 0;
+    String identificacion = '';
+    String residenceId = '';
+    
     if (authState is AuthSuccess) {
-      authName = authState.user['name'] as String?;
-      authResidence = authState.user['residence'] as String?;
+      // SIEMPRE usar datos del AuthBloc (son la fuente de verdad)
+      displayName = (authState.user['name'] ?? 
+                    authState.user['nombreCompleto'] ?? 
+                    authState.user['nombres'] ?? 'Usuario') as String;
+      personaId = int.tryParse(authState.user['id']?.toString() ?? '') ?? 0;
+      identificacion = (authState.user['identificacion'] ?? 
+                       authState.user['identification'] ?? 
+                       authState.user['dni'] ?? '') as String;
+      residenceId = (authState.user['residence'] ?? '') as String;
     }
+    
+    // Los parámetros del widget son FALLBACK (para compatibilidad con rutas antiguas)
+    if (residenceId.isEmpty && widget.residenceId.isNotEmpty) residenceId = widget.residenceId;
+    if (identificacion.isEmpty && widget.identificacion.isNotEmpty) identificacion = widget.identificacion;
+    if (personaId == 0 && widget.personaId != 0) personaId = widget.personaId;
 
-    final displayName = (widget.userName.isNotEmpty) ? widget.userName : (authName ?? 'Usuario');
-    final displayResidence = (widget.residenceId.isNotEmpty) ? widget.residenceId : (authResidence ?? '—');
+    final displayResidence = residenceId.isNotEmpty ? residenceId : '—';
 
     return AppScaffold(
       title: 'Acceso Residencial',
@@ -56,10 +70,10 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
       onTabSelected: (i) {
         setState(() => tabIndex = i);
         switch (i) {
-          case 1: Navigator.pushNamed(context, AppRoutes.qrSelf, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId, 'userName': widget.userName}); break;
-          case 2: Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId}); break;
-          case 3: Navigator.pushNamed(context, AppRoutes.members, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId}); break;
-          case 4: Navigator.pushNamed(context, AppRoutes.profile, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId}); break;
+          case 1: Navigator.pushNamed(context, AppRoutes.qrSelf, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
+          case 2: Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
+          case 3: Navigator.pushNamed(context, AppRoutes.members, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
+          case 4: Navigator.pushNamed(context, AppRoutes.profile, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
         }
       },
       body: ListView(
@@ -95,7 +109,6 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
           Wrap(spacing: 12, runSpacing: 12, children: [
             SizedBox(width: 175, child: MetricCard(label: 'Accesos Hoy', value: '2', icon: Icons.today)),
             Builder(builder: (ctx) {
-              final residenceId = (widget.residenceId.isNotEmpty) ? widget.residenceId : (authResidence ?? '');
               if (!_requestedMembers && residenceId.isNotEmpty) {
                 context.read<AccountBloc>().add(LoadFamilyMembersRequested(residenceId));
                 _requestedMembers = true;
@@ -126,16 +139,16 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
             ),
             children: [
               _QuickCard(icon: Icons.qr_code_2, label: 'Mi QR', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.qrSelf, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId, 'userName': widget.userName});
+                Navigator.pushNamed(context, AppRoutes.qrSelf, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
               }),
               _QuickCard(icon: Icons.group_add, label: 'QR Visita', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.qrVisit, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId});
+                Navigator.pushNamed(context, AppRoutes.qrVisit, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
               }),
               _QuickCard(icon: Icons.history, label: 'Historial', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId});
+                Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
               }),
               _QuickCard(icon: Icons.family_restroom, label: 'Familia', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.members, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId});
+                Navigator.pushNamed(context, AppRoutes.members, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
               }),
             ],
           ),
