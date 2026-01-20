@@ -1,23 +1,91 @@
 import '../../domain/ports/auth_repository.dart';
 import '../providers/firebase_auth_provider.dart';
+import '../dtos/perfil_usuario_dto.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final FirebaseAuthProvider provider;
-  AuthRepositoryImpl(this.provider);
+  final FirebaseAuthProvider firebaseProvider;
+  final ApiAuthProvider apiProvider;
+
+  AuthRepositoryImpl({
+    required this.firebaseProvider,
+    required this.apiProvider,
+  });
 
   @override
-  Future<Map<String, dynamic>> login({required String email, required String password}) async {
-    final cred = await provider.auth.signInWithEmailAndPassword(email: email, password: password);
-    final user = cred.user!;
-    return {'uid': user.uid, 'email': user.email};
+  Future<Map<String, dynamic>> login({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      // 1. Autenticar en Firebase
+      final userCredential = await firebaseProvider.signInWithEmail(email, password);
+      final user = userCredential.user;
+
+      if (user == null) {
+        throw Exception('Error en autenticación Firebase');
+      }
+
+      // 2. Obtener ID token de Firebase
+      final idToken = await user.getIdToken(true);
+
+      // 3. Obtener perfil desde API
+      final perfilData = await apiProvider.obtenerPerfil(user.uid);
+      final perfil = PerfilUsuarioDTO.fromJson(perfilData);
+
+      return {
+        'uid': user.uid,
+        'email': user.email,
+        'idToken': idToken,
+        'personaId': perfil.personaId,
+        'identificacion': perfil.identificacion,
+        'nombres': perfil.nombres,
+        'apellidos': perfil.apellidos,
+        'rol': perfil.rol,
+        'estado': perfil.estado,
+        'vivienda': perfil.vivienda.toJson(),
+        'parentesco': perfil.parentesco,
+      };
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override
-  Future<void> logout() => provider.auth.signOut();
+  Future<void> logout() async {
+    try {
+      await firebaseProvider.logout();
+    } catch (e) {
+      rethrow;
+    }
+  }
 
   @override
   Map<String, dynamic>? get currentUser {
-    final u = provider.auth.currentUser;
-    return u == null ? null : {'uid': u.uid, 'email': u.email};
+    final user = firebaseProvider.currentUser;
+    if (user != null) {
+      return {
+        'uid': user.uid,
+        'email': user.email,
+      };
+    }
+    return null;
+  }
+
+  @override
+  Stream<Map<String, dynamic>?> get authStateChanges {
+    return firebaseProvider.authStateChanges.map((user) {
+      if (user != null) {
+        return {
+          'uid': user.uid,
+          'email': user.email,
+        };
+      }
+      return null;
+    });
+  }
+
+  @override
+  Future<String?> getIdToken({bool forceRefresh = false}) async {
+    return await firebaseProvider.getIdToken(forceRefresh: forceRefresh);
   }
 }

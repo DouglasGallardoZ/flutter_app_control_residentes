@@ -6,7 +6,7 @@ class GenerateVisitQrUseCase {
   GenerateVisitQrUseCase(this.repo);
 
   Future<QrCode> call({
-    required String accountId,
+    required int personaId,
     required String visitorId,
     required String visitorName,
     required DateTime validFrom,
@@ -14,7 +14,7 @@ class GenerateVisitQrUseCase {
     int? maxUses,
   }) {
     return repo.generateVisit(
-      accountId: accountId,
+      personaId: personaId,
       visitorId: visitorId,
       visitorName: visitorName,
       validFrom: validFrom,

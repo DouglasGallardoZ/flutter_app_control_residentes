@@ -10,7 +10,7 @@ class QrVisitBloc extends Bloc<QrVisitEvent, QrVisitState> {
       emit(QrVisitLoading());
       try {
         final qr = await usecase(
-          accountId: e.accountId,
+          personaId: e.personaId,
           visitorId: e.visitorId,
           visitorName: e.visitorName,
           validFrom: e.validFrom,

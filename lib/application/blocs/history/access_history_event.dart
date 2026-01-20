@@ -1,6 +1,11 @@
 abstract class AccessHistoryEvent {}
 
 class LoadAccessHistory extends AccessHistoryEvent {
-  final String accountId;
-  LoadAccessHistory(this.accountId);
+  final int? page;
+  final int? pageSize;
+
+  LoadAccessHistory({
+    this.page,
+    this.pageSize,
+  });
 }

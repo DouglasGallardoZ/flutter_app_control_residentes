@@ -1,29 +1,39 @@
 import '../../domain/ports/access_history_repository.dart';
 import '../../domain/entities/access_log.dart';
-import '../providers/firestore_provider.dart';
+import '../providers/access_history_api.dart';
 
 class AccessHistoryRepositoryImpl implements AccessHistoryRepository {
-  final FirestoreProvider store;
-  AccessHistoryRepositoryImpl(this.store);
+  final AccessHistoryApi accessHistoryApi;
+
+  AccessHistoryRepositoryImpl(this.accessHistoryApi);
 
   @override
-  Future<List<AccessLog>> loadAccessLogs({required String accountId}) async {
-    final snap = await store.db
-        .collection('access_logs')
-        .where('accountId', isEqualTo: accountId)
-        .orderBy('timestamp', descending: true)
-        .get();
-    return snap.docs.map((d) {
-      final m = d.data();
-      return AccessLog(
-        personId: m['personId'],
-        personName: m['personName'] ?? '',
-        roleLabel: m['roleLabel'] ?? 'residente',
-        timestamp: DateTime.parse(m['timestamp']),
-        success: m['success'] ?? false,
-        reason: m['reason'],
-        referencedBy: m['referencedBy'],
+  Future<List<AccessLog>> loadAccessLogs({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      final response = await accessHistoryApi.obtenerHistorial(
+        page: page,
+        pageSize: pageSize,
       );
-    }).toList();
+
+      final data = response['data'] as List? ?? [];
+      return data.map((item) {
+        return AccessLog(
+          personId: item['persona_id'] ?? 0,
+          personName: '${item['nombres'] ?? ''} ${item['apellidos'] ?? ''}',
+          roleLabel: item['rol'] ?? 'residente',
+          timestamp: item['fecha_acceso'] is String
+              ? DateTime.parse(item['fecha_acceso'])
+              : DateTime.now(),
+          success: item['estado'] == 'permitido' || item['estado'] == 'exitoso',
+          reason: item['motivo'],
+          referencedBy: item['tipo_qr'],
+        );
+      }).toList();
+    } catch (e) {
+      rethrow;
+    }
   }
 }

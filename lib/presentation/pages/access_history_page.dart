@@ -8,8 +8,10 @@ import '../../application/blocs/auth/auth_state.dart';
 import '../widgets/app_scaffold.dart';
 
 class AccessHistoryPage extends StatefulWidget {
-  final String userId;
-  const AccessHistoryPage({super.key, required this.userId});
+  final int personaId;
+  final String identificacion;
+  final String? residenceId;
+  const AccessHistoryPage({super.key, required this.personaId, required this.identificacion, this.residenceId});
 
   @override
   State<AccessHistoryPage> createState() => _AccessHistoryPageState();
@@ -22,16 +24,17 @@ class _AccessHistoryPageState extends State<AccessHistoryPage> {
   @override
   void initState() {
     super.initState();
-    context.read<AccessHistoryBloc>().add(LoadAccessHistory(widget.userId));
+    context.read<AccessHistoryBloc>().add(LoadAccessHistory());
   }
 
   @override
   Widget build(BuildContext context) {
     // Try to recover route arguments for navigation between tabs
     final routeArgs = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final maybeResidenceId = routeArgs?['residenceId'] as String?;
+    final maybeResidenceId = routeArgs?['residenceId'] as String? ?? widget.residenceId;
     final maybeUserName = routeArgs?['userName'] as String?;
-    final maybeUserId = routeArgs?['userId'] as String?;
+    final maybePersonaId = routeArgs?['personaId'] as int? ?? widget.personaId;
+    final maybeIdentificacion = routeArgs?['identificacion'] as String? ?? widget.identificacion;
     // Fallback to AuthBloc if available
       final authState = context.read<AuthBloc>().state;
       String? authUserId;
@@ -49,38 +52,42 @@ class _AccessHistoryPageState extends State<AccessHistoryPage> {
       onTabSelected: (i) {
         switch (i) {
           case 0:
-            final uid = maybeUserId ?? authUserId;
-            final rid = maybeResidenceId ?? authResidence;
-            final uname = maybeUserName ?? authName;
-            if (uid != null && rid != null && uname != null) {
-              Navigator.pushReplacementNamed(context, '/residentDashboard', arguments: {'userId': uid, 'residenceId': rid, 'userName': uname});
+            final pid = maybePersonaId;
+            final rid = maybeResidenceId;
+            final idn = maybeIdentificacion;
+            final uname = maybeUserName;
+            if (pid != null && rid != null && idn.isNotEmpty && uname != null) {
+              Navigator.pushReplacementNamed(context, '/residentDashboard', arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': uname});
             } else {
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Inicio')));
             }
             break;
           case 1:
-            final uid2 = maybeUserId ?? authUserId;
-            final uname2 = maybeUserName ?? authName;
-            if (uid2 != null && uname2 != null) {
-              Navigator.pushReplacementNamed(context, '/qrSelf', arguments: {'userId': uid2, 'userName': uname2});
+            final pid2 = maybePersonaId;
+            final idn2 = maybeIdentificacion;
+            final uname2 = maybeUserName;
+            if (pid2 != null && idn2.isNotEmpty && uname2 != null) {
+              Navigator.pushReplacementNamed(context, '/qrSelf', arguments: {'personaId': pid2, 'identificacion': idn2, 'userName': uname2});
             } else {
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Mi QR')));
             }
             break;
           case 2: break;
           case 3:
-            final uid3 = maybeUserId ?? authUserId;
-            final rid3 = maybeResidenceId ?? authResidence;
-            if (uid3 != null && rid3 != null) {
-              Navigator.pushReplacementNamed(context, '/members', arguments: {'userId': uid3, 'residenceId': rid3});
+            final pid3 = maybePersonaId;
+            final rid3 = maybeResidenceId;
+            final idn3 = maybeIdentificacion;
+            if (pid3 != null && rid3 != null && idn3.isNotEmpty) {
+              Navigator.pushReplacementNamed(context, '/members', arguments: {'personaId': pid3, 'identificacion': idn3, 'residenceId': rid3});
             } else {
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Familia')));
             }
             break;
           case 4:
-            final uid4 = maybeUserId ?? authUserId;
-            if (uid4 != null) {
-              Navigator.pushReplacementNamed(context, '/profile', arguments: {'userId': uid4});
+            final pid4 = maybePersonaId;
+            final idn4 = maybeIdentificacion;
+            if (pid4 != null && idn4.isNotEmpty) {
+              Navigator.pushReplacementNamed(context, '/profile', arguments: {'personaId': pid4, 'identificacion': idn4});
             } else {
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Perfil')));
             }

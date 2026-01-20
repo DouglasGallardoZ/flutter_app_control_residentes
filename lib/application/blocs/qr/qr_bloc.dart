@@ -10,7 +10,7 @@ class QrBloc extends Bloc<QrEvent, QrState> {
       emit(QrLoading());
       try {
         final qr = await usecase.self(
-          accountId: e.accountId,
+          personaId: e.personaId,
           validFrom: e.validFrom,
           durationHours: e.durationHours,
           maxUses: e.maxUses,

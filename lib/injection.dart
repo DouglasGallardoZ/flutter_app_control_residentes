@@ -1,49 +1,122 @@
 import 'package:get_it/get_it.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'infrastructure/providers/firestore_provider.dart';
+// Infrastructure - Providers
+import 'infrastructure/providers/http_client.dart';
 import 'infrastructure/providers/firebase_auth_provider.dart';
+import 'infrastructure/providers/qr_api.dart';
+import 'infrastructure/providers/access_history_api.dart';
+import 'infrastructure/providers/visitor_api.dart';
+
+// Infrastructure - Adapters
 import 'infrastructure/adapters/auth_repository_impl.dart';
 import 'infrastructure/adapters/account_repository_impl.dart';
 import 'infrastructure/adapters/qr_repository_impl.dart';
 import 'infrastructure/adapters/access_history_repository_impl.dart';
 import 'infrastructure/adapters/visitor_repository_impl.dart';
 
+// Domain - Ports
 import 'domain/ports/auth_repository.dart';
 import 'domain/ports/account_repository.dart';
 import 'domain/ports/qr_repository.dart';
 import 'domain/ports/access_history_repository.dart';
 import 'domain/ports/visitor_repository.dart';
 
+// Domain - Use Cases
 import 'domain/usecases/login_usecase.dart';
-import 'domain/usecases/register_account_usecase.dart';
-import 'domain/usecases/load_family_members_usecase.dart';
 import 'domain/usecases/generate_qr_usecase.dart';
+import 'domain/usecases/generate_visit_qr_usecase.dart';
 import 'domain/usecases/load_access_history_usecase.dart';
 import 'domain/usecases/manage_visitor_usecase.dart';
-import 'domain/usecases/generate_visit_qr_usecase.dart';
 
 final sl = GetIt.instance;
 
 Future<void> inject() async {
+  // Configuration
+  const String apiBaseUrl = 'http://192.168.1.3:8080/api/v1'; // Cambiar según ambiente
+
+  // Firebase
+  final firebaseAuth = FirebaseAuth.instance;
+  sl.registerLazySingleton<FirebaseAuth>(() => firebaseAuth);
+
+  // HTTP Client
+  final apiHttpClient = ApiHttpClient(
+    baseUrl: apiBaseUrl,
+    firebaseAuth: firebaseAuth,
+  );
+  sl.registerLazySingleton<ApiHttpClient>(() => apiHttpClient);
+
   // Providers
-  sl.registerLazySingleton(() => FirestoreProvider(FirebaseFirestore.instance));
-  sl.registerLazySingleton(() => FirebaseAuthProvider(FirebaseAuth.instance));
+  sl.registerLazySingleton<FirebaseAuthProvider>(
+    () => FirebaseAuthProvider(firebaseAuth),
+  );
 
-  // Adapters (repos)
-  sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl()));
-  sl.registerLazySingleton<AccountRepository>(() => AccountRepositoryImpl(sl()));
-  sl.registerLazySingleton<QrRepository>(() => QrRepositoryImpl(sl()));
-  sl.registerLazySingleton<AccessHistoryRepository>(() => AccessHistoryRepositoryImpl(sl()));
-  sl.registerLazySingleton<VisitorRepository>(() => VisitorRepositoryImpl(sl()));
+  sl.registerLazySingleton<ApiAuthProvider>(
+    () => ApiAuthProvider(apiHttpClient.dio),
+  );
 
-  // Use cases
-  sl.registerLazySingleton(() => LoginUseCase(sl(), sl()));
-  sl.registerLazySingleton(() => RegisterAccountUseCase(sl()));
-  sl.registerLazySingleton(() => LoadFamilyMembersUseCase(sl()));
-  sl.registerLazySingleton(() => GenerateQrUseCase(sl()));
-  sl.registerLazySingleton(() => LoadAccessHistoryUseCase(sl()));
-  sl.registerLazySingleton(() => GenerateVisitQrUseCase(sl()));
-  sl.registerLazySingleton(() => ManageVisitorUseCase(sl()));
+  sl.registerLazySingleton<QrApi>(
+    () => QrApi(apiHttpClient.dio),
+  );
+
+  sl.registerLazySingleton<AccessHistoryApi>(
+    () => AccessHistoryApi(apiHttpClient.dio),
+  );
+
+  sl.registerLazySingleton<VisitorApi>(
+    () => VisitorApi(apiHttpClient.dio),
+  );
+
+  // Adapters (Repositories)
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(
+      firebaseProvider: sl<FirebaseAuthProvider>(),
+      apiProvider: sl<ApiAuthProvider>(),
+    ),
+  );
+
+  sl.registerLazySingleton<AccountRepository>(
+    () => AccountRepositoryImpl(sl<ApiAuthProvider>()),
+  );
+
+  sl.registerLazySingleton<QrRepository>(
+    () => QrRepositoryImpl(sl<QrApi>()),
+  );
+
+  sl.registerLazySingleton<AccessHistoryRepository>(
+    () => AccessHistoryRepositoryImpl(sl<AccessHistoryApi>()),
+  );
+
+  sl.registerFactory<VisitorRepository>(
+    () {
+      // Get personaId from authenticated user
+      final user = firebaseAuth.currentUser;
+      final personaId = user != null ? int.tryParse(user.uid) ?? 0 : 0;
+      return VisitorRepositoryImpl(
+        api: sl<VisitorApi>(),
+        personaId: personaId,
+      );
+    },
+  );
+
+  // Use Cases
+  sl.registerLazySingleton<LoginUseCase>(
+    () => LoginUseCase(sl<AuthRepository>(), sl<AccountRepository>()),
+  );
+
+  sl.registerLazySingleton<GenerateQrUseCase>(
+    () => GenerateQrUseCase(sl<QrRepository>()),
+  );
+
+  sl.registerLazySingleton<LoadAccessHistoryUseCase>(
+    () => LoadAccessHistoryUseCase(sl<AccessHistoryRepository>()),
+  );
+
+  sl.registerLazySingleton<GenerateVisitQrUseCase>(
+    () => GenerateVisitQrUseCase(sl<QrRepository>()),
+  );
+
+  sl.registerLazySingleton<ManageVisitorUseCase>(
+    () => ManageVisitorUseCase(sl<VisitorRepository>()),
+  );
 }

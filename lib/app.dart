@@ -10,9 +10,7 @@ import 'domain/usecases/load_access_history_usecase.dart';
 import 'presentation/routes/app_routes.dart';
 import 'presentation/theme/app_theme.dart';
 import 'presentation/theme/theme_controller.dart'; // 👈 Importa el controlador
-import 'application/blocs/visitor/visitor_bloc.dart';
 import 'application/blocs/qr_visit/qr_visit_bloc.dart';
-import 'domain/usecases/manage_visitor_usecase.dart';
 import 'domain/usecases/generate_visit_qr_usecase.dart';
 import 'application/blocs/account/account_bloc.dart';
 import 'domain/ports/account_repository.dart';
@@ -28,8 +26,7 @@ class App extends StatelessWidget {
         BlocProvider<AuthBloc>(create: (_) => AuthBloc(login: sl<LoginUseCase>(), authRepo: sl<AuthRepository>())),
         BlocProvider<QrBloc>(create: (_) => QrBloc(sl<GenerateQrUseCase>())),
         BlocProvider<AccessHistoryBloc>(create: (_) => AccessHistoryBloc(sl<LoadAccessHistoryUseCase>())),
-        BlocProvider<VisitorBloc>(create: (_) => VisitorBloc(sl<ManageVisitorUseCase>())),   // 👈 nuevo
-        BlocProvider<QrVisitBloc>(create: (_) => QrVisitBloc(sl<GenerateVisitQrUseCase>())), // 👈 nuevo
+        BlocProvider<QrVisitBloc>(create: (_) => QrVisitBloc(sl<GenerateVisitQrUseCase>())),
         BlocProvider<AccountBloc>(create: (_) => AccountBloc(sl<AccountRepository>())),
       ],
       child: ValueListenableBuilder<ThemeMode>(

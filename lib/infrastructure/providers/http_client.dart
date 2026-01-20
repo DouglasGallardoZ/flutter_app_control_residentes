@@ -1,7 +1,58 @@
-// lib/data/providers/http_client.dart
+// lib/infrastructure/providers/http_client.dart
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class HttpClient {
+class ApiHttpClient {
   final Dio dio;
-  HttpClient({required String baseUrl}) : dio = Dio(BaseOptions(baseUrl: baseUrl));
+  final FirebaseAuth firebaseAuth;
+  String? _jwtToken;
+
+  ApiHttpClient({
+    required String baseUrl,
+    required this.firebaseAuth,
+  }) : dio = Dio(
+    BaseOptions(
+      baseUrl: baseUrl,
+      contentType: 'application/json',
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+    ),
+  ) {
+    // Agregar interceptor para JWT
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          // Obtener token Firebase actual
+          final user = firebaseAuth.currentUser;
+          if (user != null) {
+            try {
+              final idToken = await user.getIdToken(true);
+              options.headers['Authorization'] = 'Bearer $idToken';
+            } catch (e) {
+              print('Error obteniendo token Firebase: $e');
+            }
+          }
+          return handler.next(options);
+        },
+        onError: (error, handler) {
+          if (error.response?.statusCode == 401) {
+            print('Token expirado o no autorizado');
+          }
+          return handler.next(error);
+        },
+      ),
+    );
+  }
+
+  void setJwtToken(String token) {
+    _jwtToken = token;
+    dio.options.headers['Authorization'] = 'Bearer $token';
+  }
+
+  String? getJwtToken() => _jwtToken;
+
+  void clearJwtToken() {
+    _jwtToken = null;
+    dio.options.headers.remove('Authorization');
+  }
 }

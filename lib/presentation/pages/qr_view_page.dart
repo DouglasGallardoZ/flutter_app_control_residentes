@@ -8,12 +8,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class QrViewPage extends StatelessWidget {
   final String value;
-  const QrViewPage({super.key, required this.value});
+  final int? personaId;
+  final String? identificacion;
+  const QrViewPage({super.key, required this.value, this.personaId, this.identificacion});
 
   @override
   Widget build(BuildContext context) {
     final routeArgs = ModalRoute.of(context)?.settings.arguments as Map<String,dynamic>?;
-    final maybeUserId = routeArgs?['userId'] as String?;
+    final maybePersonaId = routeArgs?['personaId'] as int? ?? personaId;
+    final maybeIdentificacion = routeArgs?['identificacion'] as String? ?? identificacion;
     final authState = context.read<AuthBloc>().state;
     String? authUserId;
     String? authResidence;
@@ -30,25 +33,29 @@ class QrViewPage extends StatelessWidget {
       onTabSelected: (i) {
         switch (i) {
           case 0:
-            final uid = maybeUserId ?? authUserId;
+            final pid = maybePersonaId;
             final rid = authResidence;
+            final idn = maybeIdentificacion;
             final uname = authName ?? routeArgs?['userName'] as String?;
-            if (uid != null && rid != null && uname != null) {
-              Navigator.pushReplacementNamed(context, '/residentDashboard', arguments: {'userId': uid, 'residenceId': rid, 'userName': uname});
+            if (pid != null && rid != null && idn != null && uname != null) {
+              Navigator.pushReplacementNamed(context, '/residentDashboard', arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': uname});
             }
             break;
           case 1: break;
           case 2:
-            final uid2 = maybeUserId ?? authUserId;
-            if (uid2 != null) Navigator.pushReplacementNamed(context, '/accessHistory', arguments: {'userId': uid2});
+            final pid2 = maybePersonaId;
+            final idn2 = maybeIdentificacion;
+            if (pid2 != null && idn2 != null) Navigator.pushReplacementNamed(context, '/accessHistory', arguments: {'personaId': pid2, 'identificacion': idn2});
             break;
           case 3:
-            final uid3 = maybeUserId ?? authUserId;
-            if (uid3 != null) Navigator.pushReplacementNamed(context, '/members', arguments: {'userId': uid3});
+            final pid3 = maybePersonaId;
+            final idn3 = maybeIdentificacion;
+            if (pid3 != null && idn3 != null) Navigator.pushReplacementNamed(context, '/members', arguments: {'personaId': pid3, 'identificacion': idn3});
             break;
           case 4:
-            final uid4 = maybeUserId ?? authUserId;
-            if (uid4 != null) Navigator.pushReplacementNamed(context, '/profile', arguments: {'userId': uid4});
+            final pid4 = maybePersonaId;
+            final idn4 = maybeIdentificacion;
+            if (pid4 != null && idn4 != null) Navigator.pushReplacementNamed(context, '/profile', arguments: {'personaId': pid4, 'identificacion': idn4});
             break;
         }
       },

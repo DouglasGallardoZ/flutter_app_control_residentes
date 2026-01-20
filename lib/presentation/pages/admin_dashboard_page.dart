@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 class AdminDashboardPage extends StatelessWidget {
-  const AdminDashboardPage({super.key});
+  final int personaId;
+  final String identificacion;
+  const AdminDashboardPage({super.key, required this.personaId, required this.identificacion});
 
   @override
   Widget build(BuildContext context) {

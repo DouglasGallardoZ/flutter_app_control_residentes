@@ -7,6 +7,8 @@ import '../pages/qr_self_page.dart';
 import '../pages/qr_visit_page.dart';
 import '../pages/access_history_page.dart';
 import '../pages/profile_page.dart';
+import '../pages/admin_dashboard_page.dart';
+import '../pages/family_dashboard_page.dart';
 
 class AppRoutes {
   static const String login = '/login';
@@ -27,62 +29,82 @@ class AppRoutes {
 
       case residentDashboard: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final userId = args?['userId'] as String?;
+        final personaId = args?['personaId'] as int?;
+        final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
         final userName = args?['userName'] as String?;
-        if (userId == null || residenceId == null || userName == null) {
+        if (personaId == null || identificacion == null || residenceId == null || userName == null) {
           return _errorRoute('Faltan argumentos en ResidentDashboard');
         }
         return MaterialPageRoute(
-          builder: (_) => ResidentDashboardPage(userId: userId, residenceId: residenceId, userName: userName,),
+          builder: (_) => ResidentDashboardPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId, userName: userName,),
         );
       }
 
       case qrSelf: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final userId = args?['userId'] as String?;
+        final personaId = args?['personaId'] as int?;
+        final identificacion = args?['identificacion'] as String?;
+        final residenceId = args?['residenceId'] as String?;
         final userName = args?['userName'] as String?;
-        if (userId == null || userName == null) return _errorRoute('Falta argumento userId en QrSelfPage');
-        return MaterialPageRoute(builder: (_) => QrSelfPage(userId: userId, userName: userName));
+        if (personaId == null || identificacion == null || userName == null) return _errorRoute('Faltan argumentos en QrSelfPage');
+        return MaterialPageRoute(builder: (_) => QrSelfPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId, userName: userName));
       }
 
       case qrVisit: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final userId = args?['userId'] as String?;
+        final personaId = args?['personaId'] as int?;
+        final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
-        if (userId == null || residenceId == null) {
+        if (personaId == null || identificacion == null || residenceId == null) {
           return _errorRoute('Faltan argumentos en QrVisitPage');
         }
         return MaterialPageRoute(
-          builder: (_) => QrVisitPage(userId: userId, residenceId: residenceId),
+          builder: (_) => QrVisitPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId),
         );
       }
 
       case accessHistory: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final userId = args?['userId'] as String?;
-        if (userId == null) return _errorRoute('Falta argumento userId en AccessHistoryPage');
-        return MaterialPageRoute(builder: (_) => AccessHistoryPage(userId: userId));
+        final personaId = args?['personaId'] as int?;
+        final identificacion = args?['identificacion'] as String?;
+        final residenceId = args?['residenceId'] as String?;
+        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AccessHistoryPage');
+        return MaterialPageRoute(builder: (_) => AccessHistoryPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId));
       }
 
       case profile: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final userId = args?['userId'] as String?;
-        if (userId == null) return _errorRoute('Falta argumento userId en ProfilePage');
-        return MaterialPageRoute(builder: (_) => ProfilePage(userId: userId));
+        final personaId = args?['personaId'] as int?;
+        final identificacion = args?['identificacion'] as String?;
+        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en ProfilePage');
+        return MaterialPageRoute(builder: (_) => ProfilePage(personaId: personaId, identificacion: identificacion));
       }
 
       case members: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final userId = args?['userId'] as String?;
-        if (userId == null) return _errorRoute('Falta argumento userId en MembersPage');
-        return MaterialPageRoute(builder: (_) => MembersPage());
+        final personaId = args?['personaId'] as int?;
+        final identificacion = args?['identificacion'] as String?;
+        final residenceId = args?['residenceId'] as String?;
+        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en MembersPage');
+        return MaterialPageRoute(builder: (_) => MembersPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId));
       }
 
-      case adminDashboard:
-        return _errorRoute('AdminDashboard aún no implementado');
-      case familyDashboard:
-        return _errorRoute('FamilyDashboard aún no implementado');
+      case adminDashboard: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final personaId = args?['personaId'] as int?;
+        final identificacion = args?['identificacion'] as String?;
+        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminDashboardPage');
+        return MaterialPageRoute(builder: (_) => AdminDashboardPage(personaId: personaId, identificacion: identificacion));
+      }
+      case familyDashboard: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final personaId = args?['personaId'] as int?;
+        final identificacion = args?['identificacion'] as String?;
+        final residenceId = args?['residenceId'] as String?;
+        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en FamilyDashboardPage');
+        return MaterialPageRoute(builder: (_) => FamilyDashboardPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId));
+      }
 
       default:
         return _errorRoute('Ruta desconocida: ${settings.name}');

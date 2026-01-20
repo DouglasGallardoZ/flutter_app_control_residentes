@@ -12,7 +12,8 @@ import '../widgets/navigation_helpers.dart';
 
 class QrDisplayPage extends StatefulWidget {
   final String userName;
-  final String userId;
+  final int personaId;
+  final String identificacion;
   final DateTime validFrom;
   final DateTime validUntil;
   final int durationHours;
@@ -21,7 +22,8 @@ class QrDisplayPage extends StatefulWidget {
   const QrDisplayPage({
     super.key,
     required this.userName,
-    required this.userId,
+    required this.personaId,
+    required this.identificacion,
     required this.validFrom,
     required this.validUntil,
     required this.durationHours,
@@ -82,7 +84,8 @@ class _QrDisplayPageState extends State<QrDisplayPage> {
 
     // Try to recover route args to enable tab navigation
     final routeArgs = ModalRoute.of(context)?.settings.arguments as Map<String,dynamic>?;
-    final maybeUserId = routeArgs?['userId'] as String? ?? widget.userId;
+    final maybePersonaId = routeArgs?['personaId'] as int? ?? widget.personaId;
+    final maybeIdentificacion = routeArgs?['identificacion'] as String? ?? widget.identificacion;
     final maybeResidenceId = routeArgs?['residenceId'] as String?;
     final authState = context.read<AuthBloc>().state;
     String? authUserId;
@@ -100,25 +103,29 @@ class _QrDisplayPageState extends State<QrDisplayPage> {
       onTabSelected: (i) {
         switch (i) {
           case 0:
-            final uid = maybeUserId ?? authUserId;
-            final rid = maybeResidenceId ?? authResidence;
+            final pid = maybePersonaId;
+            final rid = maybeResidenceId;
+            final idn = maybeIdentificacion;
             final uname = routeArgs?['userName'] as String? ?? authName;
-            if (uid != null && rid != null && uname != null) Navigator.pushReplacementNamed(context, '/residentDashboard', arguments: {'userId': uid, 'residenceId': rid, 'userName': uname});
+            if (pid != null && rid != null && idn.isNotEmpty && uname != null) Navigator.pushReplacementNamed(context, '/residentDashboard', arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': uname});
             break;
           case 1:
             break;
           case 2:
-            final uid2 = maybeUserId ?? authUserId;
-            if (uid2 != null) Navigator.pushReplacementNamed(context, '/accessHistory', arguments: {'userId': uid2});
+            final pid2 = maybePersonaId;
+            final idn2 = maybeIdentificacion;
+            if (pid2 != null && idn2.isNotEmpty) Navigator.pushReplacementNamed(context, '/accessHistory', arguments: {'personaId': pid2, 'identificacion': idn2});
             break;
           case 3:
-            final uid3 = maybeUserId ?? authUserId;
-            final rid3 = maybeResidenceId ?? authResidence;
-            if (uid3 != null && rid3 != null) Navigator.pushReplacementNamed(context, '/members', arguments: {'userId': uid3, 'residenceId': rid3});
+            final pid3 = maybePersonaId;
+            final rid3 = maybeResidenceId;
+            final idn3 = maybeIdentificacion;
+            if (pid3 != null && rid3 != null && idn3.isNotEmpty) Navigator.pushReplacementNamed(context, '/members', arguments: {'personaId': pid3, 'identificacion': idn3, 'residenceId': rid3});
             break;
           case 4:
-            final uid4 = maybeUserId ?? authUserId;
-            if (uid4 != null) Navigator.pushReplacementNamed(context, '/profile', arguments: {'userId': uid4});
+            final pid4 = maybePersonaId;
+            final idn4 = maybeIdentificacion;
+            if (pid4 != null && idn4.isNotEmpty) Navigator.pushReplacementNamed(context, '/profile', arguments: {'personaId': pid4, 'identificacion': idn4});
             break;
         }
       },
@@ -160,7 +167,7 @@ class _QrDisplayPageState extends State<QrDisplayPage> {
             padding: const EdgeInsets.all(12),
             child: Column(children: [
               _DetailRow(label: 'Válido para:', value: widget.userName),
-              _DetailRow(label: 'Identificación:', value: widget.userId),
+              _DetailRow(label: 'Identificación:', value: widget.identificacion),
               _DetailRow(label: 'Válido desde:', value: _fmtShortES(widget.validFrom)),
               _DetailRow(label: 'Válido hasta:', value: _fmtShortES(widget.validUntil)),
               _DetailRow(label: 'Duración:', value: '${widget.durationHours} horas'),
@@ -178,7 +185,7 @@ class _QrDisplayPageState extends State<QrDisplayPage> {
             child: TextButton(
               onPressed: () => navigateToHome(
                 context,
-                routeUserId: maybeUserId ?? authUserId ?? widget.userId,
+                routeUserId: maybePersonaId?.toString() ?? authUserId ?? widget.personaId.toString(),
                 routeResidenceId: maybeResidenceId ?? authResidence,
                 routeUserName: routeArgs?['userName'] as String? ?? authName ?? widget.userName,
               ),

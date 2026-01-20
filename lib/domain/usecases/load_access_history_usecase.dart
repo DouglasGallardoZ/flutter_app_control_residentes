@@ -3,7 +3,16 @@ import '../entities/access_log.dart';
 
 class LoadAccessHistoryUseCase {
   final AccessHistoryRepository repo;
+
   LoadAccessHistoryUseCase(this.repo);
 
-  Future<List<AccessLog>> call(String accountId) => repo.loadAccessLogs(accountId: accountId);
+  Future<List<AccessLog>> call({
+    int page = 1,
+    int pageSize = 20,
+  }) {
+    return repo.loadAccessLogs(
+      page: page,
+      pageSize: pageSize,
+    );
+  }
 }

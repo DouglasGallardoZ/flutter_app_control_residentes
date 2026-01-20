@@ -7,20 +7,33 @@ import 'auth_state.dart';
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginUseCase login;
   final AuthRepository authRepo;
-  AuthBloc({required this.login, required this.authRepo}) : super(AuthInitial()) {
-    on<LoginSubmitted>((e, emit) async {
+
+  AuthBloc({
+    required this.login,
+    required this.authRepo,
+  }) : super(AuthInitial()) {
+    on<LoginSubmitted>((event, emit) async {
       emit(AuthLoading());
       try {
-        final user = await login(identification: e.id, password: e.password);
+        final user = await login(
+          email: event.email,
+          password: event.password,
+        );
         emit(AuthSuccess(user));
       } catch (ex) {
-        emit(AuthFailure('Credenciales inválidas o cuenta no encontrada'));
+        emit(AuthFailure(
+          'Error en autenticación: ${ex.toString()}',
+        ));
       }
     });
 
-    on<LogoutRequested>((e, emit) async {
-      await authRepo.logout();
-      emit(AuthInitial());
+    on<LogoutRequested>((event, emit) async {
+      try {
+        await authRepo.logout();
+        emit(AuthInitial());
+      } catch (ex) {
+        emit(AuthFailure('Error al cerrar sesión: ${ex.toString()}'));
+      }
     });
   }
 }

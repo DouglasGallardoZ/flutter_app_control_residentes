@@ -1,9 +1,9 @@
 abstract class QrVisitEvent {}
 class GenerateVisitQrRequested extends QrVisitEvent {
-  final String accountId;
+  final int personaId;
   final String visitorId;
   final String visitorName;
   final DateTime validFrom;
   final int durationHours;
-  GenerateVisitQrRequested(this.accountId, this.visitorId, this.visitorName, this.validFrom, this.durationHours);
+  GenerateVisitQrRequested(this.personaId, this.visitorId, this.visitorName, this.validFrom, this.durationHours);
 }

@@ -8,7 +8,10 @@ import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_state.dart';
 
 class MembersPage extends StatefulWidget {
-  const MembersPage({super.key});
+  final int personaId;
+  final String identificacion;
+  final String? residenceId;
+  const MembersPage({super.key, required this.personaId, required this.identificacion, this.residenceId});
 
   @override
   State<MembersPage> createState() => _MembersPageState();
@@ -25,7 +28,9 @@ class _MembersPageState extends State<MembersPage> {
   @override
   Widget build(BuildContext context) {
     final routeArgs = ModalRoute.of(context)?.settings.arguments as Map<String,dynamic>?;
-    final maybeUserId = routeArgs?['userId'] as String?;
+    final maybePersonaId = routeArgs?['personaId'] as int? ?? widget.personaId;
+    final maybeIdentificacion = routeArgs?['identificacion'] as String? ?? widget.identificacion;
+    final maybeResidenceId = routeArgs?['residenceId'] as String? ?? widget.residenceId;
     final authState = context.read<AuthBloc>().state;
     String? authUserId;
     String? authResidence;
@@ -42,28 +47,33 @@ class _MembersPageState extends State<MembersPage> {
       onTabSelected: (i) {
         switch (i) {
           case 0:
-            final uid = maybeUserId ?? authUserId;
-            final rid = authResidence;
+            final pid = maybePersonaId;
+            final rid = maybeResidenceId;
+            final idn = maybeIdentificacion;
             final uname = authName;
-            if (uid != null && rid != null && uname != null) {
-              Navigator.pushReplacementNamed(context, '/residentDashboard', arguments: {'userId': uid, 'residenceId': rid, 'userName': uname});
+            if (pid != null && rid != null && idn.isNotEmpty && uname != null) {
+              Navigator.pushReplacementNamed(context, '/residentDashboard', arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': uname});
             } else {
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
             }
             break;
           case 1:
-            final uid1 = maybeUserId ?? authUserId;
+            final pid1 = maybePersonaId;
+            final idn1 = maybeIdentificacion;
             final uname1 = authName;
-            if (uid1 != null && uname1 != null) Navigator.pushReplacementNamed(context, '/qrSelf', arguments: {'userId': uid1, 'userName': uname1}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
+            if (pid1 != null && idn1.isNotEmpty && uname1 != null) Navigator.pushReplacementNamed(context, '/qrSelf', arguments: {'personaId': pid1, 'identificacion': idn1, 'userName': uname1}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
             break;
           case 2:
-            final uid2 = maybeUserId ?? authUserId;
-            if (uid2 != null) Navigator.pushReplacementNamed(context, '/accessHistory', arguments: {'userId': uid2}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
+            final pid2 = maybePersonaId;
+            final idn2 = maybeIdentificacion;
+            final rid2 = maybeResidenceId;
+            if (pid2 != null && idn2.isNotEmpty) Navigator.pushReplacementNamed(context, '/accessHistory', arguments: {'personaId': pid2, 'identificacion': idn2, 'residenceId': rid2}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
             break;
           case 3: break;
           case 4:
-            final uid4 = maybeUserId ?? authUserId;
-            if (uid4 != null) Navigator.pushReplacementNamed(context, '/profile', arguments: {'userId': uid4}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
+            final pid4 = maybePersonaId;
+            final idn4 = maybeIdentificacion;
+            if (pid4 != null && idn4.isNotEmpty) Navigator.pushReplacementNamed(context, '/profile', arguments: {'personaId': pid4, 'identificacion': idn4}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
             break;
         }
       },
@@ -72,8 +82,8 @@ class _MembersPageState extends State<MembersPage> {
         child: Builder(builder: (ctx) {
           // Resolve residenceId from route args or auth state
           final routeArgs = ModalRoute.of(context)?.settings.arguments as Map<String,dynamic>?;
-          final maybeUserId = routeArgs?['userId'] as String?;
-          final maybeResidenceId = routeArgs?['residenceId'] as String?;
+          final maybePersonaId = routeArgs?['personaId'] as int? ?? widget.personaId;
+          final maybeResidenceId = routeArgs?['residenceId'] as String? ?? widget.residenceId;
           final authState = context.read<AuthBloc>().state;
           String? authResidence;
           if (authState is AuthSuccess) {

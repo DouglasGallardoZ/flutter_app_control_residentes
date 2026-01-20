@@ -1,80 +1,97 @@
-import 'dart:math';
 import '../../domain/entities/qr_code.dart';
 import '../../domain/ports/qr_repository.dart';
-import '../providers/firestore_provider.dart';
+import '../providers/qr_api.dart';
+import '../dtos/qr_dto.dart';
 
 class QrRepositoryImpl implements QrRepository {
-  final FirestoreProvider store;
-  QrRepositoryImpl(this.store);
+  final QrApi qrApi;
 
-  String _randomCode() {
-    final rng = Random.secure();
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    return List.generate(10, (_) => chars[rng.nextInt(chars.length)]).join();
+  QrRepositoryImpl(this.qrApi);
+
+  String _formatDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year;
+    return '$year-$month-$day';
+  }
+
+  String _formatTime(DateTime time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 
   @override
   Future<QrCode> generateSelf({
-    required String accountId,
+    required int personaId,
     required DateTime validFrom,
     required int durationHours,
     int? maxUses,
   }) async {
-    final now = DateTime.now();
-    final expiresAt = validFrom.add(Duration(hours: durationHours));
-    final value = 'SELF-$accountId-${_randomCode()}';
-    final qr = QrCode(
-      value: value,
-      createdAt: now,
-      validFrom: validFrom,
-      expiresAt: expiresAt,
-      durationHours: durationHours,
-      maxUses: maxUses,
-      type: 'self',
-    );
-    await store.db.collection('qr_codes').add({
-      'accountId': accountId,
-      'value': qr.value,
-      'type': qr.type,
-      'createdAt': qr.createdAt.toIso8601String(),
-      'validFrom': qr.validFrom.toIso8601String(),
-      'expiresAt': qr.expiresAt.toIso8601String(),
-      'durationHours': qr.durationHours,
-      'maxUses': qr.maxUses,
-    });
-    return qr;
+    try {
+
+      final response = await qrApi.generarQRPropio(
+        personaId: personaId,
+        duracionHoras: durationHours,
+        fechaAcceso: _formatDate(validFrom),
+        horaInicio: _formatTime(validFrom),
+      );
+
+      final qrDTO = QRResponseDTO.fromJson(response);
+
+      return QrCode(
+        value: qrDTO.token,
+        createdAt: qrDTO.fechaCreado,
+        validFrom: qrDTO.horaInicio,
+        expiresAt: qrDTO.horaFin,
+        durationHours: durationHours,
+        maxUses: maxUses,
+        type: 'propio',
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  // lib/infrastructure/adapters/qr_repository_impl.dart
-  // Actualiza generateVisit para aceptar validFrom + durationHours
   @override
   Future<QrCode> generateVisit({
-    required String accountId,
+    required int personaId,
     required String visitorId,
     required String visitorName,
     required DateTime validFrom,
     required int durationHours,
     int? maxUses,
   }) async {
-    final now = DateTime.now();
-    final expiresAt = validFrom.add(Duration(hours: durationHours));
-    final value = 'VISIT-$accountId-$visitorId-${_randomCode()}';
-    final qr = QrCode(
-      value: value, createdAt: now, validFrom: validFrom, expiresAt: expiresAt,
-      durationHours: durationHours, maxUses: maxUses, type: 'visit',
-    );
-    await store.db.collection('qr_codes').add({
-      'accountId': accountId,
-      'visitor': {'id': visitorId, 'name': visitorName},
-      'value': qr.value,
-      'type': qr.type,
-      'createdAt': qr.createdAt.toIso8601String(),
-      'validFrom': qr.validFrom.toIso8601String(),
-      'expiresAt': qr.expiresAt.toIso8601String(),
-      'durationHours': qr.durationHours,
-      'maxUses': qr.maxUses,
-    });
-    return qr;
-  }
+    try {
+      // Separar nombres y apellidos (asumiendo formato "Nombres Apellidos")
+      final parts = visitorName.split(' ');
+      final nombres = parts.isNotEmpty ? parts.first : visitorName;
+      final apellidos = parts.length > 1 ? parts.sublist(1).join(' ') : '';
 
+      final response = await qrApi.generarQRVisita(
+        personaId: personaId,
+        visitaIdentificacion: visitorId,
+        visitaNombres: nombres,
+        visitaApellidos: apellidos,
+        motivoVisita: 'Visita',
+        duracionHoras: durationHours,
+        fechaAcceso: _formatDate(validFrom),
+        horaInicio: _formatTime(validFrom),
+      );
+
+      final qrDTO = QRResponseDTO.fromJson(response);
+
+      return QrCode(
+        value: qrDTO.token,
+        createdAt: qrDTO.fechaCreado,
+        validFrom: qrDTO.horaInicio,
+        expiresAt: qrDTO.horaFin,
+        durationHours: durationHours,
+        maxUses: maxUses,
+        type: 'visita',
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

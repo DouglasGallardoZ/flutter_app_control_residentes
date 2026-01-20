@@ -12,10 +12,17 @@ import '../routes/app_routes.dart';
 import '../../presentation/theme/theme_controller.dart';
 
 class ResidentDashboardPage extends StatefulWidget {
-  final String userId;
+  final int personaId;
+  final String identificacion;
   final String residenceId;
   final String userName;
-  const ResidentDashboardPage({super.key, required this.userId, required this.residenceId, required this.userName});
+  const ResidentDashboardPage({
+    super.key,
+    required this.personaId,
+    required this.identificacion,
+    required this.residenceId,
+    required this.userName,
+  });
 
   @override
   State<ResidentDashboardPage> createState() => _ResidentDashboardPageState();
@@ -49,10 +56,10 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
       onTabSelected: (i) {
         setState(() => tabIndex = i);
         switch (i) {
-          case 1: Navigator.pushNamed(context, AppRoutes.qrSelf, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId, 'userName': widget.userName}); break;
-          case 2: Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId}); break;
-          case 3: Navigator.pushNamed(context, AppRoutes.members, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId}); break;
-          case 4: Navigator.pushNamed(context, AppRoutes.profile, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId}); break;
+          case 1: Navigator.pushNamed(context, AppRoutes.qrSelf, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId, 'userName': widget.userName}); break;
+          case 2: Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId}); break;
+          case 3: Navigator.pushNamed(context, AppRoutes.members, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId}); break;
+          case 4: Navigator.pushNamed(context, AppRoutes.profile, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId}); break;
         }
       },
       body: ListView(
@@ -119,16 +126,16 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
             ),
             children: [
               _QuickCard(icon: Icons.qr_code_2, label: 'Mi QR', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.qrSelf, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId, 'userName': widget.userName});
+                Navigator.pushNamed(context, AppRoutes.qrSelf, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId, 'userName': widget.userName});
               }),
               _QuickCard(icon: Icons.group_add, label: 'QR Visita', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.qrVisit, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId});
+                Navigator.pushNamed(context, AppRoutes.qrVisit, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId});
               }),
               _QuickCard(icon: Icons.history, label: 'Historial', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId});
+                Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId});
               }),
               _QuickCard(icon: Icons.family_restroom, label: 'Familia', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.members, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId});
+                Navigator.pushNamed(context, AppRoutes.members, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId});
               }),
             ],
           ),

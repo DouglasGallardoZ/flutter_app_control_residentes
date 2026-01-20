@@ -1,67 +1,79 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/ports/account_repository.dart';
 import '../../domain/entities/account.dart';
-import '../providers/firestore_provider.dart';
+import '../providers/firebase_auth_provider.dart';
+import '../dtos/perfil_usuario_dto.dart';
 
 class AccountRepositoryImpl implements AccountRepository {
-  final FirestoreProvider store;
-  AccountRepositoryImpl(this.store);
+  final ApiAuthProvider apiProvider;
+
+  AccountRepositoryImpl(this.apiProvider);
 
   @override
   Future<Account> register(Account account) async {
-    final ref = store.db.collection('users').doc(account.uid);
-    await ref.set({
-      'uid': account.uid,
-      'id': account.id,
-      'role': account.role,
-      'status': account.status,
-      'email': account.email,
-      'name': account.name,
-      'residence': account.residence,
-      'relationship': account.relationship,
-    }, SetOptions(merge: true));
-    return account;
+    try {
+      // El registro se hace via Firebase + API endpoint POST /cuentas/residente/firebase
+      // Este método es llamado después de la autenticación
+      await apiProvider.crearCuentaResidente(
+        personaId: account.personaId,
+        firebaseUid: account.firebaseUid,
+        email: account.correo ?? '',
+      );
+      return account;
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override
-  Future<Account?> getById(String id) async {
-    final snap = await store.db.collection('users').where('id', isEqualTo: id).limit(1).get();
-    if (snap.docs.isEmpty) return null;
-    final m = snap.docs.first.data();
-    return Account(
-      uid: m['uid'] ?? '',
-      id: m['id'] ?? '',
-      role: m['role'] ?? 'resident',
-      status: m['status'] ?? 'activo',
-      email: m['email'],
-      name: m['name'],
-      residence: m['residence'],
-      relationship: m['relationship'],
-    );
+  Future<Account?> getById(String firebaseUid) async {
+    try {
+      final response = await apiProvider.obtenerPerfil(firebaseUid);
+      final perfilDTO = PerfilUsuarioDTO.fromJson(response);
+      
+      return Account(
+        firebaseUid: firebaseUid,
+        personaId: perfilDTO.personaId,
+        identificacion: perfilDTO.identificacion,
+        nombres: perfilDTO.nombres,
+        apellidos: perfilDTO.apellidos,
+        rol: perfilDTO.rol,
+        estado: perfilDTO.estado,
+        correo: perfilDTO.correo,
+        celular: perfilDTO.celular,
+        vivienda: Vivienda(
+          manzana: perfilDTO.vivienda.manzana,
+          villa: perfilDTO.vivienda.villa,
+        ),
+        parentesco: perfilDTO.parentesco,
+        fechaCreado: perfilDTO.fechaCreado,
+      );
+    } catch (e) {
+      // Si no existe, retorna null
+      if (e is Exception && e.toString().contains('404')) {
+        return null;
+      }
+      rethrow;
+    }
   }
 
   @override
   Future<List<Account>> listByResidenceAndRole(String residenceId, String role) async {
-    final snap = await store.db.collection('users').where('residence', isEqualTo: residenceId).where('role', isEqualTo: role).get();
-    return snap.docs.map((d) {
-      final m = d.data();
-      return Account(
-        uid: m['uid'] ?? '',
-        id: m['id'] ?? '',
-        role: m['role'] ?? 'resident',
-        status: m['status'] ?? 'activo',
-        email: m['email'],
-        name: m['name'],
-        residence: m['residence'],
-        relationship: m['relationship'],
-      );
-    }).toList();
+    try {
+      // Este endpoint podría no existir en la API actual
+      // Por ahora retorna lista vacía - necesitaría implementar en backend
+      return [];
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override
-  Future<void> updateEmail(String id, String newEmail) async {
-    final snap = await store.db.collection('users').where('id', isEqualTo: id).limit(1).get();
-    if (snap.docs.isEmpty) throw Exception('Usuario no encontrado');
-    await snap.docs.first.reference.update({'email': newEmail});
+  Future<void> updateEmail(String firebaseUid, String newEmail) async {
+    try {
+      // Esta operación se haría en Firebase Auth, no en la API
+      throw UnimplementedError('Usar FirebaseAuth directamente para actualizar email');
+    } catch (e) {
+      rethrow;
+    }
   }
 }

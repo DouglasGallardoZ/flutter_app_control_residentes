@@ -6,13 +6,13 @@ class GenerateQrUseCase {
   GenerateQrUseCase(this.repo);
 
   Future<QrCode> self({
-    required String accountId,
+    required int personaId,
     required DateTime validFrom,
     required int durationHours,
     int? maxUses,
   }) {
     return repo.generateSelf(
-      accountId: accountId,
+      personaId: personaId,
       validFrom: validFrom,
       durationHours: durationHours,
       maxUses: maxUses,
@@ -20,14 +20,14 @@ class GenerateQrUseCase {
   }
 
   // Future<QrCode> visit({
-  //   required String accountId,
+  //   required int personaId,
   //   required String visitorId,
   //   required String visitorName,
   //   required DateTime expiresAt,
   //   int? maxUses,
   // }) {
   //   return repo.generateVisit(
-  //     accountId: accountId,
+  //     personaId: personaId,
   //     visitorId: visitorId,
   //     visitorName: visitorName,
   //     expiresAt: expiresAt,

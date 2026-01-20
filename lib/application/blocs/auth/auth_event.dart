@@ -1,7 +1,10 @@
 abstract class AuthEvent {}
+
 class LoginSubmitted extends AuthEvent {
-  final String id;
+  final String email;
   final String password;
-  LoginSubmitted(this.id, this.password);
+
+  LoginSubmitted(this.email, this.password);
 }
+
 class LogoutRequested extends AuthEvent {}

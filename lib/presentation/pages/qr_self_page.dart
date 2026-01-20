@@ -16,9 +16,11 @@ import '../../application/blocs/auth/auth_state.dart';
 import '../widgets/navigation_helpers.dart';
 
 class QrSelfPage extends StatefulWidget {
-  final String userId;
+  final int personaId;
+  final String identificacion;
+  final String? residenceId;
   final String userName;
-  const QrSelfPage({super.key, required this.userId, required this.userName});
+  const QrSelfPage({super.key, required this.personaId, required this.identificacion, this.residenceId, required this.userName});
 
   @override
   State<QrSelfPage> createState() => _QrSelfPageState();
@@ -120,7 +122,7 @@ class _QrSelfPageState extends State<QrSelfPage> {
     );
 
     if (ok == true) {
-      context.read<QrBloc>().add(GenerateSelfQrConfigured(widget.userId, validFrom!, durationHours!));
+      context.read<QrBloc>().add(GenerateSelfQrConfigured(widget.personaId, validFrom!, durationHours!));
       setState(() => qrGenerated = true);
       // _toastSuccess('Generando código QR...');
     }
@@ -146,21 +148,21 @@ class _QrSelfPageState extends State<QrSelfPage> {
         switch (i) {
           case 0:
             if (authResidence != null && widget.userName.isNotEmpty) {
-              Navigator.pushReplacementNamed(context, AppRoutes.residentDashboard, arguments: {'userId': widget.userId, 'residenceId': authResidence, 'userName': widget.userName});
+              Navigator.pushReplacementNamed(context, AppRoutes.residentDashboard, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': authResidence, 'userName': widget.userName});
             } else {
-              Navigator.pushReplacementNamed(context, AppRoutes.residentDashboard, arguments: {'userId': widget.userId, 'residenceId': authResidence ?? '', 'userName': widget.userName});
+              Navigator.pushReplacementNamed(context, AppRoutes.residentDashboard, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': authResidence ?? '', 'userName': widget.userName});
             }
             break;
           case 1:
             break;
           case 2:
-            Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'userId': widget.userId});
+            Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion});
             break;
           case 3:
-            Navigator.pushNamed(context, AppRoutes.members, arguments: {'userId': widget.userId});
+            Navigator.pushNamed(context, AppRoutes.members, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion});
             break;
           case 4:
-            Navigator.pushNamed(context, AppRoutes.profile, arguments: {'userId': widget.userId});
+            Navigator.pushNamed(context, AppRoutes.profile, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion});
             break;
         }
       },
@@ -172,7 +174,8 @@ class _QrSelfPageState extends State<QrSelfPage> {
               MaterialPageRoute(
                 builder: (_) => QrDisplayPage(
                   userName: widget.userName,
-                  userId: widget.userId,
+                  personaId: widget.personaId,
+                  identificacion: widget.identificacion,
                   validFrom: validFrom!,
                   validUntil: validUntil!,
                   durationHours: durationHours!,
@@ -220,7 +223,7 @@ class _QrSelfPageState extends State<QrSelfPage> {
                       const SizedBox(width: 8),
                       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         const Text('Identificación', style: TextStyle(fontWeight: FontWeight.w600)),
-                        Text(widget.userId),
+                        Text(widget.identificacion),
                       ]),
                     ]),
                   ]),

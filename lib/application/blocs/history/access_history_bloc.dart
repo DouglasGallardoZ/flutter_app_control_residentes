@@ -5,14 +5,18 @@ import 'access_history_state.dart';
 
 class AccessHistoryBloc extends Bloc<AccessHistoryEvent, AccessHistoryState> {
   final LoadAccessHistoryUseCase usecase;
+
   AccessHistoryBloc(this.usecase) : super(AccessHistoryInitial()) {
     on<LoadAccessHistory>((e, emit) async {
       emit(AccessHistoryLoading());
       try {
-        final logs = await usecase(e.accountId);
+        final logs = await usecase(
+          page: e.page ?? 1,
+          pageSize: e.pageSize ?? 20,
+        );
         emit(AccessHistoryLoaded(logs));
       } catch (ex) {
-        emit(AccessHistoryError('Error al cargar historial'));
+        emit(AccessHistoryError('Error al cargar historial: ${ex.toString()}'));
       }
     });
   }

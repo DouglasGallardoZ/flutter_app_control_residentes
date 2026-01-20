@@ -10,8 +10,9 @@ import '../widgets/app_scaffold.dart';
 import '../routes/app_routes.dart';
 
 class ProfilePage extends StatefulWidget {
-  final String userId;
-  const ProfilePage({super.key, required this.userId});
+  final int personaId;
+  final String identificacion;
+  const ProfilePage({super.key, required this.personaId, required this.identificacion});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -51,7 +52,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
     // Dispatch update to AccountBloc
     setState(() { isSavingEmail = true; });
-    context.read<AccountBloc>().add(UpdateEmailSubmitted(widget.userId, editedEmail));
+    context.read<AccountBloc>().add(UpdateEmailSubmitted(widget.personaId.toString(), editedEmail));
   }
 
   void _confirmLogout() async {
@@ -194,7 +195,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(height: 12),
                         _infoRow(context, Icons.person, 'Nombre Completo', name),
                         const SizedBox(height: 8),
-                        _infoRow(context, Icons.badge_outlined, 'Identificación', widget.userId),
+                        _infoRow(context, Icons.badge_outlined, 'Identificación', widget.identificacion),
                       ]),
                     ),
                   ),

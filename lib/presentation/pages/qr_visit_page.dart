@@ -14,11 +14,14 @@ import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_state.dart';
 import 'qr_display_page.dart';
 import '../widgets/navigation_helpers.dart';
+import '../../injection.dart';
+import '../../domain/usecases/manage_visitor_usecase.dart';
 
 class QrVisitPage extends StatefulWidget {
-  final String userId;
+  final int personaId;
+  final String identificacion;
   final String residenceId;
-  const QrVisitPage({super.key, required this.userId, required this.residenceId});
+  const QrVisitPage({super.key, required this.personaId, required this.identificacion, required this.residenceId});
 
   @override
   State<QrVisitPage> createState() => _QrVisitPageState();
@@ -52,10 +55,6 @@ class _QrVisitPageState extends State<QrVisitPage> {
   @override
   void initState() {
     super.initState();
-    context.read<VisitorBloc>().add(LoadVisitors(widget.residenceId));
-    searchCtrl.addListener(() {
-      context.read<VisitorBloc>().add(SearchVisitors(searchCtrl.text));
-    });
   }
 
   @override
@@ -127,7 +126,7 @@ class _QrVisitPageState extends State<QrVisitPage> {
               Row(children: const [
                 Icon(Icons.check_circle, color: Color(0xFF10B981), size: 20),
                 SizedBox(width: 6),
-                Text('Este visitante será registrado automáticamente', style: TextStyle(color: Colors.blue)),
+                Text('El visitante será registrado automáticamente en el sistema', style: TextStyle(color: Colors.blue, fontSize: 12)),
               ]),
             ],
             const SizedBox(height: 12),
@@ -152,13 +151,11 @@ class _QrVisitPageState extends State<QrVisitPage> {
     );
 
     if (ok == true) {
-      // Registrar/actualizar visitante
-      context.read<VisitorBloc>().add(UpsertVisitorRequested(widget.residenceId, visitorId, visitorName, null, validFrom!));
-      // Generar QR visitante
-      context.read<QrVisitBloc>().add(GenerateVisitQrRequested(widget.userId, visitorId, visitorName, validFrom!, durationHours!));
+      // Solo generar QR - El API registrará automáticamente al visitante
+      context.read<QrVisitBloc>().add(GenerateVisitQrRequested(widget.personaId, visitorId, visitorName, validFrom!, durationHours!));
       setState(() {
         qrGenerated = true;
-        successBadge = mode == 'new' ? 'Visitante registrado exitosamente' : null;
+        successBadge = mode == 'new' ? 'Visitante registrado automáticamente' : null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Código QR generado exitosamente'), behavior: SnackBarBehavior.floating),
@@ -171,8 +168,10 @@ class _QrVisitPageState extends State<QrVisitPage> {
     final theme = Theme.of(context);
     final separatorColor = theme.brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade300;
 
-    return AppScaffold(
-      title: 'QR de Visitante',
+    return BlocProvider<VisitorBloc>(
+      create: (_) => VisitorBloc(sl<ManageVisitorUseCase>()),
+      child: AppScaffold(
+        title: 'QR de Visitante',
       isRoot: true,
       currentIndex: 1,
       onTabSelected: (i) {
@@ -186,7 +185,8 @@ class _QrVisitPageState extends State<QrVisitPage> {
               context,
               AppRoutes.residentDashboard,
               arguments: {
-                'userId': widget.userId,
+                'personaId': widget.personaId,
+                'identificacion': widget.identificacion,
                 'residenceId': widget.residenceId,
                 'userName': authName ?? '',
               },
@@ -195,43 +195,53 @@ class _QrVisitPageState extends State<QrVisitPage> {
           case 1:
             break;
           case 2:
-            Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'userId': widget.userId});
+            Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion});
             break;
           case 3:
-            Navigator.pushNamed(context, AppRoutes.members, arguments: {'userId': widget.userId, 'residenceId': widget.residenceId});
+            Navigator.pushNamed(context, AppRoutes.members, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId});
             break;
           case 4:
-            Navigator.pushNamed(context, AppRoutes.profile, arguments: {'userId': widget.userId});
+            Navigator.pushNamed(context, AppRoutes.profile, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion});
             break;
         }
       },
-      body: BlocBuilder<VisitorBloc, VisitorState>(
-        builder: (ctx, vstState) {
-          return BlocListener<QrVisitBloc, QrVisitState>(
-            listener: (ctx, qrState) {
-              if (qrState is QrVisitReady && qrGenerated) {
-                // Navigate to display page similarly to self QR flow
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => QrDisplayPage(
-                      userName: nameCtrl.text.isNotEmpty ? nameCtrl.text : 'Visitante',
-                      userId: idCtrl.text,
-                      validFrom: qrState.qr.validFrom,
-                      validUntil: qrState.qr.expiresAt,
-                      durationHours: qrState.qr.durationHours ?? durationHours ?? 0,
-                      qrValue: qrState.qr.value,
-                    ),
-                  ),
-                );
-                setState(() => qrGenerated = false);
-              }
-            },
-            child: BlocBuilder<QrVisitBloc, QrVisitState>(
-            builder: (ctx, qrState) {
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
+      body: BlocListener<QrVisitBloc, QrVisitState>(
+        listener: (ctx, qrState) {
+          if (qrState is QrVisitReady && qrGenerated) {
+            // Recargar lista de visitantes después de generar QR
+            // (El API ya registró al nuevo visitante)
+            context.read<VisitorBloc>().add(LoadVisitors(widget.residenceId));
+            
+            // Navigate to display page
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => QrDisplayPage(
+                  userName: nameCtrl.text.isNotEmpty ? nameCtrl.text : 'Visitante',
+                  personaId: widget.personaId,
+                  identificacion: widget.identificacion,
+                  validFrom: qrState.qr.validFrom,
+                  validUntil: qrState.qr.expiresAt,
+                  durationHours: qrState.qr.durationHours ?? durationHours ?? 0,
+                  qrValue: qrState.qr.value,
+                ),
+              ),
+            );
+            setState(() => qrGenerated = false);
+          }
+        },
+        child: BlocBuilder<VisitorBloc, VisitorState>(
+          builder: (ctx, vstState) {
+            // Load visitors on first build
+            if (vstState is VisitorInitial) {
+              ctx.read<VisitorBloc>().add(LoadVisitors(widget.residenceId));
+            }
+            
+            return BlocBuilder<QrVisitBloc, QrVisitState>(
+              builder: (ctx, qrState) {
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
                   // Header similar to web TSX: back button, centered title, placeholder at right
                   // Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   //   IconButton(onPressed: () => navigateToHome(context, routeUserId: widget.userId, routeResidenceId: widget.residenceId), icon: const Icon(Icons.arrow_back)),
@@ -288,6 +298,9 @@ class _QrVisitPageState extends State<QrVisitPage> {
                     // Buscador
                     TextField(
                       controller: searchCtrl,
+                      onChanged: (query) {
+                        context.read<VisitorBloc>().add(SearchVisitors(query));
+                      },
                       decoration: const InputDecoration(
                         prefixIcon: Icon(Icons.search),
                         hintText: 'Buscar por nombre o identificación',
@@ -538,9 +551,11 @@ class _QrVisitPageState extends State<QrVisitPage> {
                   ],
                 ],
               );
-            },
-          ));
-        }
+              },
+            );
+          },
+        ),
+      ),
       ),
     );
   }
