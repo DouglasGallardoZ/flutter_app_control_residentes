@@ -111,11 +111,19 @@ class AppRoutes {
       }
       case familyDashboard: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = args?['personaId'] as int?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
-        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en FamilyDashboardPage');
-        return MaterialPageRoute(builder: (_) => FamilyDashboardPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId));
+        // Los argumentos son opcionales - la página puede obtener datos del AuthBloc
+        if (personaId != null && identificacion != null && residenceId != null) {
+          return MaterialPageRoute(
+            builder: (_) => FamilyDashboardPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId),
+          );
+        }
+        // Fallback: retornar sin argumentos y dejar que la página use los BLoCs
+        return MaterialPageRoute(
+          builder: (_) => const FamilyDashboardPage(personaId: 0, identificacion: '', residenceId: ''),
+        );
       }
 
       default:

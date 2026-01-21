@@ -111,7 +111,7 @@ class _ProfilePageState extends State<ProfilePage> {
               final uname = routeArgs?['userName'] as String? ?? authName;
               if (uid != null && rid != null && uname != null) {
                 final route = isFamilyMember ? AppRoutes.familyDashboard : AppRoutes.residentDashboard;
-                Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false, arguments: {'userId': uid, 'residenceId': rid, 'userName': uname});
+                Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false, arguments: {'personaId': uid, 'identificacion': uid, 'residenceId': rid, 'userName': uname});
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Inicio')));
               }
