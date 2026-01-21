@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import '../../application/blocs/admin/admin_dashboard_bloc.dart';
 import '../../application/blocs/admin/admin_dashboard_state.dart';
+import '../../infrastructure/providers/admin_api.dart';
 import '../widgets/admin_scaffold.dart';
 
 class AdminResidentsPage extends StatefulWidget {
@@ -20,7 +22,58 @@ class AdminResidentsPage extends StatefulWidget {
 
 class _AdminResidentsPageState extends State<AdminResidentsPage> {
   final TextEditingController _searchController = TextEditingController();
-  final List<ResidentData> _residents = [
+  late AdminApi _adminApi;
+  List<ResidentData> _residents = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _adminApi = GetIt.I<AdminApi>();
+    _loadResidents();
+  }
+
+  Future<void> _loadResidents() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final response = await _adminApi.getResidents();
+      if (!mounted) return;
+      
+      setState(() {
+        _residents = List<ResidentData>.from(
+          response.map((r) => ResidentData(
+            id: r['id'] ?? 0,
+            name: r['nombre_completo'] ?? 'N/A',
+            section: r['seccion'] ?? '',
+            villa: r['villa'] ?? '',
+            email: r['email'] ?? '',
+            phone: r['telefono'] ?? '',
+            isBlocked: r['cuenta_bloqueada'] ?? false,
+            joinDate: r['fecha_registro'] ?? '',
+          )),
+        );
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'Error al cargar residentes: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  final List<ResidentData> _mockResidents = [
     ResidentData(
       id: 1,
       name: 'María Rodríguez',
@@ -59,12 +112,6 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
     return _residents
         .where((r) => r.name.toLowerCase().contains(query) || r.villa.toLowerCase().contains(query))
         .toList();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   @override
@@ -147,37 +194,75 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
                 ),
               ),
               Expanded(
-                child: filteredResidents.isEmpty
+                child: _isLoading
                     ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.person_off,
-                            size: 64,
-                            color: Colors.grey.shade400,
-                          ),
+                          const CircularProgressIndicator(),
                           const SizedBox(height: 16),
                           Text(
-                            'No se encontraron residentes',
+                            'Cargando residentes...',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                         ],
                       ),
                     )
-                    : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: filteredResidents.length,
-                      itemBuilder: (context, index) {
-                        final resident = filteredResidents[index];
-                        return _ResidentCard(
-                          resident: resident,
-                          onBlock: () => _showBlockDialog(context, resident),
-                          onDelete: () => _showDeleteDialog(context, resident),
-                          onDetails: () => _showDetailsDialog(context, resident),
-                        );
-                      },
-                    ),
+                    : _errorMessage != null
+                        ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: Colors.red.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _errorMessage!,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.red),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              FilledButton.tonal(
+                                onPressed: _loadResidents,
+                                child: const Text('Reintentar'),
+                              ),
+                            ],
+                          ),
+                        )
+                        : filteredResidents.isEmpty
+                            ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.person_off,
+                                    size: 64,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No se encontraron residentes',
+                                    style: Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                ],
+                              ),
+                            )
+                            : ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              itemCount: filteredResidents.length,
+                              itemBuilder: (context, index) {
+                                final resident = filteredResidents[index];
+                                return _ResidentCard(
+                                  resident: resident,
+                                  onBlock: () => _showBlockDialog(context, resident),
+                                  onDelete: () => _showDeleteDialog(context, resident),
+                                  onDetails: () => _showDetailsDialog(context, resident),
+                                );
+                              },
+                            ),
               ),
             ],
           );
@@ -202,18 +287,32 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () {
-              setState(() => resident.isBlocked = !resident.isBlocked);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    resident.isBlocked
-                        ? '${resident.name} ha sido bloqueado'
-                        : '${resident.name} ha sido desbloqueado',
+            onPressed: () async {
+              try {
+                if (resident.isBlocked) {
+                  await _adminApi.unblockAccount(resident.id);
+                } else {
+                  await _adminApi.blockAccount(resident.id, 'Bloqueado por administrador');
+                }
+                if (!mounted) return;
+                setState(() => resident.isBlocked = !resident.isBlocked);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      resident.isBlocked
+                          ? '${resident.name} ha sido bloqueado'
+                          : '${resident.name} ha sido desbloqueado',
+                    ),
                   ),
-                ),
-              );
+                );
+              } catch (e) {
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                );
+              }
             },
             child: Text(resident.isBlocked ? 'Desbloquear' : 'Bloquear'),
           ),
@@ -237,12 +336,22 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
           ),
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
-            onPressed: () {
-              setState(() => _residents.remove(resident));
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${resident.name} ha sido eliminado')),
-              );
+            onPressed: () async {
+              try {
+                await _adminApi.deleteAccount(resident.id);
+                if (!mounted) return;
+                setState(() => _residents.remove(resident));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${resident.name} ha sido eliminado')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                );
+              }
             },
             child: const Text('Eliminar'),
           ),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import '../../application/blocs/admin/admin_dashboard_bloc.dart';
 import '../../application/blocs/admin/admin_dashboard_state.dart';
+import '../../infrastructure/providers/admin_api.dart';
 import '../widgets/admin_scaffold.dart';
 
 class AdminMembersPage extends StatefulWidget {
@@ -20,7 +22,59 @@ class AdminMembersPage extends StatefulWidget {
 
 class _AdminMembersPageState extends State<AdminMembersPage> {
   final TextEditingController _searchController = TextEditingController();
-  final List<MemberData> _members = [
+  late AdminApi _adminApi;
+  List<MemberData> _members = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _adminApi = GetIt.I<AdminApi>();
+    _loadMembers();
+  }
+
+  Future<void> _loadMembers() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final response = await _adminApi.getFamilyMembers();
+      if (!mounted) return;
+      
+      setState(() {
+        _members = List<MemberData>.from(
+          response.map((r) => MemberData(
+            id: r['id'] ?? 0,
+            name: r['nombre_completo'] ?? 'N/A',
+            relationship: r['relacion'] ?? '',
+            parentName: r['nombre_padre_madre'] ?? '',
+            section: r['seccion'] ?? '',
+            villa: r['villa'] ?? '',
+            email: r['email'] ?? '',
+            joinDate: r['fecha_registro'] ?? '',
+            isBlocked: r['cuenta_bloqueada'] ?? false,
+          )),
+        );
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'Error al cargar miembros: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  final List<MemberData> _mockMembers = [
     MemberData(
       id: 1,
       name: 'Ana Pérez García',
@@ -71,12 +125,6 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
     final query = _searchController.text.toLowerCase();
     if (query.isEmpty) return _members;
     return _members.where((m) => m.name.toLowerCase().contains(query) || m.parentName.toLowerCase().contains(query)).toList();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   @override
@@ -159,37 +207,75 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                 ),
               ),
               Expanded(
-                child: filteredMembers.isEmpty
+                child: _isLoading
                     ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.group_off,
-                            size: 64,
-                            color: Colors.grey.shade400,
-                          ),
+                          const CircularProgressIndicator(),
                           const SizedBox(height: 16),
                           Text(
-                            'No se encontraron miembros',
+                            'Cargando miembros...',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                         ],
                       ),
                     )
-                    : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: filteredMembers.length,
-                      itemBuilder: (context, index) {
-                        final member = filteredMembers[index];
-                        return _MemberCard(
-                          member: member,
-                          onBlock: () => _showBlockDialog(context, member),
-                          onDelete: () => _showDeleteDialog(context, member),
-                          onDetails: () => _showDetailsDialog(context, member),
-                        );
-                      },
-                    ),
+                    : _errorMessage != null
+                        ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: Colors.red.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _errorMessage!,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.red),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              FilledButton.tonal(
+                                onPressed: _loadMembers,
+                                child: const Text('Reintentar'),
+                              ),
+                            ],
+                          ),
+                        )
+                        : filteredMembers.isEmpty
+                            ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.group_off,
+                                    size: 64,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No se encontraron miembros',
+                                    style: Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                ],
+                              ),
+                            )
+                            : ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              itemCount: filteredMembers.length,
+                              itemBuilder: (context, index) {
+                                final member = filteredMembers[index];
+                                return _MemberCard(
+                                  member: member,
+                                  onBlock: () => _showBlockDialog(context, member),
+                                  onDelete: () => _showDeleteDialog(context, member),
+                                  onDetails: () => _showDetailsDialog(context, member),
+                                );
+                              },
+                            ),
               ),
             ],
           );
@@ -214,18 +300,32 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () {
-              setState(() => member.isBlocked = !member.isBlocked);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    member.isBlocked
-                        ? '${member.name} ha sido bloqueado'
-                        : '${member.name} ha sido desbloqueado',
+            onPressed: () async {
+              try {
+                if (member.isBlocked) {
+                  await _adminApi.unblockAccount(member.id);
+                } else {
+                  await _adminApi.blockAccount(member.id, 'Bloqueado por administrador');
+                }
+                if (!mounted) return;
+                setState(() => member.isBlocked = !member.isBlocked);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      member.isBlocked
+                          ? '${member.name} ha sido bloqueado'
+                          : '${member.name} ha sido desbloqueado',
+                    ),
                   ),
-                ),
-              );
+                );
+              } catch (e) {
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                );
+              }
             },
             child: Text(member.isBlocked ? 'Desbloquear' : 'Bloquear'),
           ),
@@ -249,12 +349,22 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           ),
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
-            onPressed: () {
-              setState(() => _members.remove(member));
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${member.name} ha sido eliminado')),
-              );
+            onPressed: () async {
+              try {
+                await _adminApi.deleteAccount(member.id);
+                if (!mounted) return;
+                setState(() => _members.remove(member));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${member.name} ha sido eliminado')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                );
+              }
             },
             child: const Text('Eliminar'),
           ),

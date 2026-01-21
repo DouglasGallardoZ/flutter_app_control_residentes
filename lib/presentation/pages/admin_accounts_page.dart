@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import '../../application/blocs/admin/admin_dashboard_bloc.dart';
 import '../../application/blocs/admin/admin_dashboard_state.dart';
+import '../../infrastructure/providers/admin_api.dart';
 import '../widgets/admin_scaffold.dart';
 
 class AdminAccountsPage extends StatefulWidget {
@@ -21,7 +23,46 @@ class AdminAccountsPage extends StatefulWidget {
 class _AdminAccountsPageState extends State<AdminAccountsPage> {
   final TextEditingController _searchController = TextEditingController();
   String _filterStatus = 'Todos'; // Todos, Activo, Bloqueado
-  final List<AccountData> _accounts = [
+  late AdminApi _adminApi;
+  List<AccountData> _accounts = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _adminApi = GetIt.I<AdminApi>();
+    _loadAccounts();
+  }
+
+  Future<void> _loadAccounts() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      // TODO: Implement getAccounts() in AdminApi
+      // For now, using mock data - replace with real API call
+      setState(() {
+        _accounts = _mockAccounts;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'Error al cargar cuentas: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  final List<AccountData> _mockAccounts = [
     AccountData(
       id: 1,
       firebaseUid: 'uid_001',
@@ -106,12 +147,6 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
     }
 
     return result;
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   @override
@@ -218,38 +253,76 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                 ),
               ),
               Expanded(
-                child: filteredAccounts.isEmpty
+                child: _isLoading
                     ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.person_off,
-                            size: 64,
-                            color: Colors.grey.shade400,
-                          ),
+                          const CircularProgressIndicator(),
                           const SizedBox(height: 16),
                           Text(
-                            'No se encontraron cuentas',
+                            'Cargando cuentas...',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                         ],
                       ),
                     )
-                    : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: filteredAccounts.length,
-                      itemBuilder: (context, index) {
-                        final account = filteredAccounts[index];
-                        return _AccountCard(
-                          account: account,
-                          onBlock: () => _showBlockDialog(context, account),
-                          onDelete: () => _showDeleteDialog(context, account),
-                          onDetails: () => _showDetailsDialog(context, account),
-                          onResetPassword: () => _showResetPasswordDialog(context, account),
-                        );
-                      },
-                    ),
+                    : _errorMessage != null
+                        ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: Colors.red.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _errorMessage!,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.red),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              FilledButton.tonal(
+                                onPressed: _loadAccounts,
+                                child: const Text('Reintentar'),
+                              ),
+                            ],
+                          ),
+                        )
+                        : filteredAccounts.isEmpty
+                            ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.person_off,
+                                    size: 64,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No se encontraron cuentas',
+                                    style: Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                ],
+                              ),
+                            )
+                            : ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              itemCount: filteredAccounts.length,
+                              itemBuilder: (context, index) {
+                                final account = filteredAccounts[index];
+                                return _AccountCard(
+                                  account: account,
+                                  onBlock: () => _showBlockDialog(context, account),
+                                  onDelete: () => _showDeleteDialog(context, account),
+                                  onDetails: () => _showDetailsDialog(context, account),
+                                  onResetPassword: () => _showResetPasswordDialog(context, account),
+                                );
+                              },
+                            ),
               ),
             ],
           );
@@ -274,21 +347,35 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () {
-              setState(() {
-                account.isBlocked = !account.isBlocked;
-                if (!account.isBlocked) account.loginAttempts = 0;
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    account.isBlocked
-                        ? '${account.name} ha sido bloqueado'
-                        : '${account.name} ha sido desbloqueado',
+            onPressed: () async {
+              try {
+                if (account.isBlocked) {
+                  await _adminApi.unblockAccount(account.id);
+                } else {
+                  await _adminApi.blockAccount(account.id, 'Bloqueado por administrador');
+                }
+                if (!mounted) return;
+                setState(() {
+                  account.isBlocked = !account.isBlocked;
+                  if (!account.isBlocked) account.loginAttempts = 0;
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      account.isBlocked
+                          ? '${account.name} ha sido bloqueado'
+                          : '${account.name} ha sido desbloqueado',
+                    ),
                   ),
-                ),
-              );
+                );
+              } catch (e) {
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                );
+              }
             },
             child: Text(account.isBlocked ? 'Desbloquear' : 'Bloquear'),
           ),
@@ -312,12 +399,22 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
           ),
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
-            onPressed: () {
-              setState(() => _accounts.remove(account));
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${account.name} ha sido eliminado')),
-              );
+            onPressed: () async {
+              try {
+                await _adminApi.deleteAccount(account.id);
+                if (!mounted) return;
+                setState(() => _accounts.remove(account));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${account.name} ha sido eliminado')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                );
+              }
             },
             child: const Text('Eliminar'),
           ),

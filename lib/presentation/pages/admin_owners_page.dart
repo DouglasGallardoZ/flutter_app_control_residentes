@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import '../../application/blocs/admin/admin_dashboard_bloc.dart';
 import '../../application/blocs/admin/admin_dashboard_state.dart';
+import '../../infrastructure/providers/admin_api.dart';
 import '../widgets/admin_scaffold.dart';
 
 class AdminOwnersPage extends StatefulWidget {
@@ -20,7 +22,57 @@ class AdminOwnersPage extends StatefulWidget {
 
 class _AdminOwnersPageState extends State<AdminOwnersPage> {
   final TextEditingController _searchController = TextEditingController();
-  final List<OwnerData> _owners = [
+  late AdminApi _adminApi;
+  List<OwnerData> _owners = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _adminApi = GetIt.I<AdminApi>();
+    _loadOwners();
+  }
+
+  Future<void> _loadOwners() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final response = await _adminApi.getOwners();
+      if (!mounted) return;
+      
+      setState(() {
+        _owners = List<OwnerData>.from(
+          response.map((r) => OwnerData(
+            id: r['id'] ?? 0,
+            name: r['nombre_completo'] ?? 'N/A',
+            email: r['email'] ?? '',
+            phone: r['telefono'] ?? '',
+            properties: r['propiedades'] ?? 0,
+            registrationDate: r['fecha_registro'] ?? '',
+            isBlocked: r['cuenta_bloqueada'] ?? false,
+          )),
+        );
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'Error al cargar propietarios: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  final List<OwnerData> _mockOwners = [
     OwnerData(
       id: 1,
       name: 'Carlos López',
@@ -54,12 +106,6 @@ class _AdminOwnersPageState extends State<AdminOwnersPage> {
     final query = _searchController.text.toLowerCase();
     if (query.isEmpty) return _owners;
     return _owners.where((o) => o.name.toLowerCase().contains(query) || o.email.toLowerCase().contains(query)).toList();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   @override
@@ -142,38 +188,76 @@ class _AdminOwnersPageState extends State<AdminOwnersPage> {
                 ),
               ),
               Expanded(
-                child: filteredOwners.isEmpty
+                child: _isLoading
                     ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.business,
-                            size: 64,
-                            color: Colors.grey.shade400,
-                          ),
+                          const CircularProgressIndicator(),
                           const SizedBox(height: 16),
                           Text(
-                            'No se encontraron propietarios',
+                            'Cargando propietarios...',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                         ],
                       ),
                     )
-                    : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: filteredOwners.length,
-                      itemBuilder: (context, index) {
-                        final owner = filteredOwners[index];
-                        return _OwnerCard(
-                          owner: owner,
-                          onBlock: () => _showBlockDialog(context, owner),
-                          onDelete: () => _showDeleteDialog(context, owner),
-                          onDetails: () => _showDetailsDialog(context, owner),
-                          onViewProperties: () => _showPropertiesDialog(context, owner),
-                        );
-                      },
-                    ),
+                    : _errorMessage != null
+                        ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: Colors.red.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _errorMessage!,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.red),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              FilledButton.tonal(
+                                onPressed: _loadOwners,
+                                child: const Text('Reintentar'),
+                              ),
+                            ],
+                          ),
+                        )
+                        : filteredOwners.isEmpty
+                            ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.business,
+                                    size: 64,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No se encontraron propietarios',
+                                    style: Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                ],
+                              ),
+                            )
+                            : ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              itemCount: filteredOwners.length,
+                              itemBuilder: (context, index) {
+                                final owner = filteredOwners[index];
+                                return _OwnerCard(
+                                  owner: owner,
+                                  onBlock: () => _showBlockDialog(context, owner),
+                                  onDelete: () => _showDeleteDialog(context, owner),
+                                  onDetails: () => _showDetailsDialog(context, owner),
+                                  onViewProperties: () => _showPropertiesDialog(context, owner),
+                                );
+                              },
+                            ),
               ),
             ],
           );
@@ -198,18 +282,32 @@ class _AdminOwnersPageState extends State<AdminOwnersPage> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () {
-              setState(() => owner.isBlocked = !owner.isBlocked);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    owner.isBlocked
-                        ? '${owner.name} ha sido bloqueado'
-                        : '${owner.name} ha sido desbloqueado',
+            onPressed: () async {
+              try {
+                if (owner.isBlocked) {
+                  await _adminApi.unblockAccount(owner.id);
+                } else {
+                  await _adminApi.blockAccount(owner.id, 'Bloqueado por administrador');
+                }
+                if (!mounted) return;
+                setState(() => owner.isBlocked = !owner.isBlocked);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      owner.isBlocked
+                          ? '${owner.name} ha sido bloqueado'
+                          : '${owner.name} ha sido desbloqueado',
+                    ),
                   ),
-                ),
-              );
+                );
+              } catch (e) {
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                );
+              }
             },
             child: Text(owner.isBlocked ? 'Desbloquear' : 'Bloquear'),
           ),
@@ -233,12 +331,22 @@ class _AdminOwnersPageState extends State<AdminOwnersPage> {
           ),
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
-            onPressed: () {
-              setState(() => _owners.remove(owner));
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${owner.name} ha sido eliminado')),
-              );
+            onPressed: () async {
+              try {
+                await _adminApi.deleteAccount(owner.id);
+                if (!mounted) return;
+                setState(() => _owners.remove(owner));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${owner.name} ha sido eliminado')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                );
+              }
             },
             child: const Text('Eliminar'),
           ),
