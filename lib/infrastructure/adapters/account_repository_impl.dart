@@ -32,10 +32,17 @@ class AccountRepositoryImpl implements AccountRepository {
       final response = await apiProvider.obtenerPerfil(firebaseUid);
       final perfilDTO = PerfilUsuarioDTO.fromJson(response);
       
+      // Usar valores por defecto si son null (típico para admins)
+      final vivienda = perfilDTO.vivienda ?? ViviendaDTO(
+        viviendaId: null,
+        manzana: '',
+        villa: '',
+      );
+      
       return Account(
         firebaseUid: firebaseUid,
-        personaId: perfilDTO.personaId,
-        identificacion: perfilDTO.identificacion,
+        personaId: perfilDTO.personaId ?? 0,
+        identificacion: perfilDTO.identificacion ?? '',
         nombres: perfilDTO.nombres,
         apellidos: perfilDTO.apellidos,
         rol: perfilDTO.rol,
@@ -43,9 +50,9 @@ class AccountRepositoryImpl implements AccountRepository {
         correo: perfilDTO.correo,
         celular: perfilDTO.celular,
         vivienda: Vivienda(
-          manzana: perfilDTO.vivienda.manzana,
-          villa: perfilDTO.vivienda.villa,
-          viviendaId: perfilDTO.vivienda.viviendaId,
+          manzana: vivienda.manzana,
+          villa: vivienda.villa,
+          viviendaId: vivienda.viviendaId ?? 0,
         ),
         parentesco: perfilDTO.parentesco,
         fechaCreado: perfilDTO.fechaCreado,

@@ -106,7 +106,7 @@ Future<void> inject() async {
 
   // Use Cases
   sl.registerLazySingleton<LoginUseCase>(
-    () => LoginUseCase(sl<AuthRepository>(), sl<AccountRepository>()),
+    () => LoginUseCase(sl<AuthRepository>()),
   );
 
   sl.registerLazySingleton<GenerateQrUseCase>(

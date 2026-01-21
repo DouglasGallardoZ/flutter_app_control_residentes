@@ -32,19 +32,35 @@ class AuthRepositoryImpl implements AuthRepository {
       final perfilData = await apiProvider.obtenerPerfil(user.uid);
       final perfil = PerfilUsuarioDTO.fromJson(perfilData);
 
-      return {
+      // Construir respuesta de login
+      final Map<String, dynamic> loginResponse = {
         'uid': user.uid,
         'email': user.email,
         'idToken': idToken,
-        'personaId': perfil.personaId,
-        'identificacion': perfil.identificacion,
         'nombres': perfil.nombres,
         'apellidos': perfil.apellidos,
         'rol': perfil.rol,
         'estado': perfil.estado,
-        'vivienda': perfil.vivienda.toJson(),
-        'parentesco': perfil.parentesco,
       };
+
+      // Agregar campos opcionales solo si no es null
+      if (perfil.personaId != null) {
+        loginResponse['personaId'] = perfil.personaId;
+      }
+      
+      if (perfil.identificacion != null) {
+        loginResponse['identificacion'] = perfil.identificacion;
+      }
+      
+      if (perfil.vivienda != null) {
+        loginResponse['vivienda'] = perfil.vivienda!.toJson();
+      }
+      
+      if (perfil.parentesco != null) {
+        loginResponse['parentesco'] = perfil.parentesco;
+      }
+
+      return loginResponse;
     } catch (e) {
       rethrow;
     }

@@ -310,66 +310,90 @@ Similar a residente pero para miembros de familia. Valida que la persona sea mie
 ### 3. Bloquear Cuenta
 
 **Endpoint:** `POST /{cuenta_id}/bloquear`  
-**Requirement:** RF-C08  
+**Requirement:** RF-C05, RFC-C08  
 **Auth:** Bearer token (admin/seguridad)
 
 **Descripción:**
-Bloquea una cuenta existente. El usuario bloqueado no puede acceder.
+Bloquea una cuenta existente. El usuario bloqueado no puede acceder. Si es residente y cascada=true, bloquea también a todos los miembros de familia.
 
 **Request Body:**
 ```json
 {
+  "usuario_actualizado": "admin_001",
   "motivo": "Violación de políticas de acceso",
-  "usuario_actualizado": "admin_001"
+  "cascada": true
 }
 ```
+
+**Request Fields:**
+| Campo | Tipo | Requerido | Descripción | Defecto |
+|-------|------|----------|-------------|---------|
+| usuario_actualizado | string | ✅ | Usuario que realiza acción | - |
+| motivo | string | ✅ | Razón del bloqueo | - |
+| cascada | boolean | ❌ | Si es residente, bloquea miembros | true |
 
 **Success Response (200 OK):**
 ```json
 {
-  "mensaje": "Cuenta bloqueada correctamente",
-  "cuenta_id": 42,
-  "motivo": "Violación de políticas de acceso"
+  "mensaje": "Se han bloqueado 4 cuenta(s)",
+  "cuentas_bloqueadas": 4,
+  "cuenta_principal_id": 42,
+  "es_residente": true,
+  "cascada_solicitada": true,
+  "cascada_aplicada": true,
+  "vivienda_id": 5
 }
 ```
 
 **Validaciones:**
 - ✅ Cuenta debe existir
-- ✅ Motivo es requerido
-
-**Error Response:**
-```json
-{
-  "detail": "Cuenta no encontrada"
-}
-```
+- ✅ Usuario y motivo son requeridos
+- ✅ Si cascada=true y es residente: bloquea miembros
 
 ---
 
 ### 4. Desbloquear Cuenta
 
 **Endpoint:** `POST /{cuenta_id}/desbloquear`  
-**Requirement:** RF-C09  
+**Requirement:** RFC-C06, RFC-C09  
 **Auth:** Bearer token (admin)
 
 **Descripción:**
-Desbloquea una cuenta previamente bloqueada.
+Desbloquea una cuenta previamente bloqueada. Si es residente y cascada=true, desbloquea también a todos los miembros de familia.
 
 **Request Body:**
 ```json
 {
+  "usuario_actualizado": "admin_001",
   "motivo": "Apelación aprobada",
-  "usuario_actualizado": "admin_001"
+  "cascada": true
 }
 ```
+
+**Request Fields:**
+| Campo | Tipo | Requerido | Descripción | Defecto |
+|-------|------|----------|-------------|---------|
+| usuario_actualizado | string | ✅ | Usuario que realiza acción | - |
+| motivo | string | ✅ | Razón del desbloqueo | - |
+| cascada | boolean | ❌ | Si es residente, desbloquea miembros | true |
 
 **Success Response (200 OK):**
 ```json
 {
-  "mensaje": "Cuenta desbloqueada correctamente",
-  "cuenta_id": 42
+  "mensaje": "Se han desbloqueado 4 cuenta(s)",
+  "cuentas_desbloqueadas": 4,
+  "cuenta_principal_id": 42,
+  "es_residente": true,
+  "cascada_solicitada": true,
+  "cascada_aplicada": true,
+  "vivienda_id": 5
 }
 ```
+
+**Validaciones:**
+- ✅ Cuenta debe existir
+- ✅ Usuario y motivo son requeridos
+- ✅ Si cascada=true y es residente: desbloquea miembros
 
 ---
 
@@ -1492,7 +1516,7 @@ Lista todas las fotos de rostro registradas para un residente.
 ## PROPIETARIOS
 
 **Prefijo:** `/api/v1/propietarios`  
-**Total Endpoints:** 4
+**Total Endpoints:** 7
 
 ### 1. Registrar Propietario
 
@@ -1634,6 +1658,113 @@ Elimina (soft delete) un propietario de la vivienda.
 {
   "mensaje": "Propietario eliminado correctamente",
   "propietario_id": 5
+}
+```
+
+---
+
+### 5. Actualizar Información de Propietario
+
+**Endpoint:** `PUT /{propietario_id}`  
+**Requirement:** RFC-P03  
+**Auth:** Bearer token (admin/propietario)
+
+**Descripción:**
+Actualiza la información de contacto y dirección de un propietario.
+
+**Request Body:**
+```json
+{
+  "correo": "nuevo.correo@example.com",
+  "celular": "+593999999999",
+  "direccion_alternativa": "Nueva dirección",
+  "usuario_actualizado": "admin_001"
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "mensaje": "Información del propietario actualizada",
+  "propietario_id": 5,
+  "correo": "nuevo.correo@example.com"
+}
+```
+
+---
+
+### 6. Dar de Baja un Propietario
+
+**Endpoint:** `POST /{propietario_id}/baja`  
+**Requirement:** RFC-P04  
+**Auth:** Bearer token (admin)
+
+**Descripción:**
+Da de baja a un propietario e inactiva sus miembros de familia. Si tiene cónyuge, lo activa como principal.
+
+**Request Body:**
+```json
+{
+  "motivo": "Venta de propiedad",
+  "usuario_actualizado": "admin_001"
+}
+```
+
+**Cascada Logic:**
+- Propietario → Inactivo
+- Cónyuge (si existe) → Se activa como propietario principal
+- Miembros de familia → Se inactivan
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "mensaje": "Propietario dado de baja correctamente",
+  "propietario_id": 5,
+  "cascada_aplicada": true,
+  "conyuge_activado": true,
+  "miembros_inactivados": 3
+}
+```
+
+---
+
+### 7. Cambio de Propietario (Transferencia)
+
+**Endpoint:** `POST /cambio-propiedad`  
+**Requirement:** RFC-P05  
+**Auth:** Bearer token (admin)
+
+**Descripción:**
+Transfiere la propiedad: inactiva propietario anterior, activa nuevo propietario y lo registra como residente.
+
+**Request Body:**
+```json
+{
+  "propietario_anterior_id": 5,
+  "persona_nueva_id": 10,
+  "vivienda_id": 1,
+  "motivo": "Venta de propiedad",
+  "usuario_actualizado": "admin_001"
+}
+```
+
+**Cascada Logic:**
+- Propietario anterior → Inactivo
+- Miembros anteriores → Se inactivan
+- Persona nueva → Se activa como propietario
+- Persona nueva → Se registra como residente
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "mensaje": "Transferencia de propiedad completada",
+  "propietario_anterior_id": 5,
+  "propietario_nuevo_id": 12,
+  "residente_nuevo_creado": true,
+  "miembros_anterior_inactivados": 2
 }
 ```
 

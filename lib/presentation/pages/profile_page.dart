@@ -39,6 +39,10 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  bool _isAdmin(String? role) {
+    return role?.toLowerCase() == 'admin' || role?.toLowerCase() == 'administrador';
+  }
+
   bool _isValidEmail(String e) {
     final re = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
     return re.hasMatch(e);
@@ -149,6 +153,7 @@ class _ProfilePageState extends State<ProfilePage> {
             final name = state.user['name'] ?? '';
             final role = (state.user['role'] ?? '') as String;
             final residence = state.user['residence'] ?? '—';
+            final isAdmin = _isAdmin(role);
 
             return BlocConsumer<AccountBloc, AccountState>(
             listener: (ctx2, accState) {
@@ -198,19 +203,33 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   const SizedBox(height: 12),
 
-                  // Personal info card (name + id)
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        const Text('Información Personal', style: TextStyle(fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 12),
-                        _infoRow(context, Icons.person, 'Nombre Completo', name),
-                        const SizedBox(height: 8),
-                        _infoRow(context, Icons.badge_outlined, 'Identificación', widget.identificacion),
-                      ]),
+                  // Personal info card (name + id) - For non-admin users
+                  if (!isAdmin)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          const Text('Información Personal', style: TextStyle(fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 12),
+                          _infoRow(context, Icons.person, 'Nombre Completo', name),
+                          const SizedBox(height: 8),
+                          _infoRow(context, Icons.badge_outlined, 'Identificación', widget.identificacion),
+                        ]),
+                      ),
+                    )
+                  else
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          const Text('Información de Administración', style: TextStyle(fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 12),
+                          _infoRow(context, Icons.admin_panel_settings, 'Función', 'Administración'),
+                          const SizedBox(height: 8),
+                          _infoRow(context, Icons.security, 'Rol', _roleName(role)),
+                        ]),
+                      ),
                     ),
-                  ),
 
                   const SizedBox(height: 12),
 
@@ -252,13 +271,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   const SizedBox(height: 12),
 
-                  // Residence card
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: _infoRow(context, Icons.home_work_outlined, 'Residencia', residence),
+                  // Residence card - Only for non-admin users
+                  if (!isAdmin)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: _infoRow(context, Icons.home_work_outlined, 'Residencia', residence),
+                      ),
                     ),
-                  ),
 
                   const SizedBox(height: 12),
                   // Settings
