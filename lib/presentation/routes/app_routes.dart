@@ -30,7 +30,7 @@ class AppRoutes {
       case residentDashboard: {
         // Ya no requiere argumentos - obtiene datos del AuthBloc y QrBloc
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = args?['personaId'] as int?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
         // Solo usar argumentos si vienen, sino dejar que la página los obtenga del BLoC
@@ -47,7 +47,7 @@ class AppRoutes {
 
       case qrSelf: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = args?['personaId'] as int?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
         if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en QrSelfPage');
@@ -56,7 +56,7 @@ class AppRoutes {
 
       case qrVisit: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = args?['personaId'] as int?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
         if (personaId == null || identificacion == null || residenceId == null) {
@@ -70,7 +70,7 @@ class AppRoutes {
       case accessHistory: {
         // Ya no requiere argumentos estrictamente
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = args?['personaId'] as int?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
         if (personaId != null && identificacion != null) {
@@ -82,7 +82,7 @@ class AppRoutes {
       case profile: {
         // Ya no requiere argumentos estrictamente
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = args?['personaId'] as int?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         if (personaId != null && identificacion != null) {
           return MaterialPageRoute(builder: (_) => ProfilePage(personaId: personaId, identificacion: identificacion));
@@ -93,7 +93,7 @@ class AppRoutes {
       case members: {
         // Ya no requiere argumentos estrictamente
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = args?['personaId'] as int?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
         if (personaId != null && identificacion != null) {
@@ -104,7 +104,7 @@ class AppRoutes {
 
       case adminDashboard: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = args?['personaId'] as int?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminDashboardPage');
         return MaterialPageRoute(builder: (_) => AdminDashboardPage(personaId: personaId, identificacion: identificacion));
