@@ -4,5 +4,5 @@ abstract class AccountRepository {
   Future<Account> register(Account account);
   Future<Account?> getById(String id);
   Future<void> updateEmail(String id, String newEmail);
-  Future<List<Account>> listByResidenceAndRole(String residenceId, String role);
+  Future<List<Account>> listByResidenceAndRole(dynamic residenceId, String role);
 }

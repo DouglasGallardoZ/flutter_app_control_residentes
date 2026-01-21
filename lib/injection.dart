@@ -7,6 +7,7 @@ import 'infrastructure/providers/firebase_auth_provider.dart';
 import 'infrastructure/providers/qr_api.dart';
 import 'infrastructure/providers/access_history_api.dart';
 import 'infrastructure/providers/visitor_api.dart';
+import 'infrastructure/providers/family_members_api.dart';
 
 // Infrastructure - Adapters
 import 'infrastructure/adapters/auth_repository_impl.dart';
@@ -67,6 +68,10 @@ Future<void> inject() async {
     () => VisitorApi(apiHttpClient.dio),
   );
 
+  sl.registerLazySingleton<FamilyMembersApi>(
+    () => FamilyMembersApi(apiHttpClient.dio),
+  );
+
   // Adapters (Repositories)
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
@@ -76,7 +81,7 @@ Future<void> inject() async {
   );
 
   sl.registerLazySingleton<AccountRepository>(
-    () => AccountRepositoryImpl(sl<ApiAuthProvider>()),
+    () => AccountRepositoryImpl(sl<ApiAuthProvider>(), sl<FamilyMembersApi>()),
   );
 
   sl.registerLazySingleton<QrRepository>(

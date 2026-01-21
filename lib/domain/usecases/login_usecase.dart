@@ -49,7 +49,9 @@ class LoginUseCase {
         'celular': account.celular,
         // Residence
         'residence': '${account.vivienda.manzana}-${account.vivienda.villa}',
+        'residence_id': account.vivienda.viviendaId,
         'vivienda': {
+          'vivienda_id': account.vivienda.viviendaId,
           'manzana': account.vivienda.manzana,
           'villa': account.vivienda.villa,
         },

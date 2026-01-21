@@ -6,6 +6,7 @@ import '../../application/blocs/account/account_event.dart';
 import '../../application/blocs/account/account_state.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_state.dart';
+import '../../domain/entities/account.dart';
 
 class MembersPage extends StatefulWidget {
   final int personaId;
@@ -86,11 +87,16 @@ class _MembersPageState extends State<MembersPage> {
           final maybeResidenceId = routeArgs?['residenceId'] as String? ?? widget.residenceId;
           final authState = context.read<AuthBloc>().state;
           String? authResidence;
+          int? viviendaId;
           if (authState is AuthSuccess) {
             authResidence = authState.user['residence'] as String?;
+            viviendaId = authState.user['residence_id'] as int?;
           }
 
-          final residenceId = maybeResidenceId ?? authResidence;
+          final residenceId = viviendaId != null && viviendaId > 0 
+            ? viviendaId // Use int vivienda_id first
+            : (maybeResidenceId ?? authResidence); // Fallback to String residenceId
+          
           if (residenceId == null) {
             return Center(child: Text('No se pudo determinar la residencia', style: Theme.of(context).textTheme.bodyLarge));
           }
@@ -138,11 +144,11 @@ class _MembersPageState extends State<MembersPage> {
                     child: ListView.builder(
                       itemCount: members.length,
                       itemBuilder: (context, i) {
-                        final m = members[i];
-                        final name = (m.name ?? m['name']) as String? ?? '';
-                        final identification = (m.id ?? m['id']) as String? ?? '';
-                        final email = (m.email ?? m['email']) as String?;
-                        final relationship = (m.relationship ?? m['relationship']) as String?;
+                        final m = members[i] as Account;
+                        final name = '${m.nombres} ${m.apellidos}'.trim();
+                        final identification = m.identificacion;
+                        final email = m.correo;
+                        final relationship = m.parentesco;
                         return Card(
                           margin: const EdgeInsets.symmetric(vertical: 8),
                           child: Padding(
@@ -158,10 +164,10 @@ class _MembersPageState extends State<MembersPage> {
                                       Text(name, style: Theme.of(context).textTheme.titleMedium),
                                       const SizedBox(height: 6),
                                       Row(children: [Icon(Icons.badge_outlined, size: 16, color: Theme.of(context).hintColor), const SizedBox(width: 6), Text(identification, style: Theme.of(context).textTheme.bodyMedium)]),
-                                        if (relationship != null) const SizedBox(height: 6),
-                                        if (relationship != null) Row(children: [Icon(Icons.family_restroom, size: 16, color: Theme.of(context).hintColor), const SizedBox(width: 6), Text(relationship, style: Theme.of(context).textTheme.bodyMedium)]),
-                                        if (email != null) const SizedBox(height: 6),
-                                        if (email != null) Row(children: [Icon(Icons.email_outlined, size: 16, color: Theme.of(context).hintColor), const SizedBox(width: 6), Text(email, style: Theme.of(context).textTheme.bodyMedium)]),
+                                        if (relationship != null && relationship.isNotEmpty) const SizedBox(height: 6),
+                                        if (relationship != null && relationship.isNotEmpty) Row(children: [Icon(Icons.family_restroom, size: 16, color: Theme.of(context).hintColor), const SizedBox(width: 6), Text(relationship, style: Theme.of(context).textTheme.bodyMedium)]),
+                                        if (email != null && email.isNotEmpty) const SizedBox(height: 6),
+                                        if (email != null && email.isNotEmpty) Row(children: [Icon(Icons.email_outlined, size: 16, color: Theme.of(context).hintColor), const SizedBox(width: 6), Text(email, style: Theme.of(context).textTheme.bodyMedium)]),
                                     ],
                                   ),
                                 ),

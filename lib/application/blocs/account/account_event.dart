@@ -14,6 +14,6 @@ class UpdateEmailSubmitted extends AccountEvent {
 }
 
 class LoadFamilyMembersRequested extends AccountEvent {
-  final String residenceId;
+  final dynamic residenceId; // Puede ser String (residencia) o int (vivienda_id)
   LoadFamilyMembersRequested(this.residenceId);
 }

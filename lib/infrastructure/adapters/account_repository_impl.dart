@@ -1,12 +1,14 @@
 import '../../domain/ports/account_repository.dart';
 import '../../domain/entities/account.dart';
 import '../providers/firebase_auth_provider.dart';
+import '../providers/family_members_api.dart';
 import '../dtos/perfil_usuario_dto.dart';
 
 class AccountRepositoryImpl implements AccountRepository {
   final ApiAuthProvider apiProvider;
+  final FamilyMembersApi familyMembersApi;
 
-  AccountRepositoryImpl(this.apiProvider);
+  AccountRepositoryImpl(this.apiProvider, this.familyMembersApi);
 
   @override
   Future<Account> register(Account account) async {
@@ -43,6 +45,7 @@ class AccountRepositoryImpl implements AccountRepository {
         vivienda: Vivienda(
           manzana: perfilDTO.vivienda.manzana,
           villa: perfilDTO.vivienda.villa,
+          viviendaId: perfilDTO.vivienda.viviendaId,
         ),
         parentesco: perfilDTO.parentesco,
         fechaCreado: perfilDTO.fechaCreado,
@@ -57,10 +60,34 @@ class AccountRepositoryImpl implements AccountRepository {
   }
 
   @override
-  Future<List<Account>> listByResidenceAndRole(String residenceId, String role) async {
+  Future<List<Account>> listByResidenceAndRole(dynamic residenceId, String role) async {
     try {
-      // Este endpoint podría no existir en la API actual
-      // Por ahora retorna lista vacía - necesitaría implementar en backend
+      // Si residenceId es int, es vivienda_id - usar FamilyMembersApi
+      if (residenceId is int) {
+        final familyMembers = await familyMembersApi.obtenerMiembrosPorVivienda(residenceId);
+        return familyMembers
+            .map((member) => Account(
+                  personaId: member.personaId,
+                  firebaseUid: '',
+                  identificacion: member.identificacion,
+                  nombres: member.nombres,
+                  apellidos: member.apellidos,
+                  rol: 'miembro_familia',
+                  estado: member.estado,
+                  correo: member.correo,
+                  celular: member.celular,
+                  parentesco: member.parentesco,
+                  fechaCreado: member.fechaCreado,
+                  vivienda: Vivienda(
+                    manzana: '',
+                    villa: '',
+                    viviendaId: residenceId,
+                  ),
+                ))
+            .toList();
+      }
+      
+      // Si es String (residencia), retorna lista vacía (método no implementado en backend)
       return [];
     } catch (e) {
       rethrow;

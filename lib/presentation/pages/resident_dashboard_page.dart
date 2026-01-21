@@ -43,6 +43,7 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
     int personaId = 0;
     String identificacion = '';
     String residenceId = '';
+    int? viviendaId;
     
     if (authState is AuthSuccess) {
       // SIEMPRE usar datos del AuthBloc (son la fuente de verdad)
@@ -54,6 +55,7 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
                        authState.user['identification'] ?? 
                        authState.user['dni'] ?? '') as String;
       residenceId = (authState.user['residence'] ?? '') as String;
+      viviendaId = authState.user['residence_id'] as int?;
     }
     
     // Los parámetros del widget son FALLBACK (para compatibilidad con rutas antiguas)
@@ -109,8 +111,13 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
           Wrap(spacing: 12, runSpacing: 12, children: [
             SizedBox(width: 175, child: MetricCard(label: 'Accesos Hoy', value: '2', icon: Icons.today)),
             Builder(builder: (ctx) {
-              if (!_requestedMembers && residenceId.isNotEmpty) {
-                context.read<AccountBloc>().add(LoadFamilyMembersRequested(residenceId));
+              if (!_requestedMembers) {
+                // Preferentemente usar vivienda_id si está disponible
+                if (viviendaId != null && viviendaId! > 0) {
+                  context.read<AccountBloc>().add(LoadFamilyMembersRequested(viviendaId));
+                } else if (residenceId.isNotEmpty) {
+                  context.read<AccountBloc>().add(LoadFamilyMembersRequested(residenceId));
+                }
                 _requestedMembers = true;
               }
               return SizedBox(

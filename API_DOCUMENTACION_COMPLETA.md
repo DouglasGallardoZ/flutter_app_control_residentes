@@ -425,6 +425,7 @@ Obtiene la información completa del perfil de un usuario basado en su Firebase 
   "estado": "activo",
   "rol": "residente",
   "vivienda": {
+    "vivienda_id": 1,
     "manzana": "A",
     "villa": "101"
   },
@@ -444,6 +445,7 @@ Obtiene la información completa del perfil de un usuario basado en su Firebase 
 | celular | string\|null | Teléfono |
 | estado | string | "activo" o "inactivo" |
 | rol | string | "residente" o "miembro_familia" |
+| vivienda.vivienda_id | integer | ID de la vivienda |
 | vivienda.manzana | string | Manzana de la residencia |
 | vivienda.villa | string | Villa de la residencia |
 | parentesco | string\|null | Solo si rol="miembro_familia" (padre, madre, hijo, etc.) |
@@ -461,6 +463,7 @@ Obtiene la información completa del perfil de un usuario basado en su Firebase 
   "estado": "activo",
   "rol": "miembro_familia",
   "vivienda": {
+    "vivienda_id": 1,
     "manzana": "A",
     "villa": "101"
   },
@@ -554,13 +557,15 @@ class PerfilUsuario {
 }
 
 class ViviendaInfo {
+  final int viviendaId;
   final String manzana;
   final String villa;
   
-  ViviendaInfo({required this.manzana, required this.villa});
+  ViviendaInfo({required this.viviendaId, required this.manzana, required this.villa});
   
   factory ViviendaInfo.fromJson(Map<String, dynamic> json) {
     return ViviendaInfo(
+      viviendaId: json['vivienda_id'],
       manzana: json['manzana'],
       villa: json['villa'],
     );

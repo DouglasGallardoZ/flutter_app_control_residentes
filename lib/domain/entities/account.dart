@@ -41,7 +41,7 @@ class Account {
         parentesco: map['parentesco'],
         vivienda: map['vivienda'] is Map 
           ? Vivienda.fromMap(map['vivienda']) 
-          : Vivienda(manzana: '', villa: ''),
+          : Vivienda(manzana: '', villa: '', viviendaId: 0),
         fechaCreado: map['fechaCreado'] is String
           ? DateTime.parse(map['fechaCreado'])
           : DateTime.now(),
@@ -69,18 +69,23 @@ class Account {
 class Vivienda {
   final String manzana;
   final String villa;
+  final int viviendaId;
 
-  Vivienda({required this.manzana, required this.villa});
+
+  Vivienda({required this.manzana, required this.villa, required this.viviendaId});
 
   factory Vivienda.fromMap(Map<String, dynamic> map) => Vivienda(
         manzana: map['manzana'] ?? '',
         villa: map['villa'] ?? '',
+        viviendaId: map['vivienda_id'] ?? '',
       );
 
   Map<String, dynamic> toMap() => {
         'manzana': manzana,
         'villa': villa,
+        'vivienda_id': viviendaId,
       };
+
 
   String get direccion => '$manzana-$villa';
 }
