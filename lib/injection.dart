@@ -8,6 +8,7 @@ import 'infrastructure/providers/qr_api.dart';
 import 'infrastructure/providers/access_history_api.dart';
 import 'infrastructure/providers/visitor_api.dart';
 import 'infrastructure/providers/family_members_api.dart';
+import 'infrastructure/providers/admin_api.dart';
 
 // Infrastructure - Adapters
 import 'infrastructure/adapters/auth_repository_impl.dart';
@@ -15,6 +16,7 @@ import 'infrastructure/adapters/account_repository_impl.dart';
 import 'infrastructure/adapters/qr_repository_impl.dart';
 import 'infrastructure/adapters/access_history_repository_impl.dart';
 import 'infrastructure/adapters/visitor_repository_impl.dart';
+import 'infrastructure/adapters/admin_repository_impl.dart';
 
 // Domain - Ports
 import 'domain/ports/auth_repository.dart';
@@ -22,6 +24,7 @@ import 'domain/ports/account_repository.dart';
 import 'domain/ports/qr_repository.dart';
 import 'domain/ports/access_history_repository.dart';
 import 'domain/ports/visitor_repository.dart';
+import 'domain/ports/admin_repository.dart';
 
 // Domain - Use Cases
 import 'domain/usecases/login_usecase.dart';
@@ -29,6 +32,11 @@ import 'domain/usecases/generate_qr_usecase.dart';
 import 'domain/usecases/generate_visit_qr_usecase.dart';
 import 'domain/usecases/load_access_history_usecase.dart';
 import 'domain/usecases/manage_visitor_usecase.dart';
+import 'domain/usecases/get_admin_metrics_usecase.dart';
+import 'domain/usecases/get_residents_usecase.dart';
+
+// BLoCs
+import 'application/blocs/admin/admin_dashboard_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -72,6 +80,10 @@ Future<void> inject() async {
     () => FamilyMembersApi(apiHttpClient.dio),
   );
 
+  sl.registerLazySingleton<AdminApi>(
+    () => AdminApi(apiHttpClient.dio),
+  );
+
   // Adapters (Repositories)
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
@@ -104,6 +116,10 @@ Future<void> inject() async {
     },
   );
 
+  sl.registerLazySingleton<AdminRepository>(
+    () => AdminRepositoryImpl(sl<AdminApi>()),
+  );
+
   // Use Cases
   sl.registerLazySingleton<LoginUseCase>(
     () => LoginUseCase(sl<AuthRepository>()),
@@ -123,5 +139,18 @@ Future<void> inject() async {
 
   sl.registerLazySingleton<ManageVisitorUseCase>(
     () => ManageVisitorUseCase(sl<VisitorRepository>()),
+  );
+
+  sl.registerLazySingleton<GetAdminMetricsUseCase>(
+    () => GetAdminMetricsUseCase(sl<AdminRepository>()),
+  );
+
+  sl.registerLazySingleton<GetResidentsUseCase>(
+    () => GetResidentsUseCase(sl<AdminRepository>()),
+  );
+
+  // BLoCs
+  sl.registerLazySingleton<AdminDashboardBloc>(
+    () => AdminDashboardBloc(sl<GetAdminMetricsUseCase>()),
   );
 }
