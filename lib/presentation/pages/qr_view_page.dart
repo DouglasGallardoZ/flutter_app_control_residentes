@@ -29,35 +29,37 @@ class QrViewPage extends StatelessWidget {
 
     return AppScaffold(
       title: 'QR generado',
-      currentIndex: 1,
+      routeName: '/qrSelf',
       onTabSelected: (i) {
-        switch (i) {
-          case 0:
-            final pid = maybePersonaId;
-            final rid = authResidence;
-            final idn = maybeIdentificacion;
-            final uname = authName ?? routeArgs?['userName'] as String?;
-            if (pid != null && rid != null && idn != null && uname != null) {
-              Navigator.pushReplacementNamed(context, '/residentDashboard', arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': uname});
-            }
-            break;
-          case 1: break;
-          case 2:
-            final pid2 = maybePersonaId;
-            final idn2 = maybeIdentificacion;
-            if (pid2 != null && idn2 != null) Navigator.pushReplacementNamed(context, '/accessHistory', arguments: {'personaId': pid2, 'identificacion': idn2});
-            break;
-          case 3:
-            final pid3 = maybePersonaId;
-            final idn3 = maybeIdentificacion;
-            if (pid3 != null && idn3 != null) Navigator.pushReplacementNamed(context, '/members', arguments: {'personaId': pid3, 'identificacion': idn3});
-            break;
-          case 4:
-            final pid4 = maybePersonaId;
-            final idn4 = maybeIdentificacion;
-            if (pid4 != null && idn4 != null) Navigator.pushReplacementNamed(context, '/profile', arguments: {'personaId': pid4, 'identificacion': idn4});
-            break;
-        }
+        if (i == 1) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          switch (i) {
+            case 0:
+              final pid = maybePersonaId;
+              final rid = authResidence;
+              final idn = maybeIdentificacion;
+              final uname = authName ?? routeArgs?['userName'] as String?;
+              if (pid != null && rid != null && idn != null && uname != null) {
+                Navigator.of(context).pushNamedAndRemoveUntil('/residentDashboard', (route) => false, arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': uname});
+              }
+              break;
+            case 2:
+              final pid2 = maybePersonaId;
+              final idn2 = maybeIdentificacion;
+              if (pid2 != null && idn2 != null) Navigator.of(context).pushNamedAndRemoveUntil('/accessHistory', (route) => false, arguments: {'personaId': pid2, 'identificacion': idn2});
+              break;
+            case 3:
+              final pid3 = maybePersonaId;
+              final idn3 = maybeIdentificacion;
+              if (pid3 != null && idn3 != null) Navigator.of(context).pushNamedAndRemoveUntil('/members', (route) => false, arguments: {'personaId': pid3, 'identificacion': idn3});
+              break;
+            case 4:
+              final pid4 = maybePersonaId;
+              final idn4 = maybeIdentificacion;
+              if (pid4 != null && idn4 != null) Navigator.of(context).pushNamedAndRemoveUntil('/profile', (route) => false, arguments: {'personaId': pid4, 'identificacion': idn4});
+              break;
+          }
+        });
       },
       body: Padding(
         padding: const EdgeInsets.all(16),

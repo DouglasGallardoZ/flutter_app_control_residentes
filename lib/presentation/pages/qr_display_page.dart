@@ -112,38 +112,38 @@ class _QrDisplayPageState extends State<QrDisplayPage> {
       },
       child: AppScaffold(
         title: 'Código QR',
-        currentIndex: 1,
+        routeName: '/qrSelf',
         onTabSelected: (i) {
-          try {
-            debugPrint('[QrDisplayPage] onTabSelected called with i=$i');
-            switch (i) {
-              case 0:
-                debugPrint('[QrDisplayPage Tab0] Navigating to ResidentDashboard');
-                Navigator.pushReplacementNamed(context, '/residentDashboard');
-                break;
-              case 1:
-                break;
-              case 2:
-                debugPrint('[QrDisplayPage Tab2] Navigating to AccessHistory');
-              Navigator.pushReplacementNamed(context, '/accessHistory');
-              break;
-            case 3:
-              debugPrint('[QrDisplayPage Tab3] Navigating to Members');
-              Navigator.pushReplacementNamed(context, '/members');
-              break;
-            case 4:
-              debugPrint('[QrDisplayPage Tab4] Navigating to Profile');
-              Navigator.pushReplacementNamed(context, '/profile');
-              break;
-          }
-        } catch (e) {
-          debugPrint('[QrDisplayPage] ERROR en onTabSelected: $e');
-          debugPrintStack();
-        }
-      },
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+          if (i == 1) return;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            try {
+              debugPrint('[QrDisplayPage] onTabSelected called with i=$i');
+              switch (i) {
+                case 0:
+                  debugPrint('[QrDisplayPage Tab0] Navigating to ResidentDashboard');
+                  Navigator.of(context).pushNamedAndRemoveUntil('/residentDashboard', (route) => false);
+                  break;
+                case 2:
+                  debugPrint('[QrDisplayPage Tab2] Navigating to AccessHistory');
+                  Navigator.of(context).pushNamedAndRemoveUntil('/accessHistory', (route) => false);
+                  break;
+                case 3:
+                  debugPrint('[QrDisplayPage Tab3] Navigating to Members');
+                  Navigator.of(context).pushNamedAndRemoveUntil('/members', (route) => false);
+                  break;
+                case 4:
+                  debugPrint('[QrDisplayPage Tab4] Navigating to Profile');
+                  Navigator.of(context).pushNamedAndRemoveUntil('/profile', (route) => false);
+                  break;
+              }
+            } catch (e) {
+              debugPrint('[QrDisplayPage] ERROR en onTabSelected: $e');
+            }
+          });
+        },
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
           Center(
             child: Container(
               width: 220,
@@ -198,7 +198,7 @@ class _QrDisplayPageState extends State<QrDisplayPage> {
             Expanded(child: OutlinedButton.icon(onPressed: _downloadQr, icon: const Icon(Icons.download), label: const Text('Descargar'))),
           ]),
         ],
-      ),
+        ),
       ),
     );
   }

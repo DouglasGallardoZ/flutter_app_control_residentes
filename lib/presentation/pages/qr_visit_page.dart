@@ -32,7 +32,8 @@ class QrVisitPage extends StatefulWidget {
 }
 
 class _QrVisitPageState extends State<QrVisitPage> {
-  final GlobalKey qrBoundaryKey = GlobalKey();  late ScrollController _scrollController;
+  final GlobalKey qrBoundaryKey = GlobalKey();
+  late ScrollController _scrollController;
   String mode = 'saved'; // saved | new
   final searchCtrl = TextEditingController();
   final nameCtrl = TextEditingController();
@@ -206,39 +207,40 @@ class _QrVisitPageState extends State<QrVisitPage> {
         },
         child: AppScaffold(
           title: 'QR de Visitante',
-        isRoot: true,
-        currentIndex: 1,
-        onTabSelected: (i) {
-          final authState = context.read<AuthBloc>().state;
-          String? authName;
-          if (authState is AuthSuccess) authName = authState.user['name'] as String?;
+          routeName: '/qrVisit',
+          isRoot: true,
+          onTabSelected: (i) {
+            if (i == 1) return;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final authState = context.read<AuthBloc>().state;
+              String? authName;
+              if (authState is AuthSuccess) authName = authState.user['name'] as String?;
 
-          switch (i) {
-            case 0:
-            Navigator.pushReplacementNamed(
-              context,
-              AppRoutes.residentDashboard,
-              arguments: {
-                'personaId': widget.personaId,
-                'identificacion': widget.identificacion,
-                'residenceId': widget.residenceId,
-                'userName': authName ?? '',
-              },
-            );
-            break;
-          case 1:
-            break;
-          case 2:
-            Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion});
-            break;
-          case 3:
-            Navigator.pushNamed(context, AppRoutes.members, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId});
-            break;
-          case 4:
-            Navigator.pushNamed(context, AppRoutes.profile, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion});
-            break;
-        }
-      },
+              switch (i) {
+                case 0:
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    AppRoutes.residentDashboard,
+                    (route) => false,
+                    arguments: {
+                      'personaId': widget.personaId,
+                      'identificacion': widget.identificacion,
+                      'residenceId': widget.residenceId,
+                      'userName': authName ?? '',
+                    },
+                  );
+                  break;
+                case 2:
+                  Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.accessHistory, (route) => false, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion});
+                  break;
+                case 3:
+                  Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.members, (route) => false, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId});
+                  break;
+                case 4:
+                  Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.profile, (route) => false, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion});
+                  break;
+              }
+            });
+          },
       body: BlocListener<QrVisitBloc, QrVisitState>(
         listener: (listenerCtx, qrState) {
           if (qrState is QrVisitReady && qrGenerated) {

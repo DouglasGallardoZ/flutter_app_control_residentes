@@ -93,35 +93,37 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return AppScaffold(
       title: 'Mi Perfil',
-      currentIndex: 4,
+      routeName: '/profile',
       onTabSelected: (i) {
-        switch (i) {
-          case 0:
-            final uid = maybeUserId ?? authUserId;
-            final rid = maybeResidenceId ?? authResidence;
-            final uname = routeArgs?['userName'] as String? ?? authName;
-            if (uid != null && rid != null && uname != null) {
-              Navigator.pushReplacementNamed(context, AppRoutes.residentDashboard, arguments: {'userId': uid, 'residenceId': rid, 'userName': uname});
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Inicio')));
-            }
-            break;
-          case 1:
-            final uid2 = maybeUserId ?? authUserId;
-            final uname2 = routeArgs?['userName'] as String? ?? authName;
-            if (uid2 != null && uname2 != null) Navigator.pushReplacementNamed(context, AppRoutes.qrSelf, arguments: {'userId': uid2, 'userName': uname2}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
-            break;
-          case 2:
-            final uid3 = maybeUserId ?? authUserId;
-            if (uid3 != null) Navigator.pushReplacementNamed(context, AppRoutes.accessHistory, arguments: {'userId': uid3}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
-            break;
-          case 3:
-            final uid4 = maybeUserId ?? authUserId;
-            final rid4 = maybeResidenceId ?? authResidence;
-            if (uid4 != null && rid4 != null) Navigator.pushReplacementNamed(context, AppRoutes.members, arguments: {'userId': uid4, 'residenceId': rid4}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
-            break;
-          case 4: break;
-        }
+        if (i == 4) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          switch (i) {
+            case 0:
+              final uid = maybeUserId ?? authUserId;
+              final rid = maybeResidenceId ?? authResidence;
+              final uname = routeArgs?['userName'] as String? ?? authName;
+              if (uid != null && rid != null && uname != null) {
+                Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.residentDashboard, (route) => false, arguments: {'userId': uid, 'residenceId': rid, 'userName': uname});
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Inicio')));
+              }
+              break;
+            case 1:
+              final uid2 = maybeUserId ?? authUserId;
+              final uname2 = routeArgs?['userName'] as String? ?? authName;
+              if (uid2 != null && uname2 != null) Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.qrSelf, (route) => false, arguments: {'userId': uid2, 'userName': uname2}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
+              break;
+            case 2:
+              final uid3 = maybeUserId ?? authUserId;
+              if (uid3 != null) Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.accessHistory, (route) => false, arguments: {'userId': uid3}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
+              break;
+            case 3:
+              final uid4 = maybeUserId ?? authUserId;
+              final rid4 = maybeResidenceId ?? authResidence;
+              if (uid4 != null && rid4 != null) Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.members, (route) => false, arguments: {'userId': uid4, 'residenceId': rid4}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
+              break;
+          }
+        });
       },
       body: BlocListener<AuthBloc, AuthState>(
         listener: (ctxAuth, authState) {

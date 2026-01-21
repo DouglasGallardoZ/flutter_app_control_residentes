@@ -31,6 +31,16 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
   bool _requestedMembers = false;
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -67,16 +77,18 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
 
     return AppScaffold(
       title: 'Acceso Residencial',
+      routeName: '/residentDashboard',
       isRoot: true,
-      currentIndex: tabIndex,
       onTabSelected: (i) {
-        setState(() => tabIndex = i);
-        switch (i) {
-          case 1: Navigator.pushNamed(context, AppRoutes.qrSelf, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
-          case 2: Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
-          case 3: Navigator.pushNamed(context, AppRoutes.members, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
-          case 4: Navigator.pushNamed(context, AppRoutes.profile, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
-        }
+        if (i == 0) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          switch (i) {
+            case 1: Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.qrSelf, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
+            case 2: Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.accessHistory, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
+            case 3: Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.members, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
+            case 4: Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.profile, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
+          }
+        });
       },
       body: ListView(
         padding: const EdgeInsets.all(16),

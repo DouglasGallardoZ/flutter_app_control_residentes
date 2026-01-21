@@ -48,51 +48,53 @@ class _AccessHistoryPageState extends State<AccessHistoryPage> {
 
     return AppScaffold(
       title: 'Historial de Accesos',
-      currentIndex: 2,
+      routeName: '/accessHistory',
       onTabSelected: (i) {
-        switch (i) {
-          case 0:
-            final pid = maybePersonaId;
-            final rid = maybeResidenceId;
-            final idn = maybeIdentificacion;
-            final uname = maybeUserName;
-            if (pid != null && rid != null && idn.isNotEmpty && uname != null) {
-              Navigator.pushReplacementNamed(context, '/residentDashboard', arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': uname});
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Inicio')));
-            }
-            break;
-          case 1:
-            final pid2 = maybePersonaId;
-            final idn2 = maybeIdentificacion;
-            final uname2 = maybeUserName;
-            if (pid2 != null && idn2.isNotEmpty && uname2 != null) {
-              Navigator.pushReplacementNamed(context, '/qrSelf', arguments: {'personaId': pid2, 'identificacion': idn2, 'userName': uname2});
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Mi QR')));
-            }
-            break;
-          case 2: break;
-          case 3:
-            final pid3 = maybePersonaId;
-            final rid3 = maybeResidenceId;
-            final idn3 = maybeIdentificacion;
-            if (pid3 != null && rid3 != null && idn3.isNotEmpty) {
-              Navigator.pushReplacementNamed(context, '/members', arguments: {'personaId': pid3, 'identificacion': idn3, 'residenceId': rid3});
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Familia')));
-            }
-            break;
-          case 4:
-            final pid4 = maybePersonaId;
-            final idn4 = maybeIdentificacion;
-            if (pid4 != null && idn4.isNotEmpty) {
-              Navigator.pushReplacementNamed(context, '/profile', arguments: {'personaId': pid4, 'identificacion': idn4});
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Perfil')));
-            }
-            break;
-        }
+        if (i == 2) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          switch (i) {
+            case 0:
+              final pid = maybePersonaId;
+              final rid = maybeResidenceId;
+              final idn = maybeIdentificacion;
+              final uname = maybeUserName;
+              if (pid != null && rid != null && idn.isNotEmpty && uname != null) {
+                Navigator.of(context).pushNamedAndRemoveUntil('/residentDashboard', (route) => false, arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': uname});
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Inicio')));
+              }
+              break;
+            case 1:
+              final pid2 = maybePersonaId;
+              final idn2 = maybeIdentificacion;
+              final uname2 = maybeUserName;
+              if (pid2 != null && idn2.isNotEmpty && uname2 != null) {
+                Navigator.of(context).pushNamedAndRemoveUntil('/qrSelf', (route) => false, arguments: {'personaId': pid2, 'identificacion': idn2, 'userName': uname2});
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Mi QR')));
+              }
+              break;
+            case 3:
+              final pid3 = maybePersonaId;
+              final rid3 = maybeResidenceId;
+              final idn3 = maybeIdentificacion;
+              if (pid3 != null && rid3 != null && idn3.isNotEmpty) {
+                Navigator.of(context).pushNamedAndRemoveUntil('/members', (route) => false, arguments: {'personaId': pid3, 'identificacion': idn3, 'residenceId': rid3});
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Familia')));
+              }
+              break;
+            case 4:
+              final pid4 = maybePersonaId;
+              final idn4 = maybeIdentificacion;
+              if (pid4 != null && idn4.isNotEmpty) {
+                Navigator.of(context).pushNamedAndRemoveUntil('/profile', (route) => false, arguments: {'personaId': pid4, 'identificacion': idn4});
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Perfil')));
+              }
+              break;
+          }
+        });
       },
       body: Column(
         children: [

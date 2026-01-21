@@ -161,25 +161,26 @@ class _QrSelfPageState extends State<QrSelfPage> {
 
     return AppScaffold(
       title: 'Mi Código QR',
+      routeName: '/qrSelf',
       isRoot: true,
-      currentIndex: 1,
       onTabSelected: (i) {
-        switch (i) {
-          case 0:
-            Navigator.pushReplacementNamed(context, AppRoutes.residentDashboard, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId ?? ''});
-            break;
-          case 1:
-            break;
-          case 2:
-            Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'personaId': personaId, 'identificacion': identificacion});
-            break;
-          case 3:
-            Navigator.pushNamed(context, AppRoutes.members, arguments: {'personaId': personaId, 'identificacion': identificacion});
-            break;
-          case 4:
-            Navigator.pushNamed(context, AppRoutes.profile, arguments: {'personaId': personaId, 'identificacion': identificacion});
-            break;
-        }
+        if (i == 1) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          switch (i) {
+            case 0:
+              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.residentDashboard, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId ?? ''});
+              break;
+            case 2:
+              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.accessHistory, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion});
+              break;
+            case 3:
+              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.members, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion});
+              break;
+            case 4:
+              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.profile, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion});
+              break;
+          }
+        });
       },
       body: BlocConsumer<QrBloc, QrState>(
         listener: (ctx, state) {
