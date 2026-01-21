@@ -33,10 +33,15 @@ class _MembersPageState extends State<MembersPage> {
     final maybeIdentificacion = routeArgs?['identificacion'] as String? ?? widget.identificacion;
     final maybeResidenceId = routeArgs?['residenceId'] as String? ?? widget.residenceId;
     final authState = context.read<AuthBloc>().state;
+    
+    // Obtener rol desde AuthBloc (determina si es miembro familiar)
+    bool isFamilyMember = false;
     String? authUserId;
     String? authResidence;
     String? authName;
     if (authState is AuthSuccess) {
+      final role = authState.user['rol'] as String?;
+      isFamilyMember = role?.toLowerCase() == 'miembro_familia' || role?.toLowerCase() == 'family' || role?.toLowerCase() == 'miembro de familia';
       authUserId = (authState.user['id'] ?? authState.user['uid'])?.toString();
       authResidence = authState.user['residence'] as String?;
       authName = authState.user['name'] as String?;
@@ -55,7 +60,8 @@ class _MembersPageState extends State<MembersPage> {
               final idn = maybeIdentificacion;
               final uname = authName;
               if (pid != null && rid != null && idn.isNotEmpty && uname != null) {
-                Navigator.of(context).pushNamedAndRemoveUntil('/residentDashboard', (route) => false, arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': uname});
+                final route = isFamilyMember ? '/familyDashboard' : '/residentDashboard';
+                Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false, arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': uname});
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
               }

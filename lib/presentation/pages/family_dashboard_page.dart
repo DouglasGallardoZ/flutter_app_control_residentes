@@ -8,6 +8,18 @@ import '../../presentation/theme/theme_controller.dart';
 import '../widgets/activity_item.dart';
 import '../widgets/metric_card.dart';
 
+/// Extensión helper para determinar el rol del usuario
+extension AuthStateExtension on AuthState {
+  bool get isFamilyMember {
+    if (this is AuthSuccess) {
+      final success = this as AuthSuccess;
+      final role = success.user['role'] as String?;
+      return role?.toLowerCase() == 'family' || role?.toLowerCase() == 'miembro de familia';
+    }
+    return false;
+  }
+}
+
 class FamilyDashboardPage extends StatefulWidget {
   final int personaId;
   final String identificacion;
@@ -53,7 +65,6 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage> {
     return AppScaffold(
       title: 'Acceso Residencial',
       routeName: '/familyDashboard',
-      isFamilyMember: true,
       onTabSelected: (i) {
         if (i == 0) return;
         WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../application/blocs/auth/auth_bloc.dart';
+import '../../application/blocs/auth/auth_state.dart';
 
 class AppScaffold extends StatelessWidget {
   final String title;
@@ -7,7 +10,6 @@ class AppScaffold extends StatelessWidget {
   final void Function(int)? onTabSelected;
   final List<Widget>? actions;
   final bool isRoot; // 👈 marca pantallas raíz (sin back)
-  final bool isFamilyMember; // 👈 indica si es miembro familiar (sin tab Familia)
   final String? routeName; // 👈 nombre explícito de la ruta para calcular el índice
 
   const AppScaffold({
@@ -18,9 +20,15 @@ class AppScaffold extends StatelessWidget {
     this.onTabSelected,
     this.actions,
     this.isRoot = false,
-    this.isFamilyMember = false,
     this.routeName,
   });
+
+  /// Determina si el usuario es miembro familiar basado en su rol
+  static bool _isFamilyMemberByRole(String? role) {
+    if (role == null) return false;
+    final normalized = role.toLowerCase();
+    return normalized == 'miembro_familia' || normalized == 'family' || normalized == 'miembro de familia';
+  }
 
   /// Mapea el nombre de la ruta al índice del tab
   static int _getTabIndexFromRoute(String routeName, bool isFamilyMember) {
@@ -44,13 +52,21 @@ class AppScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Obtener el rol desde AuthBloc (fuente de verdad)
+    final authState = context.read<AuthBloc>().state;
+    String? userRole;
+    if (authState is AuthSuccess) {
+      userRole = authState.user['rol'] as String?;
+    }
+    final isFamilyMember = _isFamilyMemberByRole(userRole);
+    
     // Usar el routeName pasado explícitamente, o intentar obtenerlo del context
     final currentRoute = routeName ?? (ModalRoute.of(context)?.settings.name ?? '');
     
     // Calcular el tab index desde el nombre de la ruta SIEMPRE
     final calculatedIndex = _getTabIndexFromRoute(currentRoute, isFamilyMember);
     
-    debugPrint('[AppScaffold] title=$title, currentRoute=$currentRoute, calculatedIndex=$calculatedIndex, isFamilyMember=$isFamilyMember');
+    debugPrint('[AppScaffold] title=$title, currentRoute=$currentRoute, calculatedIndex=$calculatedIndex, isFamilyMember=$isFamilyMember, rol=$userRole');
     
     // Construir las destinations dinámicamente según el tipo de usuario
     final destinations = <NavigationDestination>[

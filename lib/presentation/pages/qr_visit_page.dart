@@ -202,7 +202,14 @@ class _QrVisitPageState extends State<QrVisitPage> {
         canPop: true,
         onPopInvokedWithResult: (didPop, result) {
           if (didPop) {
-            Navigator.pushReplacementNamed(context, '/residentDashboard');
+            final authState = context.read<AuthBloc>().state;
+            bool isFamilyMember = false;
+            if (authState is AuthSuccess) {
+              final role = authState.user['role'] as String?;
+              isFamilyMember = role?.toLowerCase() == 'family' || role?.toLowerCase() == 'miembro de familia';
+            }
+            final homeRoute = isFamilyMember ? '/familyDashboard' : '/residentDashboard';
+            Navigator.pushReplacementNamed(context, homeRoute);
           }
         },
         child: AppScaffold(
@@ -214,12 +221,18 @@ class _QrVisitPageState extends State<QrVisitPage> {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               final authState = context.read<AuthBloc>().state;
               String? authName;
-              if (authState is AuthSuccess) authName = authState.user['name'] as String?;
+              bool isFamilyMember = false;
+              if (authState is AuthSuccess) {
+                authName = authState.user['name'] as String?;
+                final role = authState.user['rol'] as String?;
+                isFamilyMember = role?.toLowerCase() == 'miembro_familia' || role?.toLowerCase() == 'family' || role?.toLowerCase() == 'miembro de familia';
+              }
+              final homeRoute = isFamilyMember ? AppRoutes.familyDashboard : AppRoutes.residentDashboard;
 
               switch (i) {
                 case 0:
                   Navigator.of(context).pushNamedAndRemoveUntil(
-                    AppRoutes.residentDashboard,
+                    homeRoute,
                     (route) => false,
                     arguments: {
                       'personaId': widget.personaId,

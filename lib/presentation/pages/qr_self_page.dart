@@ -140,6 +140,8 @@ class _QrSelfPageState extends State<QrSelfPage> {
 
     final authState = context.read<AuthBloc>().state;
     
+    // Obtener rol desde AuthBloc (determina si es miembro familiar)
+    bool isFamilyMember = false;
     // Extraer datos del AuthBloc - SIEMPRE deben estar disponibles después del login
     int personaId = 0;
     String identificacion = '';
@@ -147,6 +149,8 @@ class _QrSelfPageState extends State<QrSelfPage> {
     
     if (authState is AuthSuccess) {
       // SIEMPRE usar datos del AuthBloc (son la fuente de verdad)
+      final role = authState.user['rol'] as String?;
+      isFamilyMember = role?.toLowerCase() == 'miembro_familia' || role?.toLowerCase() == 'family' || role?.toLowerCase() == 'miembro de familia';
       personaId = int.tryParse(authState.user['id']?.toString() ?? '') ?? 0;
       identificacion = (authState.user['identificacion'] ?? 
                        authState.user['identification'] ?? 
@@ -168,7 +172,8 @@ class _QrSelfPageState extends State<QrSelfPage> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           switch (i) {
             case 0:
-              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.residentDashboard, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId ?? ''});
+              final route = isFamilyMember ? AppRoutes.familyDashboard : AppRoutes.residentDashboard;
+              Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId ?? ''});
               break;
             case 2:
               Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.accessHistory, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion});

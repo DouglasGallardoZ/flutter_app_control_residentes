@@ -80,11 +80,17 @@ class _ProfilePageState extends State<ProfilePage> {
     final routeArgs = ModalRoute.of(context)?.settings.arguments as Map<String,dynamic>?;
     final maybeResidenceId = routeArgs?['residenceId'] as String?;
     final maybeUserId = routeArgs?['userId'] as String?;
+    
     final authState = context.read<AuthBloc>().state;
+    
+    // Obtener rol desde AuthBloc (determina si es miembro familiar)
+    bool isFamilyMember = false;
     String? authUserId;
     String? authResidence;
     String? authName;
     if (authState is AuthSuccess) {
+      final role = authState.user['rol'] as String?;
+      isFamilyMember = role?.toLowerCase() == 'miembro_familia' || role?.toLowerCase() == 'family' || role?.toLowerCase() == 'miembro de familia';
       authUserId = (authState.user['id'] ?? authState.user['uid'])?.toString();
       authResidence = authState.user['residence'] as String?;
       authName = authState.user['name'] as String?;
@@ -95,7 +101,8 @@ class _ProfilePageState extends State<ProfilePage> {
       title: 'Mi Perfil',
       routeName: '/profile',
       onTabSelected: (i) {
-        if (i == 4) return;
+        if (isFamilyMember && i == 3) return;
+        if (!isFamilyMember && i == 4) return;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           switch (i) {
             case 0:
@@ -103,7 +110,8 @@ class _ProfilePageState extends State<ProfilePage> {
               final rid = maybeResidenceId ?? authResidence;
               final uname = routeArgs?['userName'] as String? ?? authName;
               if (uid != null && rid != null && uname != null) {
-                Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.residentDashboard, (route) => false, arguments: {'userId': uid, 'residenceId': rid, 'userName': uname});
+                final route = isFamilyMember ? AppRoutes.familyDashboard : AppRoutes.residentDashboard;
+                Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false, arguments: {'userId': uid, 'residenceId': rid, 'userName': uname});
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Inicio')));
               }
@@ -118,9 +126,11 @@ class _ProfilePageState extends State<ProfilePage> {
               if (uid3 != null) Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.accessHistory, (route) => false, arguments: {'userId': uid3}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
               break;
             case 3:
-              final uid4 = maybeUserId ?? authUserId;
-              final rid4 = maybeResidenceId ?? authResidence;
-              if (uid4 != null && rid4 != null) Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.members, (route) => false, arguments: {'userId': uid4, 'residenceId': rid4}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
+              if (!isFamilyMember) {
+                final uid4 = maybeUserId ?? authUserId;
+                final rid4 = maybeResidenceId ?? authResidence;
+                if (uid4 != null && rid4 != null) Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.members, (route) => false, arguments: {'userId': uid4, 'residenceId': rid4}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
+              }
               break;
           }
         });

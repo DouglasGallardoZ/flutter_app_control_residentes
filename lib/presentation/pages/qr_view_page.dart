@@ -18,10 +18,15 @@ class QrViewPage extends StatelessWidget {
     final maybePersonaId = routeArgs?['personaId'] as int? ?? personaId;
     final maybeIdentificacion = routeArgs?['identificacion'] as String? ?? identificacion;
     final authState = context.read<AuthBloc>().state;
+    
+    // Obtener rol desde AuthBloc (determina si es miembro familiar)
+    bool isFamilyMember = false;
     String? authUserId;
     String? authResidence;
     String? authName;
     if (authState is AuthSuccess) {
+      final role = authState.user['rol'] as String?;
+      isFamilyMember = role?.toLowerCase() == 'miembro_familia' || role?.toLowerCase() == 'family' || role?.toLowerCase() == 'miembro de familia';
       authUserId = (authState.user['id'] ?? authState.user['uid'])?.toString();
       authResidence = authState.user['residence'] as String?;
       authName = authState.user['name'] as String?;
@@ -40,7 +45,8 @@ class QrViewPage extends StatelessWidget {
               final idn = maybeIdentificacion;
               final uname = authName ?? routeArgs?['userName'] as String?;
               if (pid != null && rid != null && idn != null && uname != null) {
-                Navigator.of(context).pushNamedAndRemoveUntil('/residentDashboard', (route) => false, arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': uname});
+                final route = isFamilyMember ? '/familyDashboard' : '/residentDashboard';
+                Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false, arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': uname});
               }
               break;
             case 2:

@@ -97,17 +97,23 @@ class _QrDisplayPageState extends State<QrDisplayPage> {
     String? authUserId;
     String? authResidence;
     String? authName;
+    // Obtener rol desde AuthBloc (determina si es miembro familiar)
+    bool isFamilyMember = false;
     if (authState is AuthSuccess) {
+      final role = authState.user['rol'] as String?;
+      isFamilyMember = role?.toLowerCase() == 'miembro_familia' || role?.toLowerCase() == 'family' || role?.toLowerCase() == 'miembro de familia';
       authUserId = (authState.user['id'] ?? authState.user['uid'])?.toString();
       authResidence = authState.user['residence'] as String?;
       authName = authState.user['name'] as String?;
     }
+    
+    final homeRoute = isFamilyMember ? '/familyDashboard' : '/residentDashboard';
 
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
-          Navigator.pushReplacementNamed(context, '/residentDashboard');
+          Navigator.pushReplacementNamed(context, homeRoute);
         }
       },
       child: AppScaffold(
@@ -120,8 +126,8 @@ class _QrDisplayPageState extends State<QrDisplayPage> {
               debugPrint('[QrDisplayPage] onTabSelected called with i=$i');
               switch (i) {
                 case 0:
-                  debugPrint('[QrDisplayPage Tab0] Navigating to ResidentDashboard');
-                  Navigator.of(context).pushNamedAndRemoveUntil('/residentDashboard', (route) => false);
+                  debugPrint('[QrDisplayPage Tab0] Navigating to $homeRoute');
+                  Navigator.of(context).pushNamedAndRemoveUntil(homeRoute, (route) => false);
                   break;
                 case 2:
                   debugPrint('[QrDisplayPage Tab2] Navigating to AccessHistory');

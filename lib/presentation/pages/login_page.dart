@@ -48,7 +48,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: BlocConsumer<AuthBloc, AuthState>(
                   listener: (ctx, state) {
                     if (state is AuthSuccess) {
-                      final rol = state.user['rol'];
+                      final rol = state.user['rol'] as String? ?? 'residente';
                       final personaId = int.tryParse(state.user['id']?.toString() ?? '') ?? 0;
                       final identificacion = state.user['identificacion'] as String? ?? '';
                       final vivienda = state.user['vivienda'] as Map<String, dynamic>?;
@@ -74,6 +74,8 @@ class _LoginPageState extends State<LoginPage> {
                           arguments: {
                             'personaId': personaId,
                             'identificacion': identificacion,
+                            'residenceId':
+                                '${vivienda?['manzana']}-${vivienda?['villa']}',
                             'userName': nombreCompleto,
                           },
                         );
