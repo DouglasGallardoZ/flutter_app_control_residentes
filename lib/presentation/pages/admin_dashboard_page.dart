@@ -5,7 +5,7 @@ import '../../application/blocs/admin/admin_dashboard_event.dart';
 import '../../application/blocs/admin/admin_dashboard_state.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_state.dart';
-import '../widgets/app_scaffold.dart';
+import '../widgets/admin_scaffold.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   final int personaId;
@@ -24,7 +24,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   @override
   void initState() {
     super.initState();
-    context.read<AdminDashboardBloc>().add(const LoadAdminMetrics());
+    // Cargar métricas después de que el widget esté completamente construido
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AdminDashboardBloc>().add(const LoadAdminMetrics());
+    });
   }
 
   @override
@@ -37,19 +40,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       adminName = '$nombres $apellidos'.trim();
     }
 
-    return AppScaffold(
-      title: 'Acceso Residencial',
+    return AdminScaffold(
+      title: 'Panel de Administración',
       routeName: '/adminDashboard',
       onTabSelected: (index) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (index == 4) return;
           switch (index) {
             case 0:
               // Ya está en dashboard
               break;
             case 1:
+              // Historial de accesos admin
               Navigator.of(context).pushNamedAndRemoveUntil(
-                '/accessHistory',
+                '/adminAccessHistory',
                 (route) => false,
                 arguments: {
                   'personaId': widget.personaId,
@@ -58,9 +61,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               );
               break;
             case 2:
-              // Visitantes o QR
+              // Gestión de usuarios
               Navigator.of(context).pushNamedAndRemoveUntil(
-                '/qrDisplay',
+                '/adminUsers',
                 (route) => false,
                 arguments: {
                   'personaId': widget.personaId,
@@ -69,19 +72,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               );
               break;
             case 3:
-              // Miembros/Cuentas
+              // Configuración/Perfil admin
               Navigator.of(context).pushNamedAndRemoveUntil(
-                '/members',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 4:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/profile',
+                '/adminProfile',
                 (route) => false,
                 arguments: {
                   'personaId': widget.personaId,
@@ -349,28 +342,33 @@ class MetricCard extends StatelessWidget {
     return Card(
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               decoration: BoxDecoration(
                 color: color.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              padding: const EdgeInsets.all(12),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              padding: const EdgeInsets.all(10),
+              child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(height: 8),
             Text(
+              value,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
               label,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

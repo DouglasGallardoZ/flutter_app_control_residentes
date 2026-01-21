@@ -13,6 +13,7 @@ class AdminRepositoryImpl implements AdminRepository {
   @override
   Future<AdminMetrics> getAdminMetrics() async {
     try {
+      // Obtener métricas ficticias (backend aún no implementa)
       final response = await adminApi.getAdminMetrics();
       final adminMetricsDTO = AdminMetricsDTO.fromJson(response);
       return _dtoToEntity(adminMetricsDTO);
@@ -29,6 +30,7 @@ class AdminRepositoryImpl implements AdminRepository {
     String? statusFilter,
   }) async {
     try {
+      // Usar endpoint documentado: GET /api/v1/residentes
       final response = await adminApi.getResidents(
         page: page,
         pageSize: pageSize,
@@ -54,6 +56,7 @@ class AdminRepositoryImpl implements AdminRepository {
     String? searchQuery,
   }) async {
     try {
+      // Usar endpoint documentado: GET /api/v1/miembros-familia
       final response = await adminApi.getFamilyMembers(
         page: page,
         pageSize: pageSize,
@@ -78,6 +81,7 @@ class AdminRepositoryImpl implements AdminRepository {
     String? searchQuery,
   }) async {
     try {
+      // Usar endpoint documentado: GET /api/v1/propietarios
       final response = await adminApi.getOwners(
         page: page,
         pageSize: pageSize,
@@ -98,6 +102,7 @@ class AdminRepositoryImpl implements AdminRepository {
   @override
   Future<void> updateAccountStatus(int personaId, String newStatus) async {
     try {
+      // Endpoint no documentado aún - usar mock
       await adminApi.updateAccountStatus(personaId, newStatus);
     } catch (e) {
       rethrow;
@@ -107,6 +112,7 @@ class AdminRepositoryImpl implements AdminRepository {
   @override
   Future<void> blockAccount(int personaId, String reason) async {
     try {
+      // Endpoint no documentado aún - usar mock
       await adminApi.blockAccount(personaId, reason);
     } catch (e) {
       rethrow;
@@ -116,6 +122,7 @@ class AdminRepositoryImpl implements AdminRepository {
   @override
   Future<void> unblockAccount(int personaId) async {
     try {
+      // Endpoint no documentado aún - usar mock
       await adminApi.unblockAccount(personaId);
     } catch (e) {
       rethrow;
@@ -125,6 +132,7 @@ class AdminRepositoryImpl implements AdminRepository {
   @override
   Future<void> deleteAccount(int personaId) async {
     try {
+      // Endpoint no documentado aún - usar mock
       await adminApi.deleteAccount(personaId);
     } catch (e) {
       rethrow;
@@ -134,6 +142,7 @@ class AdminRepositoryImpl implements AdminRepository {
   @override
   Future<Account> getAccountDetails(int personaId) async {
     try {
+      // Endpoint no documentado aún - usar mock
       final response = await adminApi.getAccountDetails(personaId);
       final dto = PerfilUsuarioDTO.fromJson(response);
       return _residentDtoToAccount(dto);

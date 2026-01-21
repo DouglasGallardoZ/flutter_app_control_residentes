@@ -14,6 +14,7 @@ import 'application/blocs/qr_visit/qr_visit_bloc.dart';
 import 'domain/usecases/generate_visit_qr_usecase.dart';
 import 'application/blocs/account/account_bloc.dart';
 import 'domain/ports/account_repository.dart';
+import 'application/blocs/admin/admin_dashboard_bloc.dart';
 import 'injection.dart';
 
 class App extends StatelessWidget {
@@ -28,6 +29,7 @@ class App extends StatelessWidget {
         BlocProvider<AccessHistoryBloc>(create: (_) => AccessHistoryBloc(sl<LoadAccessHistoryUseCase>())),
         BlocProvider<QrVisitBloc>(create: (_) => QrVisitBloc(sl<GenerateVisitQrUseCase>())),
         BlocProvider<AccountBloc>(create: (_) => AccountBloc(sl<AccountRepository>())),
+        BlocProvider<AdminDashboardBloc>(create: (_) => sl<AdminDashboardBloc>()),
       ],
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: ThemeController.mode,

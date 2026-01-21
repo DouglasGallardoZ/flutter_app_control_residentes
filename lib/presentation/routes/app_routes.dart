@@ -8,6 +8,13 @@ import '../pages/qr_visit_page.dart';
 import '../pages/access_history_page.dart';
 import '../pages/profile_page.dart';
 import '../pages/admin_dashboard_page.dart';
+import '../pages/admin_access_history_page.dart';
+import '../pages/admin_profile_page.dart';
+import '../pages/admin_users_page.dart';
+import '../pages/admin_residents_page.dart';
+import '../pages/admin_owners_page.dart';
+import '../pages/admin_members_page.dart';
+import '../pages/admin_accounts_page.dart';
 import '../pages/family_dashboard_page.dart';
 
 class AppRoutes {
@@ -17,9 +24,16 @@ class AppRoutes {
   static const String qrVisit = '/qrVisit';
   static const String accessHistory = '/accessHistory';
   static const String profile = '/profile';
-    static const String members = '/members';
+  static const String members = '/members';
 
   static const String adminDashboard = '/adminDashboard';
+  static const String adminAccessHistory = '/adminAccessHistory';
+  static const String adminUsers = '/adminUsers';
+  static const String adminResidents = '/adminResidents';
+  static const String adminOwners = '/adminOwners';
+  static const String adminMembers = '/adminMembers';
+  static const String adminAccounts = '/adminAccounts';
+  static const String adminProfile = '/adminProfile';
   static const String familyDashboard = '/familyDashboard';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -109,6 +123,63 @@ class AppRoutes {
         if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminDashboardPage');
         return MaterialPageRoute(builder: (_) => AdminDashboardPage(personaId: personaId, identificacion: identificacion));
       }
+
+      case adminAccessHistory: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
+        final identificacion = args?['identificacion'] as String?;
+        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminAccessHistoryPage');
+        return MaterialPageRoute(builder: (_) => AdminAccessHistoryPage(personaId: personaId, identificacion: identificacion));
+      }
+
+      case adminUsers: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
+        final identificacion = args?['identificacion'] as String?;
+        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminUsersPage');
+        return MaterialPageRoute(builder: (_) => AdminUsersPage(personaId: personaId, identificacion: identificacion));
+      }
+
+      case adminResidents: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
+        final identificacion = args?['identificacion'] as String?;
+        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminResidentsPage');
+        return MaterialPageRoute(builder: (_) => AdminResidentsPage(personaId: personaId, identificacion: identificacion));
+      }
+
+      case adminOwners: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
+        final identificacion = args?['identificacion'] as String?;
+        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminOwnersPage');
+        return MaterialPageRoute(builder: (_) => AdminOwnersPage(personaId: personaId, identificacion: identificacion));
+      }
+
+      case adminMembers: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
+        final identificacion = args?['identificacion'] as String?;
+        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminMembersPage');
+        return MaterialPageRoute(builder: (_) => AdminMembersPage(personaId: personaId, identificacion: identificacion));
+      }
+
+      case adminAccounts: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
+        final identificacion = args?['identificacion'] as String?;
+        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminAccountsPage');
+        return MaterialPageRoute(builder: (_) => AdminAccountsPage(personaId: personaId, identificacion: identificacion));
+      }
+
+      case adminProfile: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
+        final identificacion = args?['identificacion'] as String?;
+        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminProfilePage');
+        return MaterialPageRoute(builder: (_) => AdminProfilePage(personaId: personaId, identificacion: identificacion));
+      }
+
       case familyDashboard: {
         final args = settings.arguments as Map<String, dynamic>?;
         final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
