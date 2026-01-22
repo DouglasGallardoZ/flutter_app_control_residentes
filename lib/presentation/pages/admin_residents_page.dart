@@ -221,19 +221,17 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
                         Expanded(
                           child: TextField(
                             decoration: InputDecoration(
-                              labelText: 'Manzana',
-                              hintText: 'Ej: 1, 2, 3...',
+                              hintText: 'Manzana',
+                              prefixIcon: const Icon(Icons.home),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                             ),
                             keyboardType: TextInputType.number,
                             inputFormatters: [
@@ -248,12 +246,11 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
                         Expanded(
                           child: TextField(
                             decoration: InputDecoration(
-                              labelText: 'Villa',
-                              hintText: 'Ej: 101, 102...',
+                              hintText: 'Villa',
+                              prefixIcon: const Icon(Icons.apartment),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                             ),
                             keyboardType: TextInputType.number,
                             inputFormatters: [
@@ -270,10 +267,23 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
                     Row(
                       children: [
                         Expanded(
-                          child: FilledButton(
+                          child: FilledButton.tonal(
                             onPressed: _loadResidentsByLocation,
                             child: const Text('Buscar Residentes'),
                           ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedManzana = null;
+                              _selectedVilla = null;
+                              _residents = [];
+                              _errorMessage = null;
+                            });
+                          },
+                          icon: const Icon(Icons.clear),
+                          tooltip: 'Limpiar filtros',
                         ),
                       ],
                     ),

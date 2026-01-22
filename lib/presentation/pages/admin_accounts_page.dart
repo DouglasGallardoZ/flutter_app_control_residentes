@@ -459,7 +459,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                 ),
               ),
               Expanded(
-                child: _isLoading
+                child: _isLoading || _isSearching
                     ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -634,6 +634,17 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(statusMsg)),
                   );
+                  
+                  // Refrescar datos según los campos que están llenos
+                  if (_emailController.text.isNotEmpty) {
+                    // Si hay correo, buscar por correo
+                    await Future.delayed(const Duration(milliseconds: 500));
+                    _searchByEmail(_emailController.text);
+                  } else if (_manzanaController.text.isNotEmpty && _villaController.text.isNotEmpty) {
+                    // Si hay manzana y villa, buscar por ubicación
+                    await Future.delayed(const Duration(milliseconds: 500));
+                    _searchByLocation(_manzanaController.text, _villaController.text);
+                  }
                 } catch (e) {
                   if (!mounted) return;
                   Navigator.pop(context);
