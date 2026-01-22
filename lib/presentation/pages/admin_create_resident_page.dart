@@ -117,7 +117,19 @@ class _AdminCreateResidentPageState extends State<AdminCreateResidentPage> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        Navigator.of(context).pop();
+        
+        // Navegar a captura facial
+        if (mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/adminFacialEnrollment',
+            (route) => route.settings.name == '/adminResidents',
+            arguments: {
+              'personaId': response['persona_id'] ?? 0,
+              'nombres': _nombresController.text.trim(),
+              'apellidos': _apellidosController.text.trim(),
+            },
+          );
+        }
       }
     } catch (e) {
       String errorMessage = 'Error al registrar residente';

@@ -493,6 +493,43 @@ class AdminApi {
     }
   }
 
+  /// Enroll facial data para residente/miembro
+  /// Servicio de biometría en puerto 8000
+  /// Endpoint: POST /enroll
+  /// FormData: user_id (personaId), images (lista de archivos)
+  Future<Map<String, dynamic>> enrollFacialData({
+    required String personaId,
+    required List<String> imagenesRutas,
+  }) async {
+    try {
+      final formData = FormData();
+      
+      // Agregar persona ID como user_id
+      formData.fields.add(MapEntry('user_id', personaId));
+      
+      // Agregar cada imagen
+      for (int i = 0; i < imagenesRutas.length; i++) {
+        final archivo = await MultipartFile.fromFile(
+          imagenesRutas[i],
+          filename: 'face_$i.jpg',
+        );
+        formData.files.add(MapEntry('images', archivo));
+      }
+
+      // Obtener la URL base y reemplazar el puerto por 8000 para biometría
+      final dioBaseUrl = dio.options.baseUrl;
+      final biometryUrl = dioBaseUrl.replaceAll(RegExp(r':\d+'), ':8000');
+
+      final response = await dio.post(
+        '$biometryUrl/enroll',
+        data: formData,
+      );
+      return response.data ?? {};
+    } catch (e) {
+      throw Exception(_extractErrorMessage(e));
+    }
+  }
+
   /// Generar datos ficticios para métricas
   /// TODO: Reemplazar con /api/v1/admin/metrics cuando backend lo implemente
   Map<String, dynamic> _generateMockMetrics() {

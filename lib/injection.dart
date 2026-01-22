@@ -37,6 +37,7 @@ import 'domain/usecases/get_residents_usecase.dart';
 
 // BLoCs
 import 'application/blocs/admin/admin_dashboard_bloc.dart';
+import 'application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -152,5 +153,9 @@ Future<void> inject() async {
   // BLoCs
   sl.registerLazySingleton<AdminDashboardBloc>(
     () => AdminDashboardBloc(sl<GetAdminMetricsUseCase>()),
+  );
+
+  sl.registerLazySingleton<FacialEnrollmentBloc>(
+    () => FacialEnrollmentBloc(adminApi: sl<AdminApi>()),
   );
 }
