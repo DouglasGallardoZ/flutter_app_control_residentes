@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import '../../application/blocs/admin/admin_dashboard_bloc.dart';
@@ -26,35 +27,115 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
   List<ResidentData> _residents = [];
   bool _isLoading = false;
   String? _errorMessage;
+  
+  // Filtros
+  String? _selectedManzana;
+  String? _selectedVilla;
+  int _currentPage = 1;
+  final int _pageSize = 20;
 
   @override
   void initState() {
     super.initState();
     _adminApi = GetIt.I<AdminApi>();
-    _loadResidents();
   }
 
   Future<void> _loadResidents() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _currentPage = 1;
     });
     try {
-      final response = await _adminApi.getResidents();
+      final response = await _adminApi.getResidents(
+        page: _currentPage,
+        pageSize: _pageSize,
+        searchQuery: _searchController.text.isEmpty ? null : _searchController.text,
+      );
       if (!mounted) return;
       
+      // DEBUG: Imprimir respuesta para verificar estructura
+      print('=== RESIDENTES RESPONSE ===');
       setState(() {
         _residents = List<ResidentData>.from(
-          response.map((r) => ResidentData(
-            id: r['id'] ?? 0,
-            name: r['nombre_completo'] ?? 'N/A',
-            section: r['seccion'] ?? '',
-            villa: r['villa'] ?? '',
-            email: r['email'] ?? '',
-            phone: r['telefono'] ?? '',
-            isBlocked: r['cuenta_bloqueada'] ?? false,
-            joinDate: r['fecha_registro'] ?? '',
-          )),
+          response.map((r) {
+            if (r is! Map<String, dynamic>) {
+              return null;
+            }
+            
+            final nombres = r['nombres'] ?? '';
+            final apellidos = r['apellidos'] ?? '';
+            final nombreCompleto = '$nombres $apellidos'.trim();
+            
+            return ResidentData(
+              id: r['residente_id'] ?? 0,
+              name: nombreCompleto.isEmpty ? 'N/A' : nombreCompleto,
+              manzana: r['manzana'] ?? '',
+              villa: r['villa'] ?? '',
+              email: r['correo'] ?? '',
+              phone: r['celular'] ?? '',
+              identificacion: r['identificacion'] ?? '',
+              estado: r['estado'] ?? 'activo',
+            );
+          }).whereType<ResidentData>(),
+        );
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'Error al cargar residentes: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _loadResidentsByLocation() async {
+    if (_selectedManzana == null || _selectedVilla == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecciona manzana y villa para filtrar')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _currentPage = 1;
+    });
+    try {
+      final response = await _adminApi.getResidentsByLocation(
+        manzana: _selectedManzana!,
+        villa: _selectedVilla!,
+        page: _currentPage,
+        pageSize: _pageSize,
+      );
+      if (!mounted) return;
+      
+      // DEBUG: Imprimir respuesta para verificar estructura
+      print('=== RESIDENTES BY LOCATION RESPONSE ===');
+      setState(() {
+        _residents = List<ResidentData>.from(
+          response.map((r) {
+            if (r is! Map<String, dynamic>) {
+              return null;
+            }
+            
+            final nombres = r['nombres'] ?? '';
+            final apellidos = r['apellidos'] ?? '';
+            final nombreCompleto = '$nombres $apellidos'.trim();
+            
+            return ResidentData(
+              id: r['residente_id'] ?? 0,
+              name: nombreCompleto.isEmpty ? 'N/A' : nombreCompleto,
+              manzana: r['manzana'] ?? '',
+              villa: r['villa'] ?? '',
+              email: r['correo'] ?? '',
+              phone: r['celular'] ?? '',
+              identificacion: r['identificacion'] ?? '',
+              estado: r['estado'] ?? 'activo',
+            );
+          }).whereType<ResidentData>(),
         );
       });
     } catch (e) {
@@ -72,39 +153,6 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
     _searchController.dispose();
     super.dispose();
   }
-
-  final List<ResidentData> _mockResidents = [
-    ResidentData(
-      id: 1,
-      name: 'María Rodríguez',
-      section: 'Manzana A',
-      villa: 'Villa 101',
-      email: 'maria@example.com',
-      phone: '+34 612 345 678',
-      isBlocked: false,
-      joinDate: '2023-05-15',
-    ),
-    ResidentData(
-      id: 2,
-      name: 'Juan Pérez',
-      section: 'Manzana B',
-      villa: 'Villa 205',
-      email: 'juan@example.com',
-      phone: '+34 623 456 789',
-      isBlocked: false,
-      joinDate: '2023-06-20',
-    ),
-    ResidentData(
-      id: 3,
-      name: 'Andrea Martínez',
-      section: 'Manzana C',
-      villa: 'Villa 308',
-      email: 'andrea@example.com',
-      phone: '+34 634 567 890',
-      isBlocked: true,
-      joinDate: '2023-07-10',
-    ),
-  ];
 
   List<ResidentData> get filteredResidents {
     final query = _searchController.text.toLowerCase();
@@ -169,30 +217,70 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
         builder: (context, state) {
           return Column(
             children: [
+              // Filtros por ubicación
               Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Buscar residente...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon:
-                        _searchController.text.isNotEmpty
-                            ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() {});
-                              },
-                            )
-                            : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            decoration: InputDecoration(
+                              labelText: 'Manzana',
+                              hintText: 'Ej: 1, 2, 3...',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            onChanged: (value) {
+                              setState(() => _selectedManzana = value.isEmpty ? null : value);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            decoration: InputDecoration(
+                              labelText: 'Villa',
+                              hintText: 'Ej: 101, 102...',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            onChanged: (value) {
+                              setState(() => _selectedVilla = value.isEmpty ? null : value);
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  onChanged: (_) => setState(() {}),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: _loadResidentsByLocation,
+                            child: const Text('Buscar Residentes'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
+              const SizedBox(height: 16),
               Expanded(
                 child: _isLoading
                     ? Center(
@@ -272,14 +360,32 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
   }
 
   void _showBlockDialog(BuildContext context, ResidentData resident) {
+    final TextEditingController reasonController = TextEditingController();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(resident.isBlocked ? 'Desbloquear residente' : 'Bloquear residente'),
-        content: Text(
-          resident.isBlocked
-              ? '¿Desea desbloquear a ${resident.name}? Podrá acceder nuevamente.'
-              : '¿Desea bloquear a ${resident.name}? No podrá acceder al sistema.',
+        title: Text(resident.isBlocked ? 'Reactivar residente' : 'Desactivar residente'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Residente: ${resident.name}'),
+              const SizedBox(height: 16),
+              const Text('Motivo (obligatorio):'),
+              const SizedBox(height: 8),
+              TextField(
+                controller: reasonController,
+                decoration: InputDecoration(
+                  hintText: resident.isBlocked ? 'Motivo de reactivación' : 'Motivo de desactivación',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -288,24 +394,34 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
           ),
           FilledButton(
             onPressed: () async {
+              final reason = reasonController.text.trim();
+              if (reason.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('El motivo es obligatorio'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
               try {
                 if (resident.isBlocked) {
-                  await _adminApi.unblockAccount(resident.id);
+                  await _adminApi.reactivateResident(resident.id, reason);
                 } else {
-                  await _adminApi.blockAccount(resident.id, 'Bloqueado por administrador');
+                  await _adminApi.deactivateResident(resident.id, reason);
                 }
                 if (!mounted) return;
-                setState(() => resident.isBlocked = !resident.isBlocked);
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
                       resident.isBlocked
-                          ? '${resident.name} ha sido bloqueado'
-                          : '${resident.name} ha sido desbloqueado',
+                          ? '${resident.name} ha sido reactivado'
+                          : '${resident.name} ha sido desactivado',
                     ),
                   ),
                 );
+                _loadResidentsByLocation();
               } catch (e) {
                 if (!mounted) return;
                 Navigator.pop(context);
@@ -314,7 +430,7 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
                 );
               }
             },
-            child: Text(resident.isBlocked ? 'Desbloquear' : 'Bloquear'),
+            child: Text(resident.isBlocked ? 'Reactivar' : 'Desactivar'),
           ),
         ],
       ),
@@ -393,13 +509,13 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
                 ],
               ),
               const SizedBox(height: 24),
+              _DetailItem(label: 'Identificación', value: resident.identificacion),
               _DetailItem(label: 'Email', value: resident.email),
               _DetailItem(label: 'Teléfono', value: resident.phone),
-              _DetailItem(label: 'Sección', value: '${resident.section} - ${resident.villa}'),
-              _DetailItem(label: 'Fecha de registro', value: resident.joinDate),
+              _DetailItem(label: 'Ubicación', value: '${resident.manzana} - ${resident.villa}'),
               _DetailItem(
                 label: 'Estado',
-                value: resident.isBlocked ? 'Bloqueado' : 'Activo',
+                value: resident.estado.replaceFirst(resident.estado[0], resident.estado[0].toUpperCase()),
                 valueColor: resident.isBlocked ? Colors.red : Colors.green,
               ),
               const SizedBox(height: 24),
@@ -466,7 +582,7 @@ class _ResidentCard extends StatelessWidget {
           ),
         ),
         title: Text(resident.name),
-        subtitle: Text('${resident.section} - ${resident.villa}'),
+        subtitle: Text('${resident.manzana} - ${resident.villa}'),
         trailing: Wrap(
           spacing: 4,
           children: [
@@ -530,21 +646,23 @@ class _DetailItem extends StatelessWidget {
 class ResidentData {
   final int id;
   final String name;
-  final String section;
+  final String manzana;
   final String villa;
   final String email;
   final String phone;
-  bool isBlocked;
-  final String joinDate;
+  final String identificacion;
+  final String estado;
 
   ResidentData({
     required this.id,
     required this.name,
-    required this.section,
+    required this.manzana,
     required this.villa,
     required this.email,
     required this.phone,
-    required this.isBlocked,
-    required this.joinDate,
+    required this.identificacion,
+    required this.estado,
   });
+
+  bool get isBlocked => estado != 'activo';
 }

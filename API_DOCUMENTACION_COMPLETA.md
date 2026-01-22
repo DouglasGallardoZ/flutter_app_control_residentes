@@ -13,11 +13,11 @@
 1. [Introducción y Conceptos](#introducción-y-conceptos)
 2. [Configuración Base](#configuración-base)
 3. [Autenticación](#autenticación)
-4. [Endpoints - Cuentas (6)](#cuentas)
+4. [Endpoints - Cuentas (8)](#cuentas)
 5. [Endpoints - QR (5)](#qr)
-6. [Endpoints - Residentes (5)](#residentes)
-7. [Endpoints - Propietarios (4)](#propietarios)
-8. [Endpoints - Miembros de Familia (5)](#miembros-de-familia)
+6. [Endpoints - Residentes (6)](#residentes)
+7. [Endpoints - Propietarios (5)](#propietarios)
+8. [Endpoints - Miembros de Familia (6)](#miembros-de-familia)
 9. [Modelos de Datos (Schemas)](#modelos-de-datos)
 10. [Códigos de Error](#códigos-de-error)
 11. [Patrones de Implementación](#patrones-de-implementación)
@@ -189,7 +189,7 @@ POST /auth/login
 ## CUENTAS
 
 **Prefijo:** `/api/v1/cuentas`  
-**Total Endpoints:** 6
+**Total Endpoints:** 8
 
 ### 1. Crear Cuenta de Residente con Firebase
 
@@ -646,6 +646,107 @@ void cargarPerfilUsuario() async {
    final direccion = 'Manzana ${perfil.vivienda.manzana}, Villa ${perfil.vivienda.villa}';
    mostrarInformacionVivienda(direccion);
    ```
+
+---
+
+### 7. Obtener Usuarios de Vivienda (por Manzana y Villa)
+
+**Endpoint:** `GET /vivienda/{manzana}/{villa}/usuarios`  
+**Auth:** Bearer token
+
+**Descripción:**
+Obtiene todos los usuarios (residentes y miembros con cuenta activa) de una vivienda por su ubicación.
+
+**Path Parameters:**
+```
+{manzana} = Manzana de la vivienda
+{villa} = Villa de la vivienda
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "vivienda_id": 1,
+  "manzana": "A",
+  "villa": "101",
+  "total_usuarios": 3,
+  "usuarios": [
+    {
+      "usuario_id": 42,
+      "persona_id": 1,
+      "identificacion": "1234567890",
+      "nombres": "Juan",
+      "apellidos": "Pérez",
+      "correo": "juan@example.com",
+      "celular": "+593987654321",
+      "tipo": "residente",
+      "estado": "activo"
+    },
+    {
+      "usuario_id": 43,
+      "persona_id": 2,
+      "identificacion": "9876543210",
+      "nombres": "María",
+      "apellidos": "Pérez",
+      "correo": "maria@example.com",
+      "celular": "+593998765432",
+      "tipo": "miembro_familia",
+      "parentesco": "esposa",
+      "estado": "activo"
+    }
+  ]
+}
+```
+
+---
+
+### 8. Obtener Usuario por Correo Electrónico
+
+**Endpoint:** `GET /usuario/por-correo/{correo}`  
+**Auth:** Bearer token
+
+**Descripción:**
+Obtiene la información completa de un usuario buscando por correo electrónico. Retorna rol, vivienda y datos de cuenta.
+
+**Path Parameters:**
+```
+{correo} = Correo electrónico de la persona
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "cuenta_id": 42,
+  "persona_id": 1,
+  "identificacion": "1234567890",
+  "nombres": "Juan",
+  "apellidos": "Pérez",
+  "correo": "juan@example.com",
+  "celular": "+593987654321",
+  "estado": "activo",
+  "rol": "residente",
+  "vivienda": {
+    "vivienda_id": 1,
+    "manzana": "A",
+    "villa": "101"
+  },
+  "parentesco": null,
+  "firebase_uid": "firebase_uid_123"
+}
+```
+
+**Error Responses:**
+```json
+// 404 - Usuario no encontrado
+{
+  "detail": "Usuario no encontrado con ese correo"
+}
+
+// 404 - Sin cuenta activa
+{
+  "detail": "El usuario no tiene una cuenta activa"
+}
+```
 
 ---
 
@@ -1311,7 +1412,7 @@ Future<void> generarQRConVisitanteExistente(
 ## RESIDENTES
 
 **Prefijo:** `/api/v1/residentes`  
-**Total Endpoints:** 5
+**Total Endpoints:** 6
 
 ### 1. Registrar Residente
 
@@ -1513,10 +1614,65 @@ Lista todas las fotos de rostro registradas para un residente.
 
 ---
 
+### 6. Obtener Residentes por Ubicación (Manzana y Villa)
+
+**Endpoint:** `GET /manzana-villa/{manzana}/{villa}`  
+**Auth:** Bearer token
+
+**Descripción:**
+Obtiene todos los residentes activos de una vivienda especificada por su manzana y villa.
+
+**Path Parameters:**
+```
+{manzana} = Manzana de la vivienda
+{villa} = Villa de la vivienda
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "vivienda_id": 1,
+  "manzana": "A",
+  "villa": "101",
+  "total_residentes": 2,
+  "residentes": [
+    {
+      "residente_id": 1,
+      "persona_id": 1,
+      "identificacion": "1234567890",
+      "nombres": "Juan",
+      "apellidos": "Pérez",
+      "correo": "juan@example.com",
+      "celular": "+593987654321",
+      "estado": "activo"
+    },
+    {
+      "residente_id": 2,
+      "persona_id": 2,
+      "identificacion": "9876543210",
+      "nombres": "María",
+      "apellidos": "García",
+      "correo": "maria@example.com",
+      "celular": "+593998765432",
+      "estado": "activo"
+    }
+  ]
+}
+```
+
+**Error Responses:**
+```json
+{
+  "detail": "Vivienda no encontrada"
+}
+```
+
+---
+
 ## PROPIETARIOS
 
 **Prefijo:** `/api/v1/propietarios`  
-**Total Endpoints:** 7
+**Total Endpoints:** 8
 
 ### 1. Registrar Propietario
 
@@ -1770,10 +1926,48 @@ Transfiere la propiedad: inactiva propietario anterior, activa nuevo propietario
 
 ---
 
+### 8. Obtener Propietarios por Ubicación (Manzana y Villa)
+
+**Endpoint:** `GET /manzana-villa/{manzana}/{villa}`  
+**Auth:** Bearer token
+
+**Descripción:**
+Obtiene todos los propietarios activos de una vivienda especificada por su manzana y villa.
+
+**Path Parameters:**
+```
+{manzana} = Manzana de la vivienda
+{villa} = Villa de la vivienda
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "vivienda_id": 1,
+  "manzana": "A",
+  "villa": "101",
+  "total_propietarios": 1,
+  "propietarios": [
+    {
+      "propietario_id": 5,
+      "persona_id": 2,
+      "identificacion": "9876543210",
+      "nombres": "María",
+      "apellidos": "García",
+      "correo": "maria@example.com",
+      "celular": "+593998765432",
+      "estado": "activo"
+    }
+  ]
+}
+```
+
+---
+
 ## MIEMBROS DE FAMILIA
 
 **Prefijo:** `/api/v1/miembros`  
-**Total Endpoints:** 5
+**Total Endpoints:** 6
 
 ### 1. Agregar Miembro de Familia
 
@@ -1939,6 +2133,56 @@ Elimina (soft delete) un miembro de familia del registro.
 {
   "mensaje": "Miembro de familia eliminado correctamente",
   "miembro_id": 20
+}
+```
+
+---
+
+### 6. Obtener Miembros por Ubicación (Manzana y Villa)
+
+**Endpoint:** `GET /manzana-villa/{manzana}/{villa}`  
+**Auth:** Bearer token
+
+**Descripción:**
+Obtiene todos los miembros de familia activos de una vivienda especificada por su manzana y villa.
+
+**Path Parameters:**
+```
+{manzana} = Manzana de la vivienda
+{villa} = Villa de la vivienda
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "vivienda_id": 1,
+  "manzana": "A",
+  "villa": "101",
+  "total_miembros": 2,
+  "miembros": [
+    {
+      "miembro_id": 15,
+      "persona_id": 3,
+      "identificacion": "1111111111",
+      "nombres": "Carlos",
+      "apellidos": "García",
+      "correo": "carlos@example.com",
+      "celular": "+593991234567",
+      "parentesco": "esposo",
+      "estado": "activo"
+    },
+    {
+      "miembro_id": 16,
+      "persona_id": 4,
+      "identificacion": "2222222222",
+      "nombres": "Pedro",
+      "apellidos": "García",
+      "correo": "pedro@example.com",
+      "celular": "+593992345678",
+      "parentesco": "hijo",
+      "estado": "activo"
+    }
+  ]
 }
 ```
 

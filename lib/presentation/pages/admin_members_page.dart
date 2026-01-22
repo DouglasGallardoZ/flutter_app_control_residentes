@@ -21,41 +21,104 @@ class AdminMembersPage extends StatefulWidget {
 }
 
 class _AdminMembersPageState extends State<AdminMembersPage> {
-  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _manzanaController = TextEditingController();
+  final TextEditingController _villaController = TextEditingController();
   late AdminApi _adminApi;
   List<MemberData> _members = [];
   bool _isLoading = false;
   String? _errorMessage;
+  int _currentPage = 1;
+  final int _pageSize = 20;
 
   @override
   void initState() {
     super.initState();
     _adminApi = GetIt.I<AdminApi>();
-    _loadMembers();
   }
 
   Future<void> _loadMembers() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _currentPage = 1;
     });
     try {
-      final response = await _adminApi.getFamilyMembers();
+      final manzana = _manzanaController.text.trim();
+      final villa = _villaController.text.trim();
+      
+      if (manzana.isNotEmpty && villa.isNotEmpty) {
+        final response = await _adminApi.getFamilyMembersByLocation(
+          manzana: manzana,
+          villa: villa,
+          page: _currentPage,
+          pageSize: _pageSize,
+        );
+        if (!mounted) return;
+        
+        setState(() {
+          _members = List<MemberData>.from(
+            response.map((r) {
+              if (r is! Map<String, dynamic>) return null;
+              return MemberData(
+                id: r['miembro_id'] ?? 0,
+                name: '${r['nombres'] ?? ''} ${r['apellidos'] ?? ''}'.trim(),
+                relationship: r['parentesco'] ?? '',
+                manzana: r['manzana'] ?? '',
+                villa: r['villa'] ?? '',
+                email: r['correo'] ?? '',
+                phone: r['celular'] ?? '',
+                identificacion: r['identificacion'] ?? '',
+                estado: r['estado'] ?? 'activo',
+              );
+            }).whereType<MemberData>(),
+          );
+        });
+      } else {
+        setState(() {
+          _members = [];
+          _errorMessage = 'Por favor ingrese manzana y villa';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'Error al cargar miembros: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _loadMembersByVivienda(int viviendaId) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _currentPage = 1;
+    });
+    try {
+      final response = await _adminApi.getFamilyMembersByVivienda(
+        viviendaId: viviendaId,
+        page: _currentPage,
+        pageSize: _pageSize,
+      );
       if (!mounted) return;
       
       setState(() {
         _members = List<MemberData>.from(
-          response.map((r) => MemberData(
-            id: r['id'] ?? 0,
-            name: r['nombre_completo'] ?? 'N/A',
-            relationship: r['relacion'] ?? '',
-            parentName: r['nombre_padre_madre'] ?? '',
-            section: r['seccion'] ?? '',
-            villa: r['villa'] ?? '',
-            email: r['email'] ?? '',
-            joinDate: r['fecha_registro'] ?? '',
-            isBlocked: r['cuenta_bloqueada'] ?? false,
-          )),
+          response.map((r) {
+            if (r is! Map<String, dynamic>) return null;
+            return MemberData(
+              id: r['miembro_id'] ?? 0,
+              name: '${r['nombres'] ?? ''} ${r['apellidos'] ?? ''}'.trim(),
+              relationship: r['parentesco'] ?? '',
+              manzana: r['manzana'] ?? '',
+              villa: r['villa'] ?? '',
+              email: r['correo'] ?? '',
+              phone: r['celular'] ?? '',
+              identificacion: r['identificacion'] ?? '',
+              estado: r['estado'] ?? 'activo',
+            );
+          }).whereType<MemberData>(),
         );
       });
     } catch (e) {
@@ -68,63 +131,17 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
     }
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void _onSearchChanged(String query) {
+    setState(() {
+      _currentPage = 1;
+    });
   }
 
-  final List<MemberData> _mockMembers = [
-    MemberData(
-      id: 1,
-      name: 'Ana Pérez García',
-      relationship: 'Hija',
-      parentName: 'María Rodríguez',
-      section: 'Manzana A',
-      villa: 'Villa 101',
-      email: 'ana@example.com',
-      joinDate: '2023-06-15',
-      isBlocked: false,
-    ),
-    MemberData(
-      id: 2,
-      name: 'Pedro Rodríguez',
-      relationship: 'Padre',
-      parentName: 'María Rodríguez',
-      section: 'Manzana A',
-      villa: 'Villa 101',
-      email: 'pedro@example.com',
-      joinDate: '2023-07-01',
-      isBlocked: false,
-    ),
-    MemberData(
-      id: 3,
-      name: 'Carlos Pérez García',
-      relationship: 'Hermano',
-      parentName: 'María Rodríguez',
-      section: 'Manzana A',
-      villa: 'Villa 101',
-      email: 'carlos.p@example.com',
-      joinDate: '2023-08-10',
-      isBlocked: true,
-    ),
-    MemberData(
-      id: 4,
-      name: 'María López Martínez',
-      relationship: 'Madre',
-      parentName: 'Juan Pérez',
-      section: 'Manzana B',
-      villa: 'Villa 205',
-      email: 'maria.l@example.com',
-      joinDate: '2023-09-20',
-      isBlocked: false,
-    ),
-  ];
-
-  List<MemberData> get filteredMembers {
-    final query = _searchController.text.toLowerCase();
-    if (query.isEmpty) return _members;
-    return _members.where((m) => m.name.toLowerCase().contains(query) || m.parentName.toLowerCase().contains(query)).toList();
+  @override
+  void dispose() {
+    _manzanaController.dispose();
+    _villaController.dispose();
+    super.dispose();
   }
 
   @override
@@ -184,26 +201,67 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             children: [
               Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Buscar miembro...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon:
-                        _searchController.text.isNotEmpty
-                            ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() {});
-                              },
-                            )
-                            : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                child: Column(
+                  children: [
+                    // Filtros por manzana y villa
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _manzanaController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              hintText: 'Manzana',
+                              prefixIcon: const Icon(Icons.home),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onChanged: _onSearchChanged,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: _villaController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              hintText: 'Villa',
+                              prefixIcon: const Icon(Icons.apartment),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onChanged: _onSearchChanged,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  onChanged: (_) => setState(() {}),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.tonal(
+                            onPressed: _loadMembers,
+                            child: const Text('Buscar Miembros'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: () {
+                            _manzanaController.clear();
+                            _villaController.clear();
+                            setState(() {
+                              _members = [];
+                              _errorMessage = null;
+                            });
+                          },
+                          icon: const Icon(Icons.clear),
+                          tooltip: 'Limpiar filtros',
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               Expanded(
@@ -245,7 +303,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                             ],
                           ),
                         )
-                        : filteredMembers.isEmpty
+                        : _members.isEmpty
                             ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -265,9 +323,9 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                             )
                             : ListView.builder(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
-                              itemCount: filteredMembers.length,
+                              itemCount: _members.length,
                               itemBuilder: (context, index) {
-                                final member = filteredMembers[index];
+                                final member = _members[index];
                                 return _MemberCard(
                                   member: member,
                                   onBlock: () => _showBlockDialog(context, member),
@@ -285,14 +343,32 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
   }
 
   void _showBlockDialog(BuildContext context, MemberData member) {
+    final TextEditingController reasonController = TextEditingController();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(member.isBlocked ? 'Desbloquear miembro' : 'Bloquear miembro'),
-        content: Text(
-          member.isBlocked
-              ? '¿Desea desbloquear a ${member.name}? Podrá acceder nuevamente.'
-              : '¿Desea bloquear a ${member.name}? No podrá acceder al sistema.',
+        title: Text(member.isBlocked ? 'Reactivar miembro' : 'Desactivar miembro'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Miembro: ${member.name}'),
+              const SizedBox(height: 16),
+              const Text('Motivo (obligatorio):'),
+              const SizedBox(height: 8),
+              TextField(
+                controller: reasonController,
+                decoration: InputDecoration(
+                  hintText: member.isBlocked ? 'Motivo de reactivación' : 'Motivo de desactivación',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -301,24 +377,34 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           ),
           FilledButton(
             onPressed: () async {
+              final reason = reasonController.text.trim();
+              if (reason.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('El motivo es obligatorio'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
               try {
                 if (member.isBlocked) {
-                  await _adminApi.unblockAccount(member.id);
+                  await _adminApi.reactivateMember(member.id, reason);
                 } else {
-                  await _adminApi.blockAccount(member.id, 'Bloqueado por administrador');
+                  await _adminApi.deactivateMember(member.id, reason);
                 }
                 if (!mounted) return;
-                setState(() => member.isBlocked = !member.isBlocked);
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
                       member.isBlocked
-                          ? '${member.name} ha sido bloqueado'
-                          : '${member.name} ha sido desbloqueado',
+                          ? '${member.name} ha sido reactivado'
+                          : '${member.name} ha sido desactivado',
                     ),
                   ),
                 );
+                _loadMembers();
               } catch (e) {
                 if (!mounted) return;
                 Navigator.pop(context);
@@ -327,7 +413,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                 );
               }
             },
-            child: Text(member.isBlocked ? 'Desbloquear' : 'Bloquear'),
+            child: Text(member.isBlocked ? 'Reactivar' : 'Desactivar'),
           ),
         ],
       ),
@@ -390,27 +476,29 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     child: Icon(Icons.person, size: 32, color: Colors.pink.shade700),
                   ),
                   const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        member.name,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      Text(
-                        member.relationship,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          member.name,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        Text(
+                          member.relationship,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
               _DetailItem(label: 'Email', value: member.email),
               _DetailItem(label: 'Relación', value: member.relationship),
-              _DetailItem(label: 'Familia principal', value: member.parentName),
-              _DetailItem(label: 'Ubicación', value: '${member.section} - ${member.villa}'),
-              _DetailItem(label: 'Fecha de registro', value: member.joinDate),
+              _DetailItem(label: 'Identificación', value: member.identificacion),
+              _DetailItem(label: 'Teléfono', value: member.phone),
+              _DetailItem(label: 'Ubicación', value: '${member.manzana} - ${member.villa}'),
               _DetailItem(
                 label: 'Estado',
                 value: member.isBlocked ? 'Bloqueado' : 'Activo',
@@ -480,7 +568,7 @@ class _MemberCard extends StatelessWidget {
           ),
         ),
         title: Text(member.name),
-        subtitle: Text('${member.relationship} de ${member.parentName} • ${member.section} - ${member.villa}'),
+        subtitle: Text('${member.relationship} • ${member.manzana} - ${member.villa}'),
         trailing: Wrap(
           spacing: 4,
           children: [
@@ -545,22 +633,24 @@ class MemberData {
   final int id;
   final String name;
   final String relationship;
-  final String parentName;
-  final String section;
+  final String manzana;
   final String villa;
   final String email;
-  final String joinDate;
-  bool isBlocked;
+  final String phone;
+  final String identificacion;
+  final String estado;
 
   MemberData({
     required this.id,
     required this.name,
     required this.relationship,
-    required this.parentName,
-    required this.section,
+    required this.manzana,
     required this.villa,
     required this.email,
-    required this.joinDate,
-    required this.isBlocked,
+    required this.phone,
+    required this.identificacion,
+    required this.estado,
   });
+
+  bool get isBlocked => estado != 'activo';
 }

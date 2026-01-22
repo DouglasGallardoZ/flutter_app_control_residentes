@@ -45,6 +45,29 @@ class AdminApi {
     }
   }
 
+  /// Obtener residentes por ubicación (manzana y villa)
+  /// Endpoint: GET /api/v1/residentes/manzana-villa/{manzana}/{villa}
+  Future<List<dynamic>> getResidentsByLocation({
+    required String manzana,
+    required String villa,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      final queryParams = {
+        'page': page,
+        'page_size': pageSize,
+      };
+      final response = await dio.get(
+        '/residentes/manzana-villa/$manzana/$villa',
+        queryParameters: queryParams,
+      );
+      return response.data?['residentes'] ?? [];
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Obtener lista de miembros de familia (usando endpoint documentado)
   Future<List<dynamic>> getFamilyMembers({
     int page = 1,
@@ -68,6 +91,46 @@ class AdminApi {
     }
   }
 
+  /// Obtener miembros de familia por vivienda
+  /// Endpoint: GET /api/v1/miembros/{vivienda_id}
+  Future<List<dynamic>> getFamilyMembersByVivienda({
+    required int viviendaId,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      final queryParams = {
+        'page': page,
+        'page_size': pageSize,
+      };
+      final response = await dio.get(
+        '/miembros/$viviendaId',
+        queryParameters: queryParams,
+      );
+      return response.data?['miembros'] ?? [];
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Obtener miembros de familia por ubicación (manzana y villa)
+  /// Endpoint: GET /api/v1/miembros-familia/manzana-villa/{manzana}/{villa}
+  Future<List<dynamic>> getFamilyMembersByLocation({
+    required String manzana,
+    required String villa,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      final response = await dio.get(
+        '/miembros/manzana-villa/$manzana/$villa',
+      );
+      return response.data?['miembros'] ?? [];
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Obtener lista de propietarios (usando endpoint documentado)
   Future<List<dynamic>> getOwners({
     int page = 1,
@@ -86,6 +149,62 @@ class AdminApi {
         queryParameters: queryParams,
       );
       return response.data ?? [];
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Obtener propietarios por ubicación (manzana y villa)
+  /// Endpoint: GET /api/v1/propietarios/manzana-villa/{manzana}/{villa}
+  Future<List<dynamic>> getOwnersByLocation({
+    required String manzana,
+    required String villa,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      final queryParams = {
+        'page': page,
+        'page_size': pageSize,
+      };
+      final response = await dio.get(
+        '/propietarios/manzana-villa/$manzana/$villa',
+        queryParameters: queryParams,
+      );
+      return response.data?['propietarios'] ?? [];
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Obtener usuario por correo electrónico
+  /// Endpoint: GET /api/v1/cuentas/usuario/por-correo/{correo}
+  Future<Map<String, dynamic>> getUserByEmail({
+    required String correo,
+  }) async {
+    try {
+      final response = await dio.get(
+        '/cuentas/usuario/por-correo/$correo',
+      );
+      return response.data ?? {};
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Obtener usuarios de una vivienda por manzana y villa
+  /// Endpoint: GET /api/v1/vivienda/{manzana}/{villa}/usuarios
+  Future<List<dynamic>> getUsersByVivienda({
+    required String manzana,
+    required String villa,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      final response = await dio.get(
+        '/cuentas/vivienda/$manzana/$villa/usuarios',
+      );
+      return response.data?['usuarios'] ?? [];
     } catch (e) {
       rethrow;
     }
@@ -174,6 +293,111 @@ class AdminApi {
   Future<Map<String, dynamic>> getAccountDetails(int firebaseUid) async {
     try {
       final response = await dio.get('/cuentas/perfil/$firebaseUid');
+      return response.data ?? {};
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Desactivar un residente (Endpoint: POST /residentes/{residente_id}/desactivar)
+  /// Requiere: motivo de desactivación
+  Future<Map<String, dynamic>> deactivateResident(
+    int residenteId,
+    String reason, {
+    String usuarioActualizado = 'admin_system',
+  }) async {
+    try {
+      final response = await dio.post(
+        '/residentes/$residenteId/desactivar',
+        data: {
+          'motivo': reason,
+          'usuario_actualizado': usuarioActualizado,
+        },
+      );
+      return response.data ?? {};
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Reactivar un residente (Endpoint: POST /residentes/{residente_id}/reactivar)
+  /// Requiere: motivo de reactivación
+  Future<Map<String, dynamic>> reactivateResident(
+    int residenteId,
+    String reason, {
+    String usuarioActualizado = 'admin_system',
+  }) async {
+    try {
+      final response = await dio.post(
+        '/residentes/$residenteId/reactivar',
+        data: {
+          'motivo': reason,
+          'usuario_actualizado': usuarioActualizado,
+        },
+      );
+      return response.data ?? {};
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Dar de baja a un propietario (Endpoint: POST /propietarios/{propietario_id}/baja)
+  /// Requiere: motivo de baja
+  Future<Map<String, dynamic>> deactivateOwner(
+    int propietarioId,
+    String reason, {
+    String usuarioActualizado = 'admin_system',
+  }) async {
+    try {
+      final response = await dio.post(
+        '/propietarios/$propietarioId/baja',
+        data: {
+          'motivo': reason,
+          'usuario_actualizado': usuarioActualizado,
+        },
+      );
+      return response.data ?? {};
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Desactivar un miembro de familia (Endpoint: POST /miembros/{miembro_id}/desactivar)
+  /// Requiere: motivo de desactivación
+  Future<Map<String, dynamic>> deactivateMember(
+    int miembroId,
+    String reason, {
+    String usuarioActualizado = 'admin_system',
+  }) async {
+    try {
+      final response = await dio.post(
+        '/miembros/$miembroId/desactivar',
+        data: {
+          'motivo': reason,
+          'usuario_actualizado': usuarioActualizado,
+        },
+      );
+      return response.data ?? {};
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Reactivar un miembro de familia (Endpoint: POST /miembros/{miembro_id}/reactivar)
+  /// Requiere: motivo de reactivación
+  Future<Map<String, dynamic>> reactivateMember(
+    int miembroId,
+    String reason, {
+    String usuarioActualizado = 'admin_system',
+  }) async {
+    try {
+      final response = await dio.post(
+        '/miembros/$miembroId/reactivar',
+        data: {
+          'motivo': reason,
+          'usuario_actualizado': usuarioActualizado,
+        },
+      );
       return response.data ?? {};
     } catch (e) {
       rethrow;

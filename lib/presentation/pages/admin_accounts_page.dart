@@ -21,30 +21,34 @@ class AdminAccountsPage extends StatefulWidget {
 }
 
 class _AdminAccountsPageState extends State<AdminAccountsPage> {
-  final TextEditingController _searchController = TextEditingController();
-  String _filterStatus = 'Todos'; // Todos, Activo, Bloqueado
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _manzanaController = TextEditingController();
+  final TextEditingController _villaController = TextEditingController();
   late AdminApi _adminApi;
   List<AccountData> _accounts = [];
+  List<AccountData> _searchResults = [];
   bool _isLoading = false;
+  bool _isSearching = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _adminApi = GetIt.I<AdminApi>();
-    _loadAccounts();
   }
 
   Future<void> _loadAccounts() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      // _currentPage = 1;
     });
     try {
       // TODO: Implement getAccounts() in AdminApi
       // For now, using mock data - replace with real API call
       setState(() {
         _accounts = _mockAccounts;
+        _searchResults = [];
       });
     } catch (e) {
       if (!mounted) return;
@@ -56,9 +60,160 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
     }
   }
 
+  Future<void> _searchByEmail(String email) async {
+    if (email.trim().isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+      _errorMessage = null;
+    });
+    try {
+      final response = await _adminApi.getUserByEmail(correo: email);
+      if (!mounted) return;
+      
+      // Construir nombre completo a partir de nombres y apellidos si es necesario
+      String fullName = response['nombre_completo'] ?? 
+                       response['nombre'] ?? 
+                       '${response['nombres'] ?? ''} ${response['apellidos'] ?? ''}'.trim() ?? 
+                       'N/A';
+      
+      // Mapear el estado correctamente
+      bool isBlocked = false;
+      if (response.containsKey('cuenta_bloqueada')) {
+        final val = response['cuenta_bloqueada'];
+        isBlocked = val is bool ? val : (val.toString().toLowerCase() == 'true' || val.toString().toLowerCase() == 'inactivo');
+      } else if (response.containsKey('estado')) {
+        isBlocked = response['estado'].toString().toLowerCase() != 'activo';
+      } else if (response.containsKey('bloqueada')) {
+        final val = response['bloqueada'];
+        isBlocked = val is bool ? val : (val.toString().toLowerCase() == 'true');
+      }
+      
+      // Obtener tipo de usuario
+      String type = response['tipo_usuario'] ?? response['tipo'] ?? response['tipo_persona'] ?? 'N/A';
+      
+      setState(() {
+        _searchResults = [
+          AccountData(
+            id: response['id'] ?? response['persona_id'] ?? response['cuenta_id'] ?? 0,
+            firebaseUid: response['firebase_uid'] ?? response['uid'] ?? '',
+            name: fullName,
+            email: response['email'] ?? response['correo'] ?? '',
+            type: type,
+            createdDate: response['fecha_registro'] ?? response['fecha_creacion'] ?? '',
+            lastLogin: response['ultimo_login'] ?? response['last_login'] ?? 'N/A',
+            isBlocked: isBlocked,
+            loginAttempts: response['intentos_fallidos'] ?? response['login_attempts'] ?? 0,
+            emailVerified: response['correo_verificado'] ?? response['email_verified'] ?? false,
+          ),
+        ];
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _searchResults = [];
+        _errorMessage = 'No se encontró cuenta con ese correo: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isSearching = false);
+      }
+    }
+  }
+
+  Future<void> _searchByLocation(String manzana, String villa) async {
+    if (manzana.trim().isEmpty || villa.trim().isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _errorMessage = 'Por favor ingrese manzana y villa';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+      _errorMessage = null;
+    });
+    try {
+      final response = await _adminApi.getUsersByVivienda(
+        manzana: manzana.trim(),
+        villa: villa.trim(),
+      );
+      if (!mounted) return;
+      
+      setState(() {
+        _searchResults = List<AccountData>.from(
+          response.map((r) {
+            if (r is! Map<String, dynamic>) return null;
+            
+            // Construir nombre completo a partir de múltiples fuentes posibles
+            String fullName = r['nombre_completo'] ?? 
+                             r['nombre'] ?? 
+                             '${r['nombres'] ?? ''} ${r['apellidos'] ?? ''}'.trim() ?? 
+                             'N/A';
+            
+            // Mapear el estado correctamente
+            bool isBlocked = false;
+            if (r.containsKey('cuenta_bloqueada')) {
+              final val = r['cuenta_bloqueada'];
+              isBlocked = val is bool ? val : (val.toString().toLowerCase() == 'true' || val.toString().toLowerCase() == 'inactivo');
+            } else if (r.containsKey('estado')) {
+              isBlocked = r['estado'].toString().toLowerCase() != 'activo';
+            } else if (r.containsKey('bloqueada')) {
+              final val = r['bloqueada'];
+              isBlocked = val is bool ? val : (val.toString().toLowerCase() == 'true');
+            }
+            
+            // Obtener tipo de usuario
+            String type = r['tipo_usuario'] ?? r['tipo'] ?? r['tipo_persona'] ?? 'N/A';
+            
+            return AccountData(
+              id: r['id'] ?? r['persona_id'] ?? r['cuenta_id'] ?? 0,
+              firebaseUid: r['firebase_uid'] ?? r['uid'] ?? '',
+              name: fullName,
+              email: r['email'] ?? r['correo'] ?? '',
+              type: type,
+              createdDate: r['fecha_registro'] ?? r['fecha_creacion'] ?? '',
+              lastLogin: r['ultimo_login'] ?? r['last_login'] ?? 'N/A',
+              isBlocked: isBlocked,
+              loginAttempts: r['intentos_fallidos'] ?? r['login_attempts'] ?? 0,
+              emailVerified: r['correo_verificado'] ?? r['email_verified'] ?? false,
+            );
+          }).whereType<AccountData>(),
+        );
+        
+        if (_searchResults.isEmpty) {
+          _errorMessage = 'No se encontraron usuarios en $manzana-$villa';
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _searchResults = [];
+        _errorMessage = 'Error al buscar usuarios: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isSearching = false);
+      }
+    }
+  }
+
+  void _onSearchChanged(String query) {
+    setState(() {});
+  }
+
   @override
   void dispose() {
-    _searchController.dispose();
+    _emailController.dispose();
+    _manzanaController.dispose();
+    _villaController.dispose();
     super.dispose();
   }
 
@@ -125,30 +280,6 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
     ),
   ];
 
-  List<AccountData> get filteredAccounts {
-    final query = _searchController.text.toLowerCase();
-    List<AccountData> result = _accounts;
-
-    // Filtrar por estado
-    if (_filterStatus == 'Activo') {
-      result = result.where((a) => !a.isBlocked).toList();
-    } else if (_filterStatus == 'Bloqueado') {
-      result = result.where((a) => a.isBlocked).toList();
-    }
-
-    // Filtrar por búsqueda
-    if (query.isNotEmpty) {
-      result = result
-          .where((a) =>
-              a.name.toLowerCase().contains(query) ||
-              a.email.toLowerCase().contains(query) ||
-              a.firebaseUid.toLowerCase().contains(query))
-          .toList();
-    }
-
-    return result;
-  }
-
   @override
   Widget build(BuildContext context) {
     return AdminScaffold(
@@ -208,18 +339,21 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
+                    // Búsqueda por correo
                     TextField(
-                      controller: _searchController,
+                      controller: _emailController,
                       decoration: InputDecoration(
-                        hintText: 'Buscar por nombre, email o UID...',
-                        prefixIcon: const Icon(Icons.search),
+                        hintText: 'Buscar por correo...',
+                        prefixIcon: const Icon(Icons.email),
                         suffixIcon:
-                            _searchController.text.isNotEmpty
+                            _emailController.text.isNotEmpty
                                 ? IconButton(
                                   icon: const Icon(Icons.clear),
                                   onPressed: () {
-                                    _searchController.clear();
-                                    setState(() {});
+                                    _emailController.clear();
+                                    setState(() {
+                                      _searchResults = [];
+                                    });
                                   },
                                 )
                                 : null,
@@ -227,27 +361,99 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      onChanged: (_) => setState(() {}),
+                      onChanged: _onSearchChanged,
                     ),
                     const SizedBox(height: 12),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: ['Todos', 'Activo', 'Bloqueado']
-                            .map(
-                              (status) => Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: FilterChip(
-                                  label: Text(status),
-                                  selected: _filterStatus == status,
-                                  onSelected: (selected) {
-                                    setState(() => _filterStatus = status);
-                                  },
-                                ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.tonal(
+                            onPressed: () {
+                              if (_emailController.text.isNotEmpty) {
+                                _searchByEmail(_emailController.text);
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Por favor ingrese un correo')),
+                                );
+                              }
+                            },
+                            child: const Text('Buscar por Correo'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Separador visual
+                    Divider(height: 1, color: Colors.grey.shade300),
+                    const SizedBox(height: 16),
+                    // Filtros por manzana y villa
+                    const Text('O buscar por ubicación:', style: TextStyle(fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _manzanaController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              hintText: 'Manzana',
+                              prefixIcon: const Icon(Icons.home),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            )
-                            .toList(),
-                      ),
+                            ),
+                            onChanged: _onSearchChanged,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: _villaController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              hintText: 'Villa',
+                              prefixIcon: const Icon(Icons.apartment),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onChanged: _onSearchChanged,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.tonal(
+                            onPressed: () {
+                              if (_manzanaController.text.isNotEmpty && _villaController.text.isNotEmpty) {
+                                _searchByLocation(_manzanaController.text, _villaController.text);
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Por favor ingrese manzana y villa')),
+                                );
+                              }
+                            },
+                            child: const Text('Buscar por Ubicación'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: () {
+                            _emailController.clear();
+                            _manzanaController.clear();
+                            _villaController.clear();
+                            setState(() {
+                              _searchResults = [];
+                              _errorMessage = null;
+                            });
+                          },
+                          icon: const Icon(Icons.clear),
+                          tooltip: 'Limpiar filtros',
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -267,7 +473,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                         ],
                       ),
                     )
-                    : _errorMessage != null
+                    : _errorMessage != null && _searchResults.isEmpty
                         ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -286,12 +492,12 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                               const SizedBox(height: 16),
                               FilledButton.tonal(
                                 onPressed: _loadAccounts,
-                                child: const Text('Reintentar'),
+                                child: const Text('Ver Todas las Cuentas'),
                               ),
                             ],
                           ),
                         )
-                        : filteredAccounts.isEmpty
+                        : _searchResults.isEmpty && _accounts.isEmpty
                             ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -311,9 +517,11 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                             )
                             : ListView.builder(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
-                              itemCount: filteredAccounts.length,
+                              itemCount: _searchResults.isNotEmpty ? _searchResults.length : _accounts.length,
                               itemBuilder: (context, index) {
-                                final account = filteredAccounts[index];
+                                final account = _searchResults.isNotEmpty
+                                    ? _searchResults[index]
+                                    : _accounts[index];
                                 return _AccountCard(
                                   account: account,
                                   onBlock: () => _showBlockDialog(context, account),
@@ -332,54 +540,112 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
   }
 
   void _showBlockDialog(BuildContext context, AccountData account) {
+    final TextEditingController reasonController = TextEditingController();
+    bool cascada = false; // Valor por defecto: desmarcado
+    
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(account.isBlocked ? 'Desbloquear cuenta' : 'Bloquear cuenta'),
-        content: Text(
-          account.isBlocked
-              ? '¿Desea desbloquear la cuenta de ${account.name}? Podrá acceder nuevamente.'
-              : '¿Desea bloquear la cuenta de ${account.name}? No podrá acceder al sistema.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              try {
-                if (account.isBlocked) {
-                  await _adminApi.unblockAccount(account.id);
-                } else {
-                  await _adminApi.blockAccount(account.id, 'Bloqueado por administrador');
-                }
-                if (!mounted) return;
-                setState(() {
-                  account.isBlocked = !account.isBlocked;
-                  if (!account.isBlocked) account.loginAttempts = 0;
-                });
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      account.isBlocked
-                          ? '${account.name} ha sido bloqueado'
-                          : '${account.name} ha sido desbloqueado',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(account.isBlocked ? 'Desbloquear cuenta' : 'Bloquear cuenta'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Cuenta: ${account.name}'),
+                const SizedBox(height: 16),
+                const Text('Motivo (obligatorio):'),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: reasonController,
+                  decoration: InputDecoration(
+                    hintText: account.isBlocked ? 'Motivo de desbloqueo' : 'Motivo de bloqueo',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                );
-              }
-            },
-            child: Text(account.isBlocked ? 'Desbloquear' : 'Bloquear'),
+                  maxLines: 3,
+                ),
+                // Mostrar opción de cascada si es residente
+                if (account.type.toLowerCase().contains('residente')) ...[
+                  const SizedBox(height: 16),
+                  CheckboxListTile(
+                    title: const Text('Aplicar a cuentas relacionadas'),
+                    subtitle: const Text('Familia/dependientes'),
+                    value: cascada,
+                    onChanged: (value) {
+                      setState(() {
+                        cascada = value ?? false;
+                      });
+                    },
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
+                ],
+              ],
+            ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final reason = reasonController.text.trim();
+                if (reason.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('El motivo es obligatorio'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+                try {
+                  if (account.isBlocked) {
+                    await _adminApi.unblockAccount(
+                      account.id,
+                      reason: reason,
+                      cascada: account.type.toLowerCase().contains('residente') ? cascada : false,
+                    );
+                  } else {
+                    await _adminApi.blockAccount(
+                      account.id,
+                      reason,
+                      cascada: account.type.toLowerCase().contains('residente') ? cascada : false,
+                    );
+                  }
+                  if (!mounted) return;
+                  setState(() {
+                    account.isBlocked = !account.isBlocked;
+                    if (!account.isBlocked) account.loginAttempts = 0;
+                  });
+                  Navigator.pop(context);
+                  
+                  String statusMsg = account.isBlocked
+                      ? '${account.name} ha sido bloqueado'
+                      : '${account.name} ha sido desbloqueado';
+                  
+                  if (account.type.toLowerCase().contains('residente') && cascada) {
+                    statusMsg += ' (familia incluida)';
+                  }
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(statusMsg)),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                  );
+                }
+              },
+              child: Text(account.isBlocked ? 'Desbloquear' : 'Bloquear'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -492,19 +758,10 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
               const SizedBox(height: 24),
               _DetailItem(label: 'Email', value: account.email),
               _DetailItem(label: 'Tipo de cuenta', value: account.type),
-              _DetailItem(label: 'Firebase UID', value: account.firebaseUid),
-              _DetailItem(label: 'Creada', value: account.createdDate),
-              _DetailItem(label: 'Último acceso', value: account.lastLogin),
-              _DetailItem(
-                label: 'Email verificado',
-                value: account.emailVerified ? 'Sí' : 'No',
-                valueColor: account.emailVerified ? Colors.green : Colors.orange,
-              ),
-              _DetailItem(
-                label: 'Intentos de login',
-                value: account.loginAttempts.toString(),
-                valueColor: account.loginAttempts > 3 ? Colors.orange : null,
-              ),
+              if (account.createdDate.isNotEmpty)
+                _DetailItem(label: 'Creada', value: account.createdDate),
+              if (account.lastLogin.isNotEmpty && account.lastLogin != 'N/A')
+                _DetailItem(label: 'Último acceso', value: account.lastLogin),
               _DetailItem(
                 label: 'Estado',
                 value: account.isBlocked ? 'Bloqueado' : 'Activo',
@@ -597,13 +854,6 @@ class _AccountCard extends StatelessWidget {
                 backgroundColor: Colors.red.shade100,
                 labelStyle: TextStyle(color: Colors.red.shade700),
                 side: BorderSide(color: Colors.red.shade300),
-              )
-            else if (!account.emailVerified)
-              Chip(
-                label: const Text('Email no verificado', style: TextStyle(fontSize: 11)),
-                backgroundColor: Colors.orange.shade100,
-                labelStyle: TextStyle(color: Colors.orange.shade700),
-                side: BorderSide(color: Colors.orange.shade300),
               ),
             PopupMenuButton(
               itemBuilder: (context) => [
