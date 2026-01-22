@@ -167,6 +167,17 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
     return AdminScaffold(
       title: 'Gestión de Residentes',
       routeName: '/adminResidents',
+      showBackButton: true,
+      onBackPressed: () {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/adminUsers',
+          (route) => false,
+          arguments: {
+            'personaId': widget.personaId,
+            'identificacion': widget.identificacion,
+          },
+        );
+      },
       onTabSelected: (index) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           switch (index) {

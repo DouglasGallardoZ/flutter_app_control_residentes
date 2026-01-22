@@ -7,6 +7,8 @@ class AdminScaffold extends StatelessWidget {
   final void Function(int)? onTabSelected;
   final List<Widget>? actions;
   final String? routeName;
+  final bool showBackButton;
+  final VoidCallback? onBackPressed;
 
   const AdminScaffold({
     super.key,
@@ -16,6 +18,8 @@ class AdminScaffold extends StatelessWidget {
     this.onTabSelected,
     this.actions,
     this.routeName,
+    this.showBackButton = false,
+    this.onBackPressed,
   });
 
   /// Mapea el nombre de la ruta al índice del tab del admin
@@ -26,6 +30,10 @@ class AdminScaffold extends StatelessWidget {
       case '/adminAccessHistory':
         return 1;
       case '/adminUsers':
+      case '/adminResidents':
+      case '/adminOwners':
+      case '/adminMembers':
+      case '/adminAccounts':
         return 2;
       case '/adminProfile':
         return 3;
@@ -73,9 +81,14 @@ class AdminScaffold extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        // Sin botón de atrás para pantallas admin
-        automaticallyImplyLeading: false,
-        leading: null,
+        // Mostrar botón de atrás si showBackButton es true
+        automaticallyImplyLeading: showBackButton,
+        leading: showBackButton
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
+              )
+            : null,
         elevation: 0,
         actions: actions,
       ),

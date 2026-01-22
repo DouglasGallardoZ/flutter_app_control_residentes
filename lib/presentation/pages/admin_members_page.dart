@@ -149,6 +149,17 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
     return AdminScaffold(
       title: 'Gestión de Miembros',
       routeName: '/adminMembers',
+      showBackButton: true,
+      onBackPressed: () {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/adminUsers',
+          (route) => false,
+          arguments: {
+            'personaId': widget.personaId,
+            'identificacion': widget.identificacion,
+          },
+        );
+      },
       onTabSelected: (index) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           switch (index) {

@@ -89,7 +89,6 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                 icon: Icons.home,
                 iconColor: Colors.blue,
                 description: 'Ver, editar, bloquear o eliminar residentes',
-                count: '125',
                 onTap: () {
                   Navigator.of(context).pushNamed(
                     '/adminResidents',
@@ -109,7 +108,6 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                 icon: Icons.business_center,
                 iconColor: Colors.purple,
                 description: 'Ver propiedades, bloquear o eliminar propietarios',
-                count: '42',
                 onTap: () {
                   Navigator.of(context).pushNamed(
                     '/adminOwners',
@@ -129,7 +127,6 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                 icon: Icons.group,
                 iconColor: Colors.pink,
                 description: 'Gestionar miembros de familia vinculados',
-                count: '89',
                 onTap: () {
                   Navigator.of(context).pushNamed(
                     '/adminMembers',
@@ -149,7 +146,6 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                 icon: Icons.account_circle,
                 iconColor: Colors.orange,
                 description: 'Resetear contraseñas, bloquear o eliminar cuentas',
-                count: '256',
                 onTap: () {
                   Navigator.of(context).pushNamed(
                     '/adminAccounts',
@@ -174,7 +170,6 @@ class _UserManagementCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final String description;
-  final String count;
   final VoidCallback onTap;
 
   const _UserManagementCard({
@@ -183,7 +178,6 @@ class _UserManagementCard extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.description,
-    required this.count,
     required this.onTap,
   });
 
@@ -230,20 +224,7 @@ class _UserManagementCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: iconColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      count,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: iconColor,
-                      ),
-                    ),
-                  ),
+                  Icon(Icons.arrow_forward_ios, size: 18, color: iconColor),
                 ],
               ),
               const SizedBox(height: 12),
@@ -253,21 +234,6 @@ class _UserManagementCard extends StatelessWidget {
                   color: Colors.grey.shade600,
                   height: 1.5,
                 ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    'Gestionar',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: iconColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_ios, size: 14, color: iconColor),
-                ],
               ),
             ],
           ),

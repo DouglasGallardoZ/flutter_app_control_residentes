@@ -285,6 +285,17 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
     return AdminScaffold(
       title: 'Gestión de Cuentas',
       routeName: '/adminAccounts',
+      showBackButton: true,
+      onBackPressed: () {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/adminUsers',
+          (route) => false,
+          arguments: {
+            'personaId': widget.personaId,
+            'identificacion': widget.identificacion,
+          },
+        );
+      },
       onTabSelected: (index) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           switch (index) {
