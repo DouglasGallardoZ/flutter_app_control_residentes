@@ -178,6 +178,26 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
           },
         );
       },
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: Center(
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pushNamed(
+                  '/adminCreateResident',
+                  arguments: {
+                    'personaId': widget.personaId,
+                    'identificacion': widget.identificacion,
+                  },
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Registrar'),
+            ),
+          ),
+        ),
+      ],
       onTabSelected: (index) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           switch (index) {

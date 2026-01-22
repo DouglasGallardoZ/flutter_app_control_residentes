@@ -5,6 +5,32 @@ class AdminApi {
 
   AdminApi(this.dio);
 
+  /// Método auxiliar para extraer errores detallados de la respuesta API
+  String _extractErrorMessage(dynamic error) {
+    if (error is DioException && error.response != null) {
+      final data = error.response?.data;
+      if (data is Map) {
+        // Intenta extraer el field 'detail' primero
+        if (data.containsKey('detail')) {
+          final detail = data['detail'];
+          if (detail is String) return detail;
+          if (detail is List && detail.isNotEmpty) {
+            final firstItem = detail.first;
+            if (firstItem is Map && firstItem.containsKey('msg')) {
+              return firstItem['msg'];
+            }
+          }
+        }
+        // Si hay 'message', usa eso
+        if (data.containsKey('message')) {
+          return data['message'] ?? 'Error desconocido';
+        }
+      }
+      return error.message ?? 'Error en la solicitud';
+    }
+    return error.toString();
+  }
+
   /// Obtener métricas del dashboard del administrador (MOCK)
   /// Nota: Backend aún no implementa endpoint de métricas
   /// Por ahora retorna datos ficticios para demostración
@@ -17,7 +43,7 @@ class AdminApi {
       // Por ahora retornamos datos mock
       return _generateMockMetrics();
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -41,7 +67,7 @@ class AdminApi {
       );
       return response.data ?? [];
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -64,7 +90,7 @@ class AdminApi {
       );
       return response.data?['residentes'] ?? [];
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -87,7 +113,7 @@ class AdminApi {
       );
       return response.data ?? [];
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -109,7 +135,7 @@ class AdminApi {
       );
       return response.data?['miembros'] ?? [];
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -127,7 +153,7 @@ class AdminApi {
       );
       return response.data?['miembros'] ?? [];
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -150,7 +176,7 @@ class AdminApi {
       );
       return response.data ?? [];
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -173,7 +199,7 @@ class AdminApi {
       );
       return response.data?['propietarios'] ?? [];
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -188,7 +214,7 @@ class AdminApi {
       );
       return response.data ?? {};
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -206,7 +232,7 @@ class AdminApi {
       );
       return response.data?['usuarios'] ?? [];
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -217,7 +243,7 @@ class AdminApi {
       // Alternativamente usar bloquear/desbloquear según newStatus
       await Future.delayed(const Duration(milliseconds: 500)); // Simular delay
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -240,7 +266,7 @@ class AdminApi {
       );
       return response.data ?? {};
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -263,7 +289,7 @@ class AdminApi {
       );
       return response.data ?? {};
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -284,7 +310,7 @@ class AdminApi {
       );
       return response.data ?? {};
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -295,7 +321,7 @@ class AdminApi {
       final response = await dio.get('/cuentas/perfil/$firebaseUid');
       return response.data ?? {};
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -316,7 +342,7 @@ class AdminApi {
       );
       return response.data ?? {};
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -337,7 +363,70 @@ class AdminApi {
       );
       return response.data ?? {};
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
+    }
+  }
+
+  /// Registrar un nuevo residente (Endpoint: POST /residentes)
+  /// Body request directo con manzana y villa
+  /// 
+  /// Ejemplo de body:
+  /// {
+  ///   "identificacion": "1234567890",
+  ///   "tipo_identificacion": "CC",
+  ///   "nombres": "Juan",
+  ///   "apellidos": "García",
+  ///   "fecha_nacimiento": "1990-01-15",
+  ///   "nacionalidad": "Colombiana",
+  ///   "correo": "juan@mail.com",
+  ///   "celular": "3001234567",
+  ///   "direccion_alternativa": "Carrera 10",
+  ///   "manzana": "A",
+  ///   "villa": "101",
+  ///   "usuario_creado": "admin_001",
+  ///   "doc_autorizacion_pdf": "ruta/documento.pdf"
+  /// }
+  Future<Map<String, dynamic>> createResident({
+    required String identificacion,
+    required String tipoIdentificacion,
+    required String nombres,
+    required String apellidos,
+    required String fechaNacimiento,
+    required String correo,
+    required String celular,
+    required String manzana,
+    required String villa,
+    String? nacionalidad,
+    String? direccionAlternativa,
+    String? docAutorizacionPdf,
+    String? usuarioCreado,
+  }) async {
+    try {
+      final requestBody = {
+        'identificacion': identificacion,
+        'tipo_identificacion': tipoIdentificacion,
+        'nombres': nombres,
+        'apellidos': apellidos,
+        'fecha_nacimiento': fechaNacimiento,
+        'correo': correo,
+        'celular': celular,
+        'manzana': manzana,
+        'villa': villa,
+        if (nacionalidad != null && nacionalidad.isNotEmpty) 'nacionalidad': nacionalidad,
+        if (direccionAlternativa != null && direccionAlternativa.isNotEmpty)
+          'direccion_alternativa': direccionAlternativa,
+        if (docAutorizacionPdf != null && docAutorizacionPdf.isNotEmpty)
+          'doc_autorizacion_pdf': docAutorizacionPdf,
+        'usuario_creado': usuarioCreado ?? 'admin_system',
+      };
+
+      final response = await dio.post(
+        '/residentes',
+        data: requestBody,
+      );
+      return response.data ?? {};
+    } catch (e) {
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -358,7 +447,7 @@ class AdminApi {
       );
       return response.data ?? {};
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -379,7 +468,7 @@ class AdminApi {
       );
       return response.data ?? {};
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 
@@ -400,7 +489,7 @@ class AdminApi {
       );
       return response.data ?? {};
     } catch (e) {
-      rethrow;
+      throw Exception(_extractErrorMessage(e));
     }
   }
 

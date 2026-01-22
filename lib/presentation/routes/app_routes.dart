@@ -15,6 +15,7 @@ import '../pages/admin_residents_page.dart';
 import '../pages/admin_owners_page.dart';
 import '../pages/admin_members_page.dart';
 import '../pages/admin_accounts_page.dart';
+import '../pages/admin_create_resident_page.dart';
 import '../pages/family_dashboard_page.dart';
 
 class AppRoutes {
@@ -33,6 +34,7 @@ class AppRoutes {
   static const String adminOwners = '/adminOwners';
   static const String adminMembers = '/adminMembers';
   static const String adminAccounts = '/adminAccounts';
+  static const String adminCreateResident = '/adminCreateResident';
   static const String adminProfile = '/adminProfile';
   static const String familyDashboard = '/familyDashboard';
 
@@ -170,6 +172,14 @@ class AppRoutes {
         final identificacion = args?['identificacion'] as String?;
         if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminAccountsPage');
         return MaterialPageRoute(builder: (_) => AdminAccountsPage(personaId: personaId, identificacion: identificacion));
+      }
+
+      case adminCreateResident: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
+        final identificacion = args?['identificacion'] as String?;
+        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminCreateResidentPage');
+        return MaterialPageRoute(builder: (_) => AdminCreateResidentPage(personaId: personaId, identificacion: identificacion));
       }
 
       case adminProfile: {
