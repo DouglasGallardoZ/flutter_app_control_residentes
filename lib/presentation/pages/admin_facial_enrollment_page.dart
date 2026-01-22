@@ -105,6 +105,12 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
   void _onFacesDetected(List<Face> faces) async {
     if (faces.isEmpty) return;
 
+    // No procesar si el registro fue exitoso o está en error
+    final state = context.read<FacialEnrollmentBloc>().state;
+    if (state is FacialEnrollmentSuccess || state is FacialEnrollmentError) {
+      return;
+    }
+
     final face = faces[0];
     final angle = face.headEulerAngleY ?? 0.0;
     
@@ -153,14 +159,15 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
             showDialog(
               context: context,
               barrierDismissible: false,
-              builder: (_) => AlertDialog(
+              builder: (dialogContext) => AlertDialog(
                 title: const Text('¡Registro Facial Exitoso!'),
                 content: Text(state.mensaje),
                 actions: [
                   TextButton(
                     onPressed: () {
-                      Navigator.of(context).pop(); // Cerrar diálogo
-                      Navigator.of(context).pop(); // Volver atrás
+                      // Cerrar diálogo y navegar directamente con pop
+                      Navigator.of(context, rootNavigator: true).pop(); // Cierra el diálogo
+                      Navigator.of(context, rootNavigator: true).pop(); // Vuelve a gestión de usuarios
                     },
                     child: const Text('OK'),
                   ),
@@ -168,10 +175,31 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
               ),
             );
           } else if (state is FacialEnrollmentError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('Error en Captura Facial'),
                 content: Text(state.mensaje),
-                backgroundColor: Colors.red,
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop(); // Cerrar diálogo
+                      // Reintentar
+                      context.read<FacialEnrollmentBloc>().add(
+                            RetryFacialEnrollment(),
+                          );
+                    },
+                    child: const Text('Reintentar'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context, rootNavigator: true).pop(); // Cierra el diálogo
+                      Navigator.of(context, rootNavigator: true).pop(); // Vuelve atrás
+                    },
+                    child: const Text('Cancelar'),
+                  ),
+                ],
               ),
             );
           }
@@ -199,12 +227,15 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
 
           String instruction = 'MIRE AL FRENTE';
           int progress = 0;
+          bool showRetryButton = false;
 
           if (state is FacialEnrollmentInProgress) {
             instruction = state.instruccion;
             progress = state.fotosCapturadas;
           } else if (state is FacialPhotoCaptured) {
             progress = state.fotoNumero;
+          } else if (state is FacialEnrollmentError) {
+            showRetryButton = true;
           }
 
           return Stack(
@@ -270,16 +301,33 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
                 ),
               ),
 
-              // Botón de cancelar
+              // Botones de acción (cancelar/reintentar)
               Positioned(
                 bottom: 20,
                 left: 16,
-                child: FloatingActionButton(
-                  backgroundColor: Colors.red.shade700,
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Icon(Icons.close),
+                right: 16,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    FloatingActionButton(
+                      backgroundColor: Colors.red.shade700,
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: const Icon(Icons.close),
+                    ),
+                    if (showRetryButton)
+                      FloatingActionButton(
+                        backgroundColor: Colors.orange,
+                        onPressed: () {
+                          // Reiniciar captura
+                          context.read<FacialEnrollmentBloc>().add(
+                                RetryFacialEnrollment(),
+                              );
+                        },
+                        child: const Icon(Icons.refresh),
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -345,6 +393,7 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
 
   @override
   void dispose() {
+    _lastCaptureTime = null;
     _cameraController?.dispose();
     super.dispose();
   }

@@ -496,16 +496,20 @@ class AdminApi {
   /// Enroll facial data para residente/miembro
   /// Servicio de biometría en puerto 8000
   /// Endpoint: POST /enroll
-  /// FormData: user_id (personaId), images (lista de archivos)
+  /// FormData: user_id (personaId), images (lista de archivos), usuario_creado
   Future<Map<String, dynamic>> enrollFacialData({
     required String personaId,
     required List<String> imagenesRutas,
+    String? usuarioCreado,
   }) async {
     try {
       final formData = FormData();
       
       // Agregar persona ID como user_id
       formData.fields.add(MapEntry('user_id', personaId));
+      
+      // Agregar usuario_creado para auditoría
+      formData.fields.add(MapEntry('usuario_creado', usuarioCreado ?? 'flutter_app'));
       
       // Agregar cada imagen
       for (int i = 0; i < imagenesRutas.length; i++) {

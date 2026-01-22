@@ -34,11 +34,15 @@ class FaceDetected extends FacialEnrollmentEvent {
 /// Enviar datos de biometría al servidor
 class SubmitFacialEnrollment extends FacialEnrollmentEvent {
   final List<String> imagenesRutas; // 3 rutas de imágenes
+  final String? usuarioCreado; // Usuario que realiza el registro
 
-  const SubmitFacialEnrollment({required this.imagenesRutas});
+  const SubmitFacialEnrollment({
+    required this.imagenesRutas,
+    this.usuarioCreado,
+  });
 
   @override
-  List<Object?> get props => [imagenesRutas];
+  List<Object?> get props => [imagenesRutas, usuarioCreado];
 }
 
 /// Reintentar captura

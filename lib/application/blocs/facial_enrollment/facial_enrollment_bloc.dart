@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../infrastructure/providers/admin_api.dart';
 import 'facial_enrollment_event.dart';
 import 'facial_enrollment_state.dart';
@@ -117,9 +118,16 @@ class FacialEnrollmentBloc
     emit(const FacialEnrollmentSubmitting());
 
     try {
+      // Obtener usuario autenticado de Firebase
+      final currentUser = FirebaseAuth.instance.currentUser;
+      final usuarioCreado = event.usuarioCreado ?? 
+          currentUser?.email ?? 
+          'flutter_app';
+      
       final response = await adminApi.enrollFacialData(
         personaId: _personaId,
         imagenesRutas: event.imagenesRutas,
+        usuarioCreado: usuarioCreado,
       );
 
       final mensaje = response['message'] ?? 'Registro facial exitoso';
