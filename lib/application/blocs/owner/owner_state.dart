@@ -1,0 +1,83 @@
+import 'package:equatable/equatable.dart';
+import '../../../domain/entities/owner_entity.dart';
+
+abstract class OwnerState extends Equatable {
+  const OwnerState();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class OwnerInitial extends OwnerState {
+  const OwnerInitial();
+}
+
+class OwnerLoading extends OwnerState {
+  const OwnerLoading();
+}
+
+class OwnersByLocationLoaded extends OwnerState {
+  final List<OwnerEntity> owners;
+  final String manzana;
+  final String villa;
+  final int currentPage;
+  final bool hasMore;
+
+  const OwnersByLocationLoaded({
+    required this.owners,
+    required this.manzana,
+    required this.villa,
+    this.currentPage = 1,
+    this.hasMore = false,
+  });
+
+  @override
+  List<Object?> get props => [owners, manzana, villa, currentPage, hasMore];
+}
+
+class OwnerBlocked extends OwnerState {
+  final String message;
+  final String reason;
+
+  const OwnerBlocked(this.message, [this.reason = '']);
+
+  @override
+  List<Object?> get props => [message, reason];
+}
+
+class OwnerUnblocked extends OwnerState {
+  final String message;
+  final String reason;
+
+  const OwnerUnblocked(this.message, [this.reason = '']);
+
+  @override
+  List<Object?> get props => [message, reason];
+}
+
+class OwnerDeleted extends OwnerState {
+  final String message;
+
+  const OwnerDeleted(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class OwnerPropertiesLoaded extends OwnerState {
+  final List<Map<String, dynamic>> properties;
+
+  const OwnerPropertiesLoaded(this.properties);
+
+  @override
+  List<Object?> get props => [properties];
+}
+
+class OwnerError extends OwnerState {
+  final String message;
+
+  const OwnerError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}

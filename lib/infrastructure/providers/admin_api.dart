@@ -451,6 +451,69 @@ class AdminApi {
     }
   }
 
+  /// Bloquear un propietario (Endpoint: POST /propietarios/{propietario_id}/baja)
+  /// Requiere: motivo de bloqueo
+  Future<Map<String, dynamic>> blockOwner(
+    int propietarioId,
+    String reason, {
+    String usuarioActualizado = 'admin_system',
+  }) async {
+    try {
+      final response = await dio.post(
+        '/propietarios/$propietarioId/baja',
+        data: {
+          'motivo': reason,
+          'usuario_actualizado': usuarioActualizado,
+        },
+      );
+      return response.data ?? {};
+    } catch (e) {
+      throw Exception(_extractErrorMessage(e));
+    }
+  }
+
+  /// Desbloquear un propietario (Endpoint: POST /propietarios/{propietario_id}/desbloquear)
+  /// Requiere: motivo de desbloqueo
+  Future<Map<String, dynamic>> unblockOwner(
+    int propietarioId,
+    String reason, {
+    String usuarioActualizado = 'admin_system',
+  }) async {
+    try {
+      final response = await dio.post(
+        '/propietarios/$propietarioId/desbloquear',
+        data: {
+          'motivo': reason,
+          'usuario_actualizado': usuarioActualizado,
+        },
+      );
+      return response.data ?? {};
+    } catch (e) {
+      throw Exception(_extractErrorMessage(e));
+    }
+  }
+
+  /// Eliminar un propietario (Endpoint: DELETE /propietarios/{propietario_id})
+  /// Soft delete - marca como eliminada
+  Future<Map<String, dynamic>> deleteOwner(
+    int propietarioId, {
+    String usuarioActualizado = 'admin_system',
+    String reason = 'Solicitud de eliminación de datos',
+  }) async {
+    try {
+      final response = await dio.delete(
+        '/propietarios/$propietarioId',
+        data: {
+          'motivo': reason,
+          'usuario_actualizado': usuarioActualizado,
+        },
+      );
+      return response.data ?? {};
+    } catch (e) {
+      throw Exception(_extractErrorMessage(e));
+    }
+  }
+
   /// Desactivar un miembro de familia (Endpoint: POST /miembros/{miembro_id}/desactivar)
   /// Requiere: motivo de desactivación
   Future<Map<String, dynamic>> deactivateMember(

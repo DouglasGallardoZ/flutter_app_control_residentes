@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_it/get_it.dart';
-import '../../application/blocs/admin/admin_dashboard_bloc.dart';
-import '../../application/blocs/admin/admin_dashboard_state.dart';
-import '../../infrastructure/providers/admin_api.dart';
+import '../../application/blocs/owner/owner_bloc.dart';
+import '../../application/blocs/owner/owner_event.dart';
+import '../../application/blocs/owner/owner_state.dart';
+import '../../domain/entities/owner_entity.dart';
 import '../widgets/admin_scaffold.dart';
 
 class AdminOwnersPage extends StatefulWidget {
@@ -22,375 +22,166 @@ class AdminOwnersPage extends StatefulWidget {
 }
 
 class _AdminOwnersPageState extends State<AdminOwnersPage> {
-  final TextEditingController _searchController = TextEditingController();
-  late AdminApi _adminApi;
-  List<OwnerData> _owners = [];
-  bool _isLoading = false;
-  String? _errorMessage;
+  final TextEditingController _manzanaController = TextEditingController();
+  final TextEditingController _villaController = TextEditingController();
   
-  // Filtros
-  String? _selectedManzana;
-  String? _selectedVilla;
-  int _currentPage = 1;
-  final int _pageSize = 20;
+  // Guardar la última búsqueda
+  String? _lastManzana;
+  String? _lastVilla;
 
   @override
   void initState() {
     super.initState();
-    _adminApi = GetIt.I<AdminApi>();
-  }
-
-  Future<void> _loadOwners() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _currentPage = 1;
-    });
-    try {
-      final response = await _adminApi.getOwners(
-        page: _currentPage,
-        pageSize: _pageSize,
-        searchQuery: _searchController.text.isEmpty ? null : _searchController.text,
-      );
-      if (!mounted) return;
-      
-      // DEBUG: Imprimir respuesta para verificar estructura
-      print('=== OWNERS RESPONSE ===');
-      setState(() {
-        _owners = List<OwnerData>.from(
-          response.map((r) {
-            if (r is! Map<String, dynamic>) {
-              return null;
-            }
-            
-            final nombres = r['nombres'] ?? '';
-            final apellidos = r['apellidos'] ?? '';
-            final nombreCompleto = '$nombres $apellidos'.trim();
-            
-            return OwnerData(
-              id: r['propietario_id'] ?? 0,
-              name: nombreCompleto.isEmpty ? 'N/A' : nombreCompleto,
-              manzana: r['manzana'] ?? '',
-              villa: r['villa'] ?? '',
-              email: r['correo'] ?? '',
-              phone: r['celular'] ?? '',
-              identificacion: r['identificacion'] ?? '',
-              estado: r['estado'] ?? 'activo',
-            );
-          }).whereType<OwnerData>(),
-        );
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _errorMessage = 'Error al cargar propietarios: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _loadOwnersByLocation() async {
-    if (_selectedManzana == null || _selectedVilla == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona manzana y villa para filtrar')),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _currentPage = 1;
-    });
-    try {
-      final response = await _adminApi.getOwnersByLocation(
-        manzana: _selectedManzana!,
-        villa: _selectedVilla!,
-        page: _currentPage,
-        pageSize: _pageSize,
-      );
-      if (!mounted) return;
-      
-      // DEBUG: Imprimir respuesta para verificar estructura
-      setState(() {
-        _owners = List<OwnerData>.from(
-          response.map((r) {
-            if (r is! Map<String, dynamic>) {
-              return null;
-            }
-            
-            final nombres = r['nombres'] ?? '';
-            final apellidos = r['apellidos'] ?? '';
-            final nombreCompleto = '$nombres $apellidos'.trim();
-            
-            return OwnerData(
-              id: r['propietario_id'] ?? 0,
-              name: nombreCompleto.isEmpty ? 'N/A' : nombreCompleto,
-              manzana: r['manzana'] ?? '',
-              villa: r['villa'] ?? '',
-              email: r['correo'] ?? '',
-              phone: r['celular'] ?? '',
-              identificacion: r['identificacion'] ?? '',
-              estado: r['estado'] ?? 'activo',
-            );
-          }).whereType<OwnerData>(),
-        );
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _errorMessage = 'Error al cargar propietarios: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _manzanaController.dispose();
+    _villaController.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return AdminScaffold(
-      title: 'Gestión de Propietarios',
-      routeName: '/adminOwners',
-      showBackButton: true,
-      onBackPressed: () {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/adminUsers',
-          (route) => false,
-          arguments: {
-            'personaId': widget.personaId,
-            'identificacion': widget.identificacion,
-          },
-        );
-      },
-      onTabSelected: (index) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          switch (index) {
-            case 0:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminDashboard',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 1:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminAccessHistory',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 2:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminUsers',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 3:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminProfile',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-          }
-        });
-      },
-      body: BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
-        builder: (context, state) {
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    // Filtros por ubicación
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            decoration: InputDecoration(
-                              hintText: 'Manzana',
-                              prefixIcon: const Icon(Icons.home),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            onChanged: (value) {
-                              setState(() => _selectedManzana = value.isEmpty ? null : value);
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            decoration: InputDecoration(
-                              hintText: 'Villa',
-                              prefixIcon: const Icon(Icons.apartment),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            onChanged: (value) {
-                              setState(() => _selectedVilla = value.isEmpty ? null : value);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton.tonal(
-                            onPressed: _loadOwnersByLocation,
-                            child: const Text('Buscar Propietarios'),
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _selectedManzana = null;
-                              _selectedVilla = null;
-                              _owners = [];
-                              _errorMessage = null;
-                            });
-                          },
-                          icon: const Icon(Icons.clear),
-                          tooltip: 'Limpiar filtros',
-                        ),
-                      ],
-                    ),
 
-                  ],
-                ),
-              ),
-              Expanded(
-                child: _isLoading
-                    ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const CircularProgressIndicator(),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Cargando propietarios...',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ],
+
+  void _handleFilterByLocation() {
+    final manzana = _manzanaController.text.trim();
+    final villa = _villaController.text.trim();
+
+    if (manzana.isEmpty || villa.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor completa manzana y villa')),
+      );
+      return;
+    }
+
+    // Guardar los parámetros de búsqueda
+    _lastManzana = manzana;
+    _lastVilla = villa;
+
+    context.read<OwnerBloc>().add(LoadOwnersByLocationEvent(
+      manzana: manzana,
+      villa: villa,
+    ));
+  }
+
+  void _clearFilters() {
+    _manzanaController.clear();
+    _villaController.clear();
+    _lastManzana = null;
+    _lastVilla = null;
+  }
+
+  void _reloadOwnersFromLastSearch() {
+    if (_lastManzana != null && _lastVilla != null) {
+      context.read<OwnerBloc>().add(LoadOwnersByLocationEvent(
+        manzana: _lastManzana!,
+        villa: _lastVilla!,
+      ));
+    }
+  }
+
+  void _showOwnerDetails(OwnerEntity owner) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 32,
+                    backgroundColor: owner.isBlocked ? Colors.red.shade200 : Colors.blue.shade200,
+                    child: Icon(
+                      Icons.person,
+                      size: 32,
+                      color: owner.isBlocked ? Colors.red.shade700 : Colors.blue.shade700,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        owner.nombreCompleto,
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
-                    )
-                    : _errorMessage != null
-                        ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                size: 64,
-                                color: Colors.red.shade400,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                _errorMessage!,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.red),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              FilledButton.tonal(
-                                onPressed: _loadOwners,
-                                child: const Text('Reintentar'),
-                              ),
-                            ],
-                          ),
-                        )
-                        : _owners.isEmpty
-                            ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.business,
-                                    size: 64,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'No se encontraron propietarios',
-                                    style: Theme.of(context).textTheme.titleMedium,
-                                  ),
-                                ],
-                              ),
-                            )
-                            : ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              itemCount: _owners.length,
-                              itemBuilder: (context, index) {
-                                final owner = _owners[index];
-                                return _OwnerCard(
-                                  owner: owner,
-                                  onBlock: () => _showBlockDialog(context, owner),
-                                  onDelete: () => _showDeleteDialog(context, owner),
-                                  onDetails: () => _showDetailsDialog(context, owner),
-                                  onViewProperties: () => _showPropertiesDialog(context, owner),
-                                );
-                              },
-                            ),
+                      Text(
+                        'M${owner.manzana} - V${owner.villa}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _DetailItem(label: 'Identificación', value: owner.identificacion),
+              _DetailItem(label: 'Email', value: owner.correo),
+              _DetailItem(label: 'Celular', value: owner.celular),
+              _DetailItem(label: 'Ubicación', value: '${owner.manzana} - ${owner.villa}'),
+              _DetailItem(
+                label: 'Estado',
+                value: owner.isBlocked ? 'Bloqueado' : 'Activo',
+                valueColor: owner.isBlocked ? Colors.red : Colors.green,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showBlockDialog(owner);
+                      },
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStateProperty.all(
+                          owner.isBlocked ? Colors.green : Colors.orange,
+                        ),
+                      ),
+                      child: Text(owner.isBlocked ? 'Desbloquear' : 'Bloquear'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showDeleteDialog(owner);
+                      },
+                      style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
+                      child: const Text('Eliminar'),
+                    ),
+                  ),
+                ],
               ),
             ],
-          );
-        },
+          ),
+        ),
       ),
     );
   }
 
-  void _showBlockDialog(BuildContext context, OwnerData owner) {
+  void _showBlockDialog(OwnerEntity owner) {
     final TextEditingController reasonController = TextEditingController();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(owner.isBlocked ? 'Reactivar propietario' : 'Dar de baja propietario'),
+        title: Text(owner.isBlocked ? 'Desbloquear Propietario' : 'Bloquear Propietario'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Propietario: ${owner.name}'),
+              Text('Propietario: ${owner.nombreCompleto}'),
               const SizedBox(height: 16),
               const Text('Motivo (obligatorio):'),
               const SizedBox(height: 8),
               TextField(
                 controller: reasonController,
                 decoration: InputDecoration(
-                  hintText: owner.isBlocked ? 'Motivo de reactivación' : 'Motivo de baja',
+                  hintText: owner.isBlocked ? 'Motivo de desbloqueo' : 'Motivo de bloqueo',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -417,73 +208,34 @@ class _AdminOwnersPageState extends State<AdminOwnersPage> {
                 );
                 return;
               }
-              try {
-                if (owner.isBlocked) {
-                  // Para reactivar propietario, necesitaríamos un endpoint específico
-                  // Por ahora usamos deactivate/activate similar a residentes
-                  await _adminApi.reactivateResident(owner.id, reason);
-                } else {
-                  await _adminApi.deactivateOwner(owner.id, reason);
-                }
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      owner.isBlocked
-                          ? '${owner.name} ha sido reactivado'
-                          : '${owner.name} ha sido dado de baja',
-                    ),
-                  ),
-                );
-                _loadOwnersByLocation();
-              } catch (e) {
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                );
+              Navigator.pop(context);
+              if (owner.isBlocked) {
+                context.read<OwnerBloc>().add(UnblockOwnerEvent(owner.id, reason));
+              } else {
+                context.read<OwnerBloc>().add(BlockOwnerEvent(owner.id, reason));
               }
             },
-            child: Text(owner.isBlocked ? 'Reactivar' : 'Dar de baja'),
+            child: Text(owner.isBlocked ? 'Desbloquear' : 'Bloquear'),
           ),
         ],
       ),
     );
   }
 
-  void _showDeleteDialog(BuildContext context, OwnerData owner) {
+  void _showDeleteDialog(OwnerEntity owner) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar propietario'),
-        content: Text(
-          '¿Desea eliminar la cuenta de ${owner.name}? Esta acción no se puede deshacer.',
-        ),
+        title: const Text('Eliminar Propietario'),
+        content: Text('¿Está seguro de eliminar a ${owner.nombreCompleto}? Esta acción no se puede deshacer.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
           FilledButton(
-            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
-            onPressed: () async {
-              try {
-                await _adminApi.deleteAccount(owner.id);
-                if (!mounted) return;
-                setState(() => _owners.remove(owner));
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${owner.name} ha sido eliminado')),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                );
-              }
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<OwnerBloc>().add(DeleteOwnerEvent(owner.id));
             },
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Eliminar'),
           ),
         ],
@@ -491,143 +243,230 @@ class _AdminOwnersPageState extends State<AdminOwnersPage> {
     );
   }
 
-  void _showDetailsDialog(BuildContext context, OwnerData owner) {
-    showModalBottomSheet(
+  void _showPropertiesDialog(OwnerEntity owner) {
+    context.read<OwnerBloc>().add(GetOwnerPropertiesEvent(owner.id));
+    showDialog(
       context: context,
-      builder: (context) => SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundColor: Colors.purple.shade200,
-                    child: Icon(Icons.business_center, size: 32, color: Colors.purple.shade700),
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        owner.name,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      Text(
-                        '${owner.manzana} - ${owner.villa}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              _DetailItem(label: 'Identificación', value: owner.identificacion),
-              _DetailItem(label: 'Email', value: owner.email),
-              _DetailItem(label: 'Teléfono', value: owner.phone),
-              _DetailItem(label: 'Ubicación', value: '${owner.manzana} - ${owner.villa}'),
-              _DetailItem(
-                label: 'Estado',
-                value: owner.estado.replaceFirst(owner.estado[0], owner.estado[0].toUpperCase()),
-                valueColor: owner.isBlocked ? Colors.red : Colors.green,
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showBlockDialog(context, owner);
-                      },
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStateProperty.all(
-                          owner.isBlocked ? Colors.green : Colors.orange,
-                        ),
-                      ),
-                      child: Text(owner.isBlocked ? 'Desbloquear' : 'Bloquear'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showDeleteDialog(context, owner);
-                      },
-                      style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
-                      child: const Text('Eliminar'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+      builder: (context) => AlertDialog(
+        title: Text('Propiedades de ${owner.nombreCompleto}'),
+        content: BlocBuilder<OwnerBloc, OwnerState>(
+          builder: (context, state) {
+            if (state is OwnerPropertiesLoaded) {
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: state.properties
+                      .map((prop) => Card(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            child: ListTile(
+                              leading: const Icon(Icons.home, color: Colors.blue),
+                              title: Text(prop['nombre'] ?? 'N/A'),
+                              subtitle: Text('${prop['residente_count'] ?? 0} residentes • ${prop['estado'] ?? 'N/A'}'),
+                            ),
+                          ))
+                      .toList(),
+                ),
+              );
+            }
+            return const CircularProgressIndicator();
+          },
         ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cerrar')),
+        ],
       ),
     );
   }
 
-  void _showPropertiesDialog(BuildContext context, OwnerData owner) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => SizedBox(
-        height: MediaQuery.of(context).size.height * 0.7,
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Propiedades de ${owner.name}',
-                style: Theme.of(context).textTheme.titleLarge,
+  @override
+  Widget build(BuildContext context) {
+    return AdminScaffold(
+      title: 'Gestión de Propietarios',
+      routeName: '/adminOwners',
+      showBackButton: true,
+      onBackPressed: () {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/adminUsers',
+          (route) => false,
+          arguments: {
+            'personaId': widget.personaId,
+            'identificacion': widget.identificacion,
+          },
+        );
+      },
+      body: BlocListener<OwnerBloc, OwnerState>(
+        listener: (context, state) {
+          if (state is OwnerBlocked) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.orange,
               ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView(
+            );
+            _reloadOwnersFromLastSearch();
+          } else if (state is OwnerUnblocked) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.green,
+              ),
+            );
+            _reloadOwnersFromLastSearch();
+          } else if (state is OwnerDeleted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+            _reloadOwnersFromLastSearch();
+          }
+        },
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _manzanaController,
+                          decoration: InputDecoration(
+                            hintText: 'Manzana',
+                            prefixIcon: const Icon(Icons.home),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _villaController,
+                          decoration: InputDecoration(
+                            hintText: 'Villa',
+                            prefixIcon: const Icon(Icons.apartment),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 12),
+                Row(
                   children: [
-                    _PropertyCard(
-                      name: 'Manzana A - Villa 101',
-                      status: 'Activa',
-                      residents: 2,
+                    Expanded(
+                      child: FilledButton.tonal(
+                        onPressed: _handleFilterByLocation,
+                        child: const Text('Buscar por Ubicación'),
+                      ),
                     ),
-                    _PropertyCard(
-                      name: 'Manzana B - Villa 210',
-                      status: 'Activa',
-                      residents: 1,
-                    ),
-                    _PropertyCard(
-                      name: 'Manzana C - Villa 305',
-                      status: 'Alquilada',
-                      residents: 3,
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: _clearFilters,
+                      icon: const Icon(Icons.clear),
+                      tooltip: 'Limpiar filtros',
                     ),
                   ],
                 ),
-              ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: BlocBuilder<OwnerBloc, OwnerState>(
+              builder: (context, state) {
+                if (state is OwnerLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (state is OwnerError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text('Error: ${state.message}'),
+                        const SizedBox(height: 16),
+                        FilledButton(
+                          onPressed: () => context.read<OwnerBloc>().add(LoadOwnersByLocationEvent(
+                            manzana: _manzanaController.text.trim(),
+                            villa: _villaController.text.trim(),
+                          )),
+                          child: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                if (state is OwnersByLocationLoaded && state.owners.isEmpty) {
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.person_outline, size: 48, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text('No hay propietarios en esa ubicación'),
+                      ],
+                    ),
+                  );
+                }
+
+                if (state is OwnerInitial) {
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.search, size: 48, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text('Busca propietarios por manzana y villa'),
+                      ],
+                    ),
+                  );
+                }
+
+                final owners = (state is OwnersByLocationLoaded ? state.owners : <OwnerEntity>[]);
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: owners.length,
+                  itemBuilder: (context, index) {
+                    final owner = owners[index];
+                    return _OwnerCard(
+                      owner: owner,
+                      onTap: () => _showOwnerDetails(owner),
+                      onBlock: () => _showBlockDialog(owner),
+                      onDelete: () => _showDeleteDialog(owner),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }
 
 class _OwnerCard extends StatelessWidget {
-  final OwnerData owner;
+  final OwnerEntity owner;
+  final VoidCallback onTap;
   final VoidCallback onBlock;
   final VoidCallback onDelete;
-  final VoidCallback onDetails;
-  final VoidCallback onViewProperties;
 
   const _OwnerCard({
     required this.owner,
+    required this.onTap,
     required this.onBlock,
     required this.onDelete,
-    required this.onDetails,
-    required this.onViewProperties,
   });
 
   @override
@@ -636,13 +475,13 @@ class _OwnerCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: owner.isBlocked ? Colors.red.shade200 : Colors.purple.shade200,
+          backgroundColor: owner.isBlocked ? Colors.red.shade200 : Colors.blue.shade200,
           child: Icon(
-            Icons.business_center,
-            color: owner.isBlocked ? Colors.red : Colors.purple,
+            Icons.person,
+            color: owner.isBlocked ? Colors.red : Colors.blue,
           ),
         ),
-        title: Text(owner.name),
+        title: Text(owner.nombreCompleto),
         subtitle: Text('${owner.manzana} - ${owner.villa}'),
         trailing: Wrap(
           spacing: 4,
@@ -656,9 +495,11 @@ class _OwnerCard extends StatelessWidget {
               ),
             PopupMenuButton(
               itemBuilder: (context) => [
-                PopupMenuItem(onTap: onDetails, child: const Text('Ver detalles')),
-                PopupMenuItem(onTap: onViewProperties, child: const Text('Ver propiedades')),
-                PopupMenuItem(onTap: onBlock, child: Text(owner.isBlocked ? 'Desbloquear' : 'Bloquear')),
+                PopupMenuItem(onTap: onTap, child: const Text('Ver detalles')),
+                PopupMenuItem(
+                  onTap: onBlock,
+                  child: Text(owner.isBlocked ? 'Desbloquear' : 'Bloquear'),
+                ),
                 PopupMenuItem(
                   onTap: onDelete,
                   child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
@@ -667,7 +508,7 @@ class _OwnerCard extends StatelessWidget {
             ),
           ],
         ),
-        onTap: onDetails,
+        onTap: onTap,
       ),
     );
   }
@@ -687,69 +528,20 @@ class _DetailItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600)),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-              color: valueColor,
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(color: valueColor ?? Colors.grey.shade700),
             ),
           ),
         ],
       ),
     );
   }
-}
-
-class _PropertyCard extends StatelessWidget {
-  final String name;
-  final String status;
-  final int residents;
-
-  const _PropertyCard({
-    required this.name,
-    required this.status,
-    required this.residents,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        leading: Icon(Icons.home, color: Colors.blue.shade300),
-        title: Text(name),
-        subtitle: Text('$residents residente${residents != 1 ? 's' : ''} • $status'),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-      ),
-    );
-  }
-}
-
-class OwnerData {
-  final int id;
-  final String name;
-  final String manzana;
-  final String villa;
-  final String email;
-  final String phone;
-  final String identificacion;
-  final String estado;
-
-  OwnerData({
-    required this.id,
-    required this.name,
-    required this.manzana,
-    required this.villa,
-    required this.email,
-    required this.phone,
-    required this.identificacion,
-    required this.estado,
-  });
-
-  bool get isBlocked => estado != 'activo';
 }

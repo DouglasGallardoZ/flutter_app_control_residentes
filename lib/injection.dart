@@ -18,6 +18,7 @@ import 'infrastructure/adapters/access_history_repository_impl.dart';
 import 'infrastructure/adapters/visitor_repository_impl.dart';
 import 'infrastructure/adapters/admin_repository_impl.dart';
 import 'infrastructure/adapters/resident_repository_impl.dart';
+import 'infrastructure/adapters/owner_repository_impl.dart';
 
 // Domain - Ports
 import 'domain/ports/auth_repository.dart';
@@ -27,6 +28,7 @@ import 'domain/ports/access_history_repository.dart';
 import 'domain/ports/visitor_repository.dart';
 import 'domain/ports/admin_repository.dart';
 import 'domain/ports/resident_repository.dart';
+import 'domain/ports/owner_repository.dart';
 
 // Domain - Use Cases
 import 'domain/usecases/login_usecase.dart';
@@ -37,11 +39,17 @@ import 'domain/usecases/manage_visitor_usecase.dart';
 import 'domain/usecases/get_admin_metrics_usecase.dart';
 import 'domain/usecases/get_residents_usecase.dart';
 import 'domain/usecases/create_resident_usecase.dart';
+import 'domain/usecases/load_owners_by_location_usecase.dart';
+import 'domain/usecases/block_owner_usecase.dart';
+import 'domain/usecases/unblock_owner_usecase.dart';
+import 'domain/usecases/delete_owner_usecase.dart';
+import 'domain/usecases/get_owner_properties_usecase.dart';
 
 // BLoCs
 import 'application/blocs/admin/admin_dashboard_bloc.dart';
 import 'application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
 import 'application/blocs/resident/resident_bloc.dart';
+import 'application/blocs/owner/owner_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -129,6 +137,10 @@ Future<void> inject() async {
     () => ResidentRepositoryImpl(sl<AdminApi>()),
   );
 
+  sl.registerLazySingleton<OwnerRepository>(
+    () => OwnerRepositoryImpl(adminApi: sl<AdminApi>()),
+  );
+
   // Use Cases
   sl.registerLazySingleton<LoginUseCase>(
     () => LoginUseCase(sl<AuthRepository>()),
@@ -162,6 +174,26 @@ Future<void> inject() async {
     () => CreateResidentUseCase(sl<ResidentRepository>()),
   );
 
+  sl.registerLazySingleton<LoadOwnersByLocationUseCase>(
+    () => LoadOwnersByLocationUseCase(sl<OwnerRepository>()),
+  );
+
+  sl.registerLazySingleton<BlockOwnerUseCase>(
+    () => BlockOwnerUseCase(sl<OwnerRepository>()),
+  );
+
+  sl.registerLazySingleton<UnblockOwnerUseCase>(
+    () => UnblockOwnerUseCase(sl<OwnerRepository>()),
+  );
+
+  sl.registerLazySingleton<DeleteOwnerUseCase>(
+    () => DeleteOwnerUseCase(sl<OwnerRepository>()),
+  );
+
+  sl.registerLazySingleton<GetOwnerPropertiesUseCase>(
+    () => GetOwnerPropertiesUseCase(sl<OwnerRepository>()),
+  );
+
   // BLoCs
   sl.registerLazySingleton<AdminDashboardBloc>(
     () => AdminDashboardBloc(sl<GetAdminMetricsUseCase>()),
@@ -176,5 +208,15 @@ Future<void> inject() async {
 
   sl.registerLazySingleton<FacialEnrollmentBloc>(
     () => FacialEnrollmentBloc(adminApi: sl<AdminApi>()),
+  );
+
+  sl.registerLazySingleton<OwnerBloc>(
+    () => OwnerBloc(
+      loadOwnersByLocationUseCase: sl<LoadOwnersByLocationUseCase>(),
+      blockOwnerUseCase: sl<BlockOwnerUseCase>(),
+      unblockOwnerUseCase: sl<UnblockOwnerUseCase>(),
+      deleteOwnerUseCase: sl<DeleteOwnerUseCase>(),
+      getOwnerPropertiesUseCase: sl<GetOwnerPropertiesUseCase>(),
+    ),
   );
 }
