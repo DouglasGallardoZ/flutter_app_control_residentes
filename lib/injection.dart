@@ -20,6 +20,7 @@ import 'infrastructure/adapters/admin_repository_impl.dart';
 import 'infrastructure/adapters/resident_repository_impl.dart';
 import 'infrastructure/adapters/owner_repository_impl.dart';
 import 'infrastructure/adapters/member_repository_impl.dart';
+import 'infrastructure/adapters/admin_account_repository_impl.dart';
 
 // Domain - Ports
 import 'domain/ports/auth_repository.dart';
@@ -31,6 +32,7 @@ import 'domain/ports/admin_repository.dart';
 import 'domain/ports/resident_repository.dart';
 import 'domain/ports/owner_repository.dart';
 import 'domain/ports/member_repository.dart';
+import 'domain/ports/admin_account_repository.dart';
 
 // Domain - Use Cases
 import 'domain/usecases/login_usecase.dart';
@@ -54,6 +56,12 @@ import 'domain/usecases/load_members_by_location_usecase.dart';
 import 'domain/usecases/deactivate_member_usecase.dart';
 import 'domain/usecases/reactivate_member_usecase.dart';
 import 'domain/usecases/delete_member_usecase.dart';
+import 'domain/usecases/search_account_by_email_usecase.dart';
+import 'domain/usecases/search_account_by_location_usecase.dart';
+import 'domain/usecases/block_account_usecase.dart';
+import 'domain/usecases/unblock_account_usecase.dart';
+import 'domain/usecases/delete_account_usecase.dart';
+import 'domain/usecases/reset_password_usecase.dart';
 
 // BLoCs
 import 'application/blocs/admin/admin_dashboard_bloc.dart';
@@ -61,6 +69,7 @@ import 'application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
 import 'application/blocs/resident/resident_bloc.dart';
 import 'application/blocs/owner/owner_bloc.dart';
 import 'application/blocs/member/member_bloc.dart';
+import 'application/blocs/admin_account/admin_account_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -156,6 +165,10 @@ Future<void> inject() async {
     () => MemberRepositoryImpl(adminApi: sl<AdminApi>()),
   );
 
+  sl.registerLazySingleton<AdminAccountRepository>(
+    () => AdminAccountRepositoryImpl(adminApi: sl<AdminApi>()),
+  );
+
   // Use Cases
   sl.registerLazySingleton<LoginUseCase>(
     () => LoginUseCase(sl<AuthRepository>()),
@@ -241,6 +254,30 @@ Future<void> inject() async {
     () => DeleteMemberUseCase(sl<MemberRepository>()),
   );
 
+  sl.registerLazySingleton<SearchAccountByEmailUseCase>(
+    () => SearchAccountByEmailUseCase(sl<AdminAccountRepository>()),
+  );
+
+  sl.registerLazySingleton<SearchAccountByLocationUseCase>(
+    () => SearchAccountByLocationUseCase(sl<AdminAccountRepository>()),
+  );
+
+  sl.registerLazySingleton<BlockAccountUseCase>(
+    () => BlockAccountUseCase(sl<AdminAccountRepository>()),
+  );
+
+  sl.registerLazySingleton<UnblockAccountUseCase>(
+    () => UnblockAccountUseCase(sl<AdminAccountRepository>()),
+  );
+
+  sl.registerLazySingleton<DeleteAccountUseCase>(
+    () => DeleteAccountUseCase(sl<AdminAccountRepository>()),
+  );
+
+  sl.registerLazySingleton<ResetPasswordUseCase>(
+    () => ResetPasswordUseCase(sl<AdminAccountRepository>()),
+  );
+
   // BLoCs
   sl.registerLazySingleton<AdminDashboardBloc>(
     () => AdminDashboardBloc(sl<GetAdminMetricsUseCase>()),
@@ -278,6 +315,18 @@ Future<void> inject() async {
       reactivateMemberUseCase: sl<ReactivateMemberUseCase>(),
       deleteMemberUseCase: sl<DeleteMemberUseCase>(),
       memberRepository: sl<MemberRepository>(),
+    ),
+  );
+
+  sl.registerLazySingleton<AdminAccountBloc>(
+    () => AdminAccountBloc(
+      searchByEmailUseCase: sl<SearchAccountByEmailUseCase>(),
+      searchByLocationUseCase: sl<SearchAccountByLocationUseCase>(),
+      blockAccountUseCase: sl<BlockAccountUseCase>(),
+      unblockAccountUseCase: sl<UnblockAccountUseCase>(),
+      deleteAccountUseCase: sl<DeleteAccountUseCase>(),
+      resetPasswordUseCase: sl<ResetPasswordUseCase>(),
+      accountRepository: sl<AdminAccountRepository>(),
     ),
   );
 }

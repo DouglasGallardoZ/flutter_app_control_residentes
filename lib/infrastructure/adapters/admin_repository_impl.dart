@@ -120,10 +120,10 @@ class AdminRepositoryImpl implements AdminRepository {
   }
 
   @override
-  Future<void> unblockAccount(int personaId) async {
+  Future<void> unblockAccount(int personaId, String reason) async {
     try {
       // Endpoint no documentado aún - usar mock
-      await adminApi.unblockAccount(personaId);
+      await adminApi.unblockAccount(personaId, reason);
     } catch (e) {
       rethrow;
     }

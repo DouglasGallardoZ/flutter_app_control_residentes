@@ -34,7 +34,7 @@ abstract class AdminRepository {
   Future<void> blockAccount(int personaId, String reason);
 
   /// Desbloquea una cuenta
-  Future<void> unblockAccount(int personaId);
+  Future<void> unblockAccount(int personaId, String reason);
 
   /// Elimina una cuenta (soft delete)
   Future<void> deleteAccount(int personaId);

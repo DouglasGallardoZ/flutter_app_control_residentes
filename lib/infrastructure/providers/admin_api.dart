@@ -273,9 +273,9 @@ class AdminApi {
   /// Desbloquear una cuenta (Endpoint documentado: POST /cuentas/{cuenta_id}/desbloquear)
   /// Requiere: usuario_actualizado, motivo, cascada (opcional)
   Future<Map<String, dynamic>> unblockAccount(
-    int cuentaId, {
+    int cuentaId, 
+    String reason,{
     String usuarioActualizado = 'admin_system',
-    String reason = 'Desbloqueo por solicitud de administrador',
     bool cascada = true,
   }) async {
     try {
