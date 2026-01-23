@@ -17,6 +17,7 @@ import 'infrastructure/adapters/qr_repository_impl.dart';
 import 'infrastructure/adapters/access_history_repository_impl.dart';
 import 'infrastructure/adapters/visitor_repository_impl.dart';
 import 'infrastructure/adapters/admin_repository_impl.dart';
+import 'infrastructure/adapters/resident_repository_impl.dart';
 
 // Domain - Ports
 import 'domain/ports/auth_repository.dart';
@@ -25,6 +26,7 @@ import 'domain/ports/qr_repository.dart';
 import 'domain/ports/access_history_repository.dart';
 import 'domain/ports/visitor_repository.dart';
 import 'domain/ports/admin_repository.dart';
+import 'domain/ports/resident_repository.dart';
 
 // Domain - Use Cases
 import 'domain/usecases/login_usecase.dart';
@@ -34,10 +36,12 @@ import 'domain/usecases/load_access_history_usecase.dart';
 import 'domain/usecases/manage_visitor_usecase.dart';
 import 'domain/usecases/get_admin_metrics_usecase.dart';
 import 'domain/usecases/get_residents_usecase.dart';
+import 'domain/usecases/create_resident_usecase.dart';
 
 // BLoCs
 import 'application/blocs/admin/admin_dashboard_bloc.dart';
 import 'application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
+import 'application/blocs/resident/resident_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -121,6 +125,10 @@ Future<void> inject() async {
     () => AdminRepositoryImpl(sl<AdminApi>()),
   );
 
+  sl.registerLazySingleton<ResidentRepository>(
+    () => ResidentRepositoryImpl(sl<AdminApi>()),
+  );
+
   // Use Cases
   sl.registerLazySingleton<LoginUseCase>(
     () => LoginUseCase(sl<AuthRepository>()),
@@ -150,9 +158,20 @@ Future<void> inject() async {
     () => GetResidentsUseCase(sl<AdminRepository>()),
   );
 
+  sl.registerLazySingleton<CreateResidentUseCase>(
+    () => CreateResidentUseCase(sl<ResidentRepository>()),
+  );
+
   // BLoCs
   sl.registerLazySingleton<AdminDashboardBloc>(
     () => AdminDashboardBloc(sl<GetAdminMetricsUseCase>()),
+  );
+
+  sl.registerLazySingleton<ResidentBloc>(
+    () => ResidentBloc(
+      createResidentUseCase: sl<CreateResidentUseCase>(),
+      residentRepository: sl<ResidentRepository>(),
+    ),
   );
 
   sl.registerLazySingleton<FacialEnrollmentBloc>(

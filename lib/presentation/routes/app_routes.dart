@@ -234,8 +234,8 @@ class AppRoutes {
   static Route<dynamic> _errorRoute(String message) {
     return MaterialPageRoute(
       builder: (_) => Scaffold(
-        appBar: AppBar(title: const Text('Error')),
-        body: Center(child: Text(message)),
+        appBar: AppBar(title: const Text('Error')), 
+        body: Text(message)
       ),
     );
   }
