@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_it/get_it.dart';
-import '../../application/blocs/admin/admin_dashboard_bloc.dart';
-import '../../application/blocs/admin/admin_dashboard_state.dart';
-import '../../infrastructure/providers/admin_api.dart';
+import '../../application/blocs/member/member_bloc.dart';
+import '../../application/blocs/member/member_event.dart';
+import '../../application/blocs/member/member_state.dart';
 import '../widgets/admin_scaffold.dart';
 
 class AdminMembersPage extends StatefulWidget {
@@ -23,125 +23,243 @@ class AdminMembersPage extends StatefulWidget {
 class _AdminMembersPageState extends State<AdminMembersPage> {
   final TextEditingController _manzanaController = TextEditingController();
   final TextEditingController _villaController = TextEditingController();
-  late AdminApi _adminApi;
-  List<MemberData> _members = [];
-  bool _isLoading = false;
-  String? _errorMessage;
-  int _currentPage = 1;
-  final int _pageSize = 20;
 
-  @override
-  void initState() {
-    super.initState();
-    _adminApi = GetIt.I<AdminApi>();
-  }
-
-  Future<void> _loadMembers() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _currentPage = 1;
-    });
-    try {
-      final manzana = _manzanaController.text.trim();
-      final villa = _villaController.text.trim();
-      
-      if (manzana.isNotEmpty && villa.isNotEmpty) {
-        final response = await _adminApi.getFamilyMembersByLocation(
-          manzana: manzana,
-          villa: villa,
-          page: _currentPage,
-          pageSize: _pageSize,
-        );
-        if (!mounted) return;
-        
-        setState(() {
-          _members = List<MemberData>.from(
-            response.map((r) {
-              if (r is! Map<String, dynamic>) return null;
-              return MemberData(
-                id: r['miembro_id'] ?? 0,
-                name: '${r['nombres'] ?? ''} ${r['apellidos'] ?? ''}'.trim(),
-                relationship: r['parentesco'] ?? '',
-                manzana: r['manzana'] ?? '',
-                villa: r['villa'] ?? '',
-                email: r['correo'] ?? '',
-                phone: r['celular'] ?? '',
-                identificacion: r['identificacion'] ?? '',
-                estado: r['estado'] ?? 'activo',
-              );
-            }).whereType<MemberData>(),
-          );
-        });
-      } else {
-        setState(() {
-          _members = [];
-          _errorMessage = 'Por favor ingrese manzana y villa';
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _errorMessage = 'Error al cargar miembros: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _loadMembersByVivienda(int viviendaId) async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _currentPage = 1;
-    });
-    try {
-      final response = await _adminApi.getFamilyMembersByVivienda(
-        viviendaId: viviendaId,
-        page: _currentPage,
-        pageSize: _pageSize,
-      );
-      if (!mounted) return;
-      
-      setState(() {
-        _members = List<MemberData>.from(
-          response.map((r) {
-            if (r is! Map<String, dynamic>) return null;
-            return MemberData(
-              id: r['miembro_id'] ?? 0,
-              name: '${r['nombres'] ?? ''} ${r['apellidos'] ?? ''}'.trim(),
-              relationship: r['parentesco'] ?? '',
-              manzana: r['manzana'] ?? '',
-              villa: r['villa'] ?? '',
-              email: r['correo'] ?? '',
-              phone: r['celular'] ?? '',
-              identificacion: r['identificacion'] ?? '',
-              estado: r['estado'] ?? 'activo',
-            );
-          }).whereType<MemberData>(),
-        );
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _errorMessage = 'Error al cargar miembros: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  void _onSearchChanged(String query) {
-    setState(() {
-      _currentPage = 1;
-    });
-  }
+  // Guardar la última búsqueda
+  String? _lastManzana;
+  String? _lastVilla;
 
   @override
   void dispose() {
     _manzanaController.dispose();
     _villaController.dispose();
     super.dispose();
+  }
+
+  void _handleFilterByLocation() {
+    final manzana = _manzanaController.text.trim();
+    final villa = _villaController.text.trim();
+
+    if (manzana.isEmpty || villa.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor completa manzana y villa')),
+      );
+      return;
+    }
+
+    // Guardar los parámetros de búsqueda
+    _lastManzana = manzana;
+    _lastVilla = villa;
+
+    context.read<MemberBloc>().add(LoadMembersByLocationEvent(
+      manzana: manzana,
+      villa: villa,
+    ));
+  }
+
+  void _clearFilters() {
+    _manzanaController.clear();
+    _villaController.clear();
+    _lastManzana = null;
+    _lastVilla = null;
+  }
+
+  void _reloadMembersFromLastSearch() {
+    if (_lastManzana != null && _lastVilla != null) {
+      context.read<MemberBloc>().add(LoadMembersByLocationEvent(
+        manzana: _lastManzana!,
+        villa: _lastVilla!,
+      ));
+    }
+  }
+
+  void _showMemberDetails(Map<String, dynamic> member) {
+    final nombres = member['nombres'] ?? '';
+    final apellidos = member['apellidos'] ?? '';
+    final nombreCompleto = '$nombres $apellidos'.trim();
+    final relacion = member['parentesco'] ?? '';
+    final manzana = member['manzana'] ?? '';
+    final villa = member['villa'] ?? '';
+    final estado = member['estado'] ?? 'activo';
+    final isBlocked = estado.toLowerCase() == 'inactivo';
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 32,
+                    backgroundColor: isBlocked ? Colors.red.shade200 : Colors.pink.shade200,
+                    child: Icon(
+                      Icons.person,
+                      size: 32,
+                      color: isBlocked ? Colors.red.shade700 : Colors.pink.shade700,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          nombreCompleto,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        Text(
+                          relacion,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _DetailItem(label: 'Email', value: member['correo'] ?? 'N/A'),
+              _DetailItem(label: 'Relación', value: relacion),
+              _DetailItem(label: 'Identificación', value: member['identificacion'] ?? 'N/A'),
+              _DetailItem(label: 'Teléfono', value: member['celular'] ?? 'N/A'),
+              _DetailItem(label: 'Ubicación', value: '$manzana - $villa'),
+              _DetailItem(
+                label: 'Estado',
+                value: estado[0].toUpperCase() + estado.substring(1),
+                valueColor: isBlocked ? Colors.red : Colors.green,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showBlockDialog(member, nombreCompleto, isBlocked);
+                      },
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStateProperty.all(
+                          isBlocked ? Colors.green : Colors.orange,
+                        ),
+                      ),
+                      child: Text(isBlocked ? 'Reactivar' : 'Desactivar'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showDeleteDialog(member, nombreCompleto);
+                      },
+                      style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
+                      child: const Text('Eliminar'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showBlockDialog(Map<String, dynamic> member, String nombreCompleto, bool isBlocked) {
+    final TextEditingController reasonController = TextEditingController();
+    final memberId = member['miembro_id'] ?? 0;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isBlocked ? 'Reactivar miembro' : 'Desactivar miembro'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Miembro: $nombreCompleto'),
+              const SizedBox(height: 16),
+              const Text('Motivo (obligatorio):'),
+              const SizedBox(height: 8),
+              TextField(
+                controller: reasonController,
+                decoration: InputDecoration(
+                  hintText: isBlocked ? 'Motivo de reactivación' : 'Motivo de desactivación',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final reason = reasonController.text.trim();
+              if (reason.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('El motivo es obligatorio'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(context);
+              if (isBlocked) {
+                context.read<MemberBloc>().add(ReactivateMemberEvent(
+                  memberId: memberId,
+                  reason: reason,
+                ));
+              } else {
+                context.read<MemberBloc>().add(DeactivateMemberEvent(
+                  memberId: memberId,
+                  reason: reason,
+                ));
+              }
+            },
+            child: Text(isBlocked ? 'Reactivar' : 'Desactivar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(Map<String, dynamic> member, String nombreCompleto) {
+    final memberId = member['miembro_id'] ?? 0;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar miembro'),
+        content: Text(
+          '¿Desea eliminar la cuenta de $nombreCompleto? Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<MemberBloc>().add(DeleteMemberEvent(memberId));
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -206,347 +324,197 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           }
         });
       },
-      body: BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
-        builder: (context, state) {
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    // Filtros por manzana y villa
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _manzanaController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              hintText: 'Manzana',
-                              prefixIcon: const Icon(Icons.home),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onChanged: _onSearchChanged,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: _villaController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              hintText: 'Villa',
-                              prefixIcon: const Icon(Icons.apartment),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onChanged: _onSearchChanged,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton.tonal(
-                            onPressed: _loadMembers,
-                            child: const Text('Buscar Miembros'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          onPressed: () {
-                            _manzanaController.clear();
-                            _villaController.clear();
-                            setState(() {
-                              _members = [];
-                              _errorMessage = null;
-                            });
-                          },
-                          icon: const Icon(Icons.clear),
-                          tooltip: 'Limpiar filtros',
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+      body: BlocListener<MemberBloc, MemberState>(
+        listener: (context, state) {
+          if (state is MemberDeactivated) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.orange,
               ),
-              Expanded(
-                child: _isLoading
-                    ? Center(
+            );
+            _reloadMembersFromLastSearch();
+          } else if (state is MemberReactivated) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.green,
+              ),
+            );
+            _reloadMembersFromLastSearch();
+          } else if (state is MemberDeleted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+            _reloadMembersFromLastSearch();
+          }
+        },
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _manzanaController,
+                          decoration: InputDecoration(
+                            hintText: 'Manzana',
+                            prefixIcon: const Icon(Icons.home),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _villaController,
+                          decoration: InputDecoration(
+                            hintText: 'Villa',
+                            prefixIcon: const Icon(Icons.apartment),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.tonal(
+                          onPressed: _handleFilterByLocation,
+                          child: const Text('Buscar Miembros'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: _clearFilters,
+                        icon: const Icon(Icons.clear),
+                        tooltip: 'Limpiar filtros',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: BlocBuilder<MemberBloc, MemberState>(
+                builder: (context, state) {
+                  if (state is MemberLoading) {
+                    return const Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const CircularProgressIndicator(),
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('Cargando miembros...'),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (state is MemberError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.red.shade400,
+                          ),
                           const SizedBox(height: 16),
                           Text(
-                            'Cargando miembros...',
-                            style: Theme.of(context).textTheme.titleMedium,
+                            state.message,
+                            style: const TextStyle(color: Colors.red),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          FilledButton.tonal(
+                            onPressed: _handleFilterByLocation,
+                            child: const Text('Reintentar'),
                           ),
                         ],
                       ),
-                    )
-                    : _errorMessage != null
-                        ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                size: 64,
-                                color: Colors.red.shade400,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                _errorMessage!,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.red),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              FilledButton.tonal(
-                                onPressed: _loadMembers,
-                                child: const Text('Reintentar'),
-                              ),
-                            ],
-                          ),
-                        )
-                        : _members.isEmpty
-                            ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.group_off,
-                                    size: 64,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'No se encontraron miembros',
-                                    style: Theme.of(context).textTheme.titleMedium,
-                                  ),
-                                ],
-                              ),
-                            )
-                            : ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              itemCount: _members.length,
-                              itemBuilder: (context, index) {
-                                final member = _members[index];
-                                return _MemberCard(
-                                  member: member,
-                                  onBlock: () => _showBlockDialog(context, member),
-                                  onDelete: () => _showDeleteDialog(context, member),
-                                  onDetails: () => _showDetailsDialog(context, member),
-                                );
-                              },
-                            ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
+                    );
+                  }
 
-  void _showBlockDialog(BuildContext context, MemberData member) {
-    final TextEditingController reasonController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(member.isBlocked ? 'Reactivar miembro' : 'Desactivar miembro'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Miembro: ${member.name}'),
-              const SizedBox(height: 16),
-              const Text('Motivo (obligatorio):'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: reasonController,
-                decoration: InputDecoration(
-                  hintText: member.isBlocked ? 'Motivo de reactivación' : 'Motivo de desactivación',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                maxLines: 3,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final reason = reasonController.text.trim();
-              if (reason.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('El motivo es obligatorio'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-                return;
-              }
-              try {
-                if (member.isBlocked) {
-                  await _adminApi.reactivateMember(member.id, reason);
-                } else {
-                  await _adminApi.deactivateMember(member.id, reason);
-                }
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      member.isBlocked
-                          ? '${member.name} ha sido reactivado'
-                          : '${member.name} ha sido desactivado',
-                    ),
-                  ),
-                );
-                _loadMembers();
-              } catch (e) {
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                );
-              }
-            },
-            child: Text(member.isBlocked ? 'Reactivar' : 'Desactivar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteDialog(BuildContext context, MemberData member) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminar miembro'),
-        content: Text(
-          '¿Desea eliminar la cuenta de ${member.name}? Esta acción no se puede deshacer.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
-            onPressed: () async {
-              try {
-                await _adminApi.deleteAccount(member.id);
-                if (!mounted) return;
-                setState(() => _members.remove(member));
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${member.name} ha sido eliminado')),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                );
-              }
-            },
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDetailsDialog(BuildContext context, MemberData member) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundColor: Colors.pink.shade200,
-                    child: Icon(Icons.person, size: 32, color: Colors.pink.shade700),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          member.name,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        Text(
-                          member.relationship,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              _DetailItem(label: 'Email', value: member.email),
-              _DetailItem(label: 'Relación', value: member.relationship),
-              _DetailItem(label: 'Identificación', value: member.identificacion),
-              _DetailItem(label: 'Teléfono', value: member.phone),
-              _DetailItem(label: 'Ubicación', value: '${member.manzana} - ${member.villa}'),
-              _DetailItem(
-                label: 'Estado',
-                value: member.isBlocked ? 'Bloqueado' : 'Activo',
-                valueColor: member.isBlocked ? Colors.red : Colors.green,
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showBlockDialog(context, member);
-                      },
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStateProperty.all(
-                          member.isBlocked ? Colors.green : Colors.orange,
-                        ),
+                  if (state is MemberInitial) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.group, size: 48, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('Busca miembros por manzana y villa'),
+                        ],
                       ),
-                      child: Text(member.isBlocked ? 'Desbloquear' : 'Bloquear'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showDeleteDialog(context, member);
-                      },
-                      style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
-                      child: const Text('Eliminar'),
-                    ),
-                  ),
-                ],
+                    );
+                  }
+
+                  if (state is MembersByLocationLoaded && state.members.isEmpty) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.group_off, size: 64, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('No se encontraron miembros'),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final members = (state is MembersByLocationLoaded ? state.members : <Map<String, dynamic>>[]);
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: members.length,
+                    itemBuilder: (context, index) {
+                      final member = members[index];
+                      return _MemberCard(
+                        member: member,
+                        onDetails: () => _showMemberDetails(member),
+                        onBlock: () {
+                          final nombres = member['nombres'] ?? '';
+                          final apellidos = member['apellidos'] ?? '';
+                          final nombreCompleto = '$nombres $apellidos'.trim();
+                          final estado = member['estado'] ?? 'activo';
+                          final isBlocked = estado.toLowerCase() == 'inactivo';
+                          _showBlockDialog(member, nombreCompleto, isBlocked);
+                        },
+                        onDelete: () {
+                          final nombres = member['nombres'] ?? '';
+                          final apellidos = member['apellidos'] ?? '';
+                          final nombreCompleto = '$nombres $apellidos'.trim();
+                          _showDeleteDialog(member, nombreCompleto);
+                        },
+                      );
+                    },
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -554,7 +522,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
 }
 
 class _MemberCard extends StatelessWidget {
-  final MemberData member;
+  final Map<String, dynamic> member;
   final VoidCallback onBlock;
   final VoidCallback onDelete;
   final VoidCallback onDetails;
@@ -568,24 +536,33 @@ class _MemberCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nombres = member['nombres'] ?? '';
+    final apellidos = member['apellidos'] ?? '';
+    final nombreCompleto = '$nombres $apellidos'.trim();
+    final relacion = member['parentesco'] ?? '';
+    final manzana = member['manzana'] ?? '';
+    final villa = member['villa'] ?? '';
+    final estado = member['estado'] ?? 'activo';
+    final isBlocked = estado.toLowerCase() == 'inactivo';
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: member.isBlocked ? Colors.red.shade200 : Colors.pink.shade200,
+          backgroundColor: isBlocked ? Colors.red.shade200 : Colors.pink.shade200,
           child: Icon(
             Icons.person,
-            color: member.isBlocked ? Colors.red : Colors.pink,
+            color: isBlocked ? Colors.red : Colors.pink,
           ),
         ),
-        title: Text(member.name),
-        subtitle: Text('${member.relationship} • ${member.manzana} - ${member.villa}'),
+        title: Text(nombreCompleto),
+        subtitle: Text('$relacion • $manzana - $villa'),
         trailing: Wrap(
           spacing: 4,
           children: [
-            if (member.isBlocked)
+            if (isBlocked)
               Chip(
-                label: const Text('Bloqueado', style: TextStyle(fontSize: 11)),
+                label: const Text('Inactivo', style: TextStyle(fontSize: 11)),
                 backgroundColor: Colors.red.shade100,
                 labelStyle: TextStyle(color: Colors.red.shade700),
                 side: BorderSide(color: Colors.red.shade300),
@@ -593,7 +570,10 @@ class _MemberCard extends StatelessWidget {
             PopupMenuButton(
               itemBuilder: (context) => [
                 PopupMenuItem(onTap: onDetails, child: const Text('Ver detalles')),
-                PopupMenuItem(onTap: onBlock, child: Text(member.isBlocked ? 'Desbloquear' : 'Bloquear')),
+                PopupMenuItem(
+                  onTap: onBlock,
+                  child: Text(isBlocked ? 'Reactivar' : 'Desactivar'),
+                ),
                 PopupMenuItem(
                   onTap: onDelete,
                   child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
@@ -622,46 +602,20 @@ class _DetailItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600)),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-              color: valueColor,
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(color: valueColor ?? Colors.grey.shade700),
             ),
           ),
         ],
       ),
     );
   }
-}
-
-class MemberData {
-  final int id;
-  final String name;
-  final String relationship;
-  final String manzana;
-  final String villa;
-  final String email;
-  final String phone;
-  final String identificacion;
-  final String estado;
-
-  MemberData({
-    required this.id,
-    required this.name,
-    required this.relationship,
-    required this.manzana,
-    required this.villa,
-    required this.email,
-    required this.phone,
-    required this.identificacion,
-    required this.estado,
-  });
-
-  bool get isBlocked => estado != 'activo';
 }

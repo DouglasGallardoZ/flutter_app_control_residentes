@@ -18,6 +18,7 @@ import 'application/blocs/admin/admin_dashboard_bloc.dart';
 import 'application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
 import 'application/blocs/resident/resident_bloc.dart';
 import 'application/blocs/owner/owner_bloc.dart';
+import 'application/blocs/member/member_bloc.dart';
 import 'injection.dart';
 
 class App extends StatelessWidget {
@@ -34,6 +35,7 @@ class App extends StatelessWidget {
         BlocProvider<AccountBloc>(create: (_) => AccountBloc(sl<AccountRepository>())),
         BlocProvider<AdminDashboardBloc>(create: (_) => sl<AdminDashboardBloc>()),
         BlocProvider<ResidentBloc>(create: (_) => sl<ResidentBloc>()),
+        BlocProvider<MemberBloc>(create: (_) => sl<MemberBloc>()),
         BlocProvider<FacialEnrollmentBloc>(create: (_) => sl<FacialEnrollmentBloc>()),
         BlocProvider<OwnerBloc>(create: (_) => sl<OwnerBloc>()),
       ],
