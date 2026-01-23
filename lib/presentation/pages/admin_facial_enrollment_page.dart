@@ -39,6 +39,17 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
     _initializeCamera();
   }
 
+  Future<void> _disposeCameraIfSuccess() async {
+    try {
+      if (_cameraController != null && _cameraController!.value.isInitialized) {
+        await _cameraController!.dispose();
+        _cameraController = null;
+      }
+    } catch (e) {
+      debugPrint('Error cerrando cámara: $e');
+    }
+  }
+
   Future<void> _initializeCamera() async {
     try {
       final cameras = await availableCameras();
@@ -144,6 +155,12 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
   }
 
   @override
+  void dispose() {
+    _disposeCameraIfSuccess();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AdminScaffold(
       title: 'Captura Facial - ${widget.nombres} ${widget.apellidos}',
@@ -155,51 +172,96 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
       body: BlocConsumer<FacialEnrollmentBloc, FacialEnrollmentState>(
         listener: (context, state) {
           if (state is FacialEnrollmentSuccess) {
+            // Cerrar la cámara cuando el registro es exitoso
+            _disposeCameraIfSuccess();
+            
             // Mostrar diálogo de éxito
             showDialog(
               context: context,
               barrierDismissible: false,
-              builder: (dialogContext) => AlertDialog(
-                title: const Text('¡Registro Facial Exitoso!'),
-                content: Text(state.mensaje),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      // Cerrar diálogo y navegar directamente con pop
-                      Navigator.of(context, rootNavigator: true).pop(); // Cierra el diálogo
-                      Navigator.of(context, rootNavigator: true).pop(); // Vuelve a gestión de usuarios
-                    },
-                    child: const Text('OK'),
-                  ),
-                ],
+              builder: (dialogContext) => WillPopScope(
+                onWillPop: () async => false, // Evitar cerrar con back
+                child: AlertDialog(
+                  title: const Text('¡Registro Facial Exitoso!'),
+                  content: Text(state.mensaje),
+                  actions: [
+                    TextButton(
+                      onPressed: () async {
+                        // Cerrar el diálogo
+                        if (mounted && Navigator.of(dialogContext).canPop()) {
+                          Navigator.of(dialogContext).pop();
+                        }
+                        
+                        // Pequeña pausa para actualizar el estado
+                        await Future.delayed(const Duration(milliseconds: 100));
+                        
+                        if (mounted) {
+                          // Mostrar notificación de éxito
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Residente registrado correctamente'),
+                              behavior: SnackBarBehavior.floating,
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                          
+                          // Navegar a la pantalla de gestión de usuarios con los argumentos necesarios
+                          await Future.delayed(const Duration(milliseconds: 500));
+                          
+                          Navigator.of(context).pushReplacementNamed(
+                            '/adminUsers',
+                            arguments: {
+                              'personaId': widget.personaId,
+                              'identificacion': 'admin',
+                            },
+                          );
+                        }
+                      },
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
               ),
             );
           } else if (state is FacialEnrollmentError) {
             showDialog(
               context: context,
               barrierDismissible: false,
-              builder: (dialogContext) => AlertDialog(
-                title: const Text('Error en Captura Facial'),
-                content: Text(state.mensaje),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(dialogContext).pop(); // Cerrar diálogo
-                      // Reintentar
-                      context.read<FacialEnrollmentBloc>().add(
-                            RetryFacialEnrollment(),
-                          );
-                    },
-                    child: const Text('Reintentar'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context, rootNavigator: true).pop(); // Cierra el diálogo
-                      Navigator.of(context, rootNavigator: true).pop(); // Vuelve atrás
-                    },
-                    child: const Text('Cancelar'),
-                  ),
-                ],
+              builder: (dialogContext) => WillPopScope(
+                onWillPop: () async => false,
+                child: AlertDialog(
+                  title: const Text('Error en Captura Facial'),
+                  content: Text(state.mensaje),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        if (mounted && Navigator.of(dialogContext).canPop()) {
+                          Navigator.of(dialogContext).pop(); // Cerrar diálogo
+                        }
+                        // Reintentar
+                        context.read<FacialEnrollmentBloc>().add(
+                              RetryFacialEnrollment(),
+                            );
+                      },
+                      child: const Text('Reintentar'),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        if (mounted && Navigator.of(dialogContext).canPop()) {
+                          Navigator.of(dialogContext).pop(); // Cerrar diálogo
+                        }
+                        
+                        // Esperar a que se cierre completamente
+                        await Future.delayed(const Duration(milliseconds: 300));
+                        
+                        if (mounted && Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop(); // Volver atrás
+                        }
+                      },
+                      child: const Text('Cancelar'),
+                    ),
+                  ],
+                ),
               ),
             );
           }
@@ -223,6 +285,12 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
                 ],
               ),
             );
+          }
+
+          // Cuando el registro es exitoso, mostrar un widget vacío
+          // El diálogo de éxito se muestra en el listener
+          if (state is FacialEnrollmentSuccess) {
+            return Container();
           }
 
           String instruction = 'MIRE AL FRENTE';
@@ -391,10 +459,10 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
     );
   }
 
-  @override
-  void dispose() {
-    _lastCaptureTime = null;
-    _cameraController?.dispose();
-    super.dispose();
-  }
+  // @override
+  // void dispose() {
+  //   _lastCaptureTime = null;
+  //   _cameraController?.dispose();
+  //   super.dispose();
+  // }
 }
