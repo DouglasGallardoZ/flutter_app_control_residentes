@@ -39,6 +39,10 @@ import 'domain/usecases/manage_visitor_usecase.dart';
 import 'domain/usecases/get_admin_metrics_usecase.dart';
 import 'domain/usecases/get_residents_usecase.dart';
 import 'domain/usecases/create_resident_usecase.dart';
+import 'domain/usecases/load_residents_by_location_usecase.dart';
+import 'domain/usecases/deactivate_resident_usecase.dart';
+import 'domain/usecases/reactivate_resident_usecase.dart';
+import 'domain/usecases/delete_resident_usecase.dart';
 import 'domain/usecases/load_owners_by_location_usecase.dart';
 import 'domain/usecases/block_owner_usecase.dart';
 import 'domain/usecases/unblock_owner_usecase.dart';
@@ -174,6 +178,22 @@ Future<void> inject() async {
     () => CreateResidentUseCase(sl<ResidentRepository>()),
   );
 
+  sl.registerLazySingleton<LoadResidentsByLocationUseCase>(
+    () => LoadResidentsByLocationUseCase(sl<ResidentRepository>()),
+  );
+
+  sl.registerLazySingleton<DeactivateResidentUseCase>(
+    () => DeactivateResidentUseCase(sl<ResidentRepository>()),
+  );
+
+  sl.registerLazySingleton<ReactivateResidentUseCase>(
+    () => ReactivateResidentUseCase(sl<ResidentRepository>()),
+  );
+
+  sl.registerLazySingleton<DeleteResidentUseCase>(
+    () => DeleteResidentUseCase(sl<ResidentRepository>()),
+  );
+
   sl.registerLazySingleton<LoadOwnersByLocationUseCase>(
     () => LoadOwnersByLocationUseCase(sl<OwnerRepository>()),
   );
@@ -202,6 +222,10 @@ Future<void> inject() async {
   sl.registerLazySingleton<ResidentBloc>(
     () => ResidentBloc(
       createResidentUseCase: sl<CreateResidentUseCase>(),
+      loadResidentsByLocationUseCase: sl<LoadResidentsByLocationUseCase>(),
+      deactivateResidentUseCase: sl<DeactivateResidentUseCase>(),
+      reactivateResidentUseCase: sl<ReactivateResidentUseCase>(),
+      deleteResidentUseCase: sl<DeleteResidentUseCase>(),
       residentRepository: sl<ResidentRepository>(),
     ),
   );

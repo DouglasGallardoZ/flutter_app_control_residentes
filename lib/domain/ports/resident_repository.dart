@@ -21,18 +21,24 @@ abstract class ResidentRepository {
   /// Obtener lista de residentes
   Future<List<Map<String, dynamic>>> getResidents();
 
-  /// Obtener residente por ID
-  // Future<Map<String, dynamic>> getResidentById(String personaId);
-
-  /// Actualizar residente
-  // Future<Map<String, dynamic>> updateResident({
-  //   required String personaId,
-  //   required Map<String, dynamic> data,
-  // });
+  /// Obtener residentes por ubicación (manzana, villa)
+  Future<List<Map<String, dynamic>>> getResidentsByLocation({
+    required String manzana,
+    required String villa,
+  });
 
   /// Desactivar residente
   Future<void> deactivateResident({
     required int personaId,
     required String reason,
   });
+
+  /// Reactivar residente
+  Future<void> reactivateResident({
+    required int personaId,
+    required String reason,
+  });
+
+  /// Eliminar residente
+  Future<void> deleteResident(int personaId);
 }

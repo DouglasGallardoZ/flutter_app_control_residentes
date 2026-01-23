@@ -62,6 +62,20 @@ class LoadResidentsEvent extends ResidentEvent {
   const LoadResidentsEvent();
 }
 
+/// Cargar residentes por ubicación
+class LoadResidentsByLocationEvent extends ResidentEvent {
+  final String manzana;
+  final String villa;
+
+  const LoadResidentsByLocationEvent({
+    required this.manzana,
+    required this.villa,
+  });
+
+  @override
+  List<Object?> get props => [manzana, villa];
+}
+
 /// Obtener residente específico
 class GetResidentEvent extends ResidentEvent {
   final String personaId;
@@ -84,4 +98,28 @@ class DeactivateResidentEvent extends ResidentEvent {
 
   @override
   List<Object?> get props => [personaId, reason];
+}
+
+/// Reactivar residente
+class ReactivateResidentEvent extends ResidentEvent {
+  final int personaId;
+  final String reason;
+
+  const ReactivateResidentEvent({
+    required this.personaId,
+    required this.reason,
+  });
+
+  @override
+  List<Object?> get props => [personaId, reason];
+}
+
+/// Eliminar residente
+class DeleteResidentEvent extends ResidentEvent {
+  final int personaId;
+
+  const DeleteResidentEvent(this.personaId);
+
+  @override
+  List<Object?> get props => [personaId];
 }

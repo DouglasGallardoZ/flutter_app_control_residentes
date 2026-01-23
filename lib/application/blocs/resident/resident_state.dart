@@ -41,6 +41,22 @@ class ResidentsLoaded extends ResidentState {
   List<Object?> get props => [residents];
 }
 
+/// Residentes cargados por ubicación
+class ResidentsByLocationLoaded extends ResidentState {
+  final List<Map<String, dynamic>> residents;
+  final String manzana;
+  final String villa;
+
+  const ResidentsByLocationLoaded({
+    required this.residents,
+    required this.manzana,
+    required this.villa,
+  });
+
+  @override
+  List<Object?> get props => [residents, manzana, villa];
+}
+
 /// Residente obtenido
 class ResidentLoaded extends ResidentState {
   final Map<String, dynamic> resident;
@@ -54,8 +70,30 @@ class ResidentLoaded extends ResidentState {
 /// Residente desactivado
 class ResidentDeactivated extends ResidentState {
   final String message;
+  final String reason;
 
-  const ResidentDeactivated(this.message);
+  const ResidentDeactivated(this.message, [this.reason = '']);
+
+  @override
+  List<Object?> get props => [message, reason];
+}
+
+/// Residente reactivado
+class ResidentReactivated extends ResidentState {
+  final String message;
+  final String reason;
+
+  const ResidentReactivated(this.message, [this.reason = '']);
+
+  @override
+  List<Object?> get props => [message, reason];
+}
+
+/// Residente eliminado
+class ResidentDeleted extends ResidentState {
+  final String message;
+
+  const ResidentDeleted(this.message);
 
   @override
   List<Object?> get props => [message];

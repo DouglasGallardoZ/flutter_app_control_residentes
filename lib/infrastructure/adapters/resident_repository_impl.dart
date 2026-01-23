@@ -55,31 +55,21 @@ class ResidentRepositoryImpl implements ResidentRepository {
     }
   }
 
-  // @override
-  // Future<Map<String, dynamic>> getResidentById(String personaId) async {
-  //   try {
-  //     final response = await adminApi.getResidentById(personaId);
-  //     return response;
-  //   } catch (e) {
-  //     rethrow;
-  //   }
-  // }
-
-  // @override
-  // Future<Map<String, dynamic>> updateResident({
-  //   required String personaId,
-  //   required Map<String, dynamic> data,
-  // }) async {
-  //   try {
-  //     final response = await adminApi.updateResident(
-  //       personaId: personaId,
-  //       data: data,
-  //     );
-  //     return response;
-  //   } catch (e) {
-  //     rethrow;
-  //   }
-  // }
+  @override
+  Future<List<Map<String, dynamic>>> getResidentsByLocation({
+    required String manzana,
+    required String villa,
+  }) async {
+    try {
+      final response = await adminApi.getResidentsByLocation(
+        manzana: manzana,
+        villa: villa,
+      );
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
 
   @override
   Future<void> deactivateResident({
@@ -87,10 +77,28 @@ class ResidentRepositoryImpl implements ResidentRepository {
     required String reason,
   }) async {
     try {
-      await adminApi.deactivateResident(
-         personaId,
-         reason,
-      );
+      await adminApi.deactivateResident(personaId, reason);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> reactivateResident({
+    required int personaId,
+    required String reason,
+  }) async {
+    try {
+      await adminApi.reactivateResident(personaId, reason);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteResident(int personaId) async {
+    try {
+      await adminApi.deleteAccount(personaId);
     } catch (e) {
       rethrow;
     }

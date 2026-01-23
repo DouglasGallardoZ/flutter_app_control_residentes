@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_it/get_it.dart';
-import '../../application/blocs/admin/admin_dashboard_bloc.dart';
-import '../../application/blocs/admin/admin_dashboard_state.dart';
-import '../../infrastructure/providers/admin_api.dart';
+import '../../application/blocs/resident/resident_bloc.dart';
+import '../../application/blocs/resident/resident_event.dart';
+import '../../application/blocs/resident/resident_state.dart';
 import '../widgets/admin_scaffold.dart';
 
 class AdminResidentsPage extends StatefulWidget {
@@ -22,144 +21,241 @@ class AdminResidentsPage extends StatefulWidget {
 }
 
 class _AdminResidentsPageState extends State<AdminResidentsPage> {
-  final TextEditingController _searchController = TextEditingController();
-  late AdminApi _adminApi;
-  List<ResidentData> _residents = [];
-  bool _isLoading = false;
-  String? _errorMessage;
-  
-  // Filtros
-  String? _selectedManzana;
-  String? _selectedVilla;
-  int _currentPage = 1;
-  final int _pageSize = 20;
+  final TextEditingController _manzanaController = TextEditingController();
+  final TextEditingController _villaController = TextEditingController();
+
+  // Guardar la última búsqueda
+  String? _lastManzana;
+  String? _lastVilla;
 
   @override
-  void initState() {
-    super.initState();
-    _adminApi = GetIt.I<AdminApi>();
+  void dispose() {
+    _manzanaController.dispose();
+    _villaController.dispose();
+    super.dispose();
   }
 
-  Future<void> _loadResidents() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _currentPage = 1;
-    });
-    try {
-      final response = await _adminApi.getResidents(
-        page: _currentPage,
-        pageSize: _pageSize,
-        searchQuery: _searchController.text.isEmpty ? null : _searchController.text,
-      );
-      if (!mounted) return;
-      
-      // DEBUG: Imprimir respuesta para verificar estructura
-      print('=== RESIDENTES RESPONSE ===');
-      setState(() {
-        _residents = List<ResidentData>.from(
-          response.map((r) {
-            if (r is! Map<String, dynamic>) {
-              return null;
-            }
-            
-            final nombres = r['nombres'] ?? '';
-            final apellidos = r['apellidos'] ?? '';
-            final nombreCompleto = '$nombres $apellidos'.trim();
-            
-            return ResidentData(
-              id: r['residente_id'] ?? 0,
-              name: nombreCompleto.isEmpty ? 'N/A' : nombreCompleto,
-              manzana: r['manzana'] ?? '',
-              villa: r['villa'] ?? '',
-              email: r['correo'] ?? '',
-              phone: r['celular'] ?? '',
-              identificacion: r['identificacion'] ?? '',
-              estado: r['estado'] ?? 'activo',
-            );
-          }).whereType<ResidentData>(),
-        );
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _errorMessage = 'Error al cargar residentes: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
+  void _handleFilterByLocation() {
+    final manzana = _manzanaController.text.trim();
+    final villa = _villaController.text.trim();
 
-  Future<void> _loadResidentsByLocation() async {
-    if (_selectedManzana == null || _selectedVilla == null) {
+    if (manzana.isEmpty || villa.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona manzana y villa para filtrar')),
+        const SnackBar(content: Text('Por favor completa manzana y villa')),
       );
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _currentPage = 1;
-    });
-    try {
-      final response = await _adminApi.getResidentsByLocation(
-        manzana: _selectedManzana!,
-        villa: _selectedVilla!,
-        page: _currentPage,
-        pageSize: _pageSize,
-      );
-      if (!mounted) return;
-      
-      // DEBUG: Imprimir respuesta para verificar estructura
-      print('=== RESIDENTES BY LOCATION RESPONSE ===');
-      setState(() {
-        _residents = List<ResidentData>.from(
-          response.map((r) {
-            if (r is! Map<String, dynamic>) {
-              return null;
-            }
-            
-            final nombres = r['nombres'] ?? '';
-            final apellidos = r['apellidos'] ?? '';
-            final nombreCompleto = '$nombres $apellidos'.trim();
-            
-            return ResidentData(
-              id: r['residente_id'] ?? 0,
-              name: nombreCompleto.isEmpty ? 'N/A' : nombreCompleto,
-              manzana: r['manzana'] ?? '',
-              villa: r['villa'] ?? '',
-              email: r['correo'] ?? '',
-              phone: r['celular'] ?? '',
-              identificacion: r['identificacion'] ?? '',
-              estado: r['estado'] ?? 'activo',
-            );
-          }).whereType<ResidentData>(),
-        );
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _errorMessage = 'Error al cargar residentes: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    // Guardar los parámetros de búsqueda
+    _lastManzana = manzana;
+    _lastVilla = villa;
+
+    context.read<ResidentBloc>().add(LoadResidentsByLocationEvent(
+      manzana: manzana,
+      villa: villa,
+    ));
+  }
+
+  void _clearFilters() {
+    _manzanaController.clear();
+    _villaController.clear();
+    _lastManzana = null;
+    _lastVilla = null;
+  }
+
+  void _reloadResidentsFromLastSearch() {
+    if (_lastManzana != null && _lastVilla != null) {
+      context.read<ResidentBloc>().add(LoadResidentsByLocationEvent(
+        manzana: _lastManzana!,
+        villa: _lastVilla!,
+      ));
     }
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void _showResidentDetails(Map<String, dynamic> resident) {
+    final nombres = resident['nombres'] ?? '';
+    final apellidos = resident['apellidos'] ?? '';
+    final nombreCompleto = '$nombres $apellidos'.trim();
+    final manzana = resident['manzana'] ?? '';
+    final villa = resident['villa'] ?? '';
+    final estado = resident['estado'] ?? 'activo';
+    final isBlocked = estado.toLowerCase() == 'inactivo';
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 32,
+                    backgroundColor: isBlocked ? Colors.red.shade200 : Colors.blue.shade200,
+                    child: Icon(
+                      Icons.person,
+                      size: 32,
+                      color: isBlocked ? Colors.red.shade700 : Colors.blue.shade700,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nombreCompleto,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      Text(
+                        'M$manzana - V$villa',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _DetailItem(label: 'Identificación', value: resident['identificacion'] ?? 'N/A'),
+              _DetailItem(label: 'Email', value: resident['correo'] ?? 'N/A'),
+              _DetailItem(label: 'Teléfono', value: resident['celular'] ?? 'N/A'),
+              _DetailItem(label: 'Ubicación', value: '$manzana - $villa'),
+              _DetailItem(
+                label: 'Estado',
+                value: estado[0].toUpperCase() + estado.substring(1),
+                valueColor: isBlocked ? Colors.red : Colors.green,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showBlockDialog(resident, nombreCompleto, isBlocked);
+                      },
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStateProperty.all(
+                          isBlocked ? Colors.green : Colors.orange,
+                        ),
+                      ),
+                      child: Text(isBlocked ? 'Reactivar' : 'Desactivar'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showDeleteDialog(resident, nombreCompleto);
+                      },
+                      style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
+                      child: const Text('Eliminar'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  List<ResidentData> get filteredResidents {
-    final query = _searchController.text.toLowerCase();
-    if (query.isEmpty) return _residents;
-    return _residents
-        .where((r) => r.name.toLowerCase().contains(query) || r.villa.toLowerCase().contains(query))
-        .toList();
+  void _showBlockDialog(Map<String, dynamic> resident, String nombreCompleto, bool isBlocked) {
+    final TextEditingController reasonController = TextEditingController();
+    final residentId = resident['residente_id'] ?? 0;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isBlocked ? 'Reactivar residente' : 'Desactivar residente'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Residente: $nombreCompleto'),
+              const SizedBox(height: 16),
+              const Text('Motivo (obligatorio):'),
+              const SizedBox(height: 8),
+              TextField(
+                controller: reasonController,
+                decoration: InputDecoration(
+                  hintText: isBlocked ? 'Motivo de reactivación' : 'Motivo de desactivación',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final reason = reasonController.text.trim();
+              if (reason.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('El motivo es obligatorio'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(context);
+              if (isBlocked) {
+                context.read<ResidentBloc>().add(ReactivateResidentEvent(
+                  personaId: residentId,
+                  reason: reason,
+                ));
+              } else {
+                context.read<ResidentBloc>().add(DeactivateResidentEvent(
+                  personaId: residentId,
+                  reason: reason,
+                ));
+              }
+            },
+            child: Text(isBlocked ? 'Reactivar' : 'Desactivar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(Map<String, dynamic> resident, String nombreCompleto) {
+    final residentId = resident['residente_id'] ?? 0;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar residente'),
+        content: Text(
+          '¿Desea eliminar la cuenta de $nombreCompleto? Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<ResidentBloc>().add(DeleteResidentEvent(residentId));
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -244,353 +340,197 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
           }
         });
       },
-      body: BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
-        builder: (context, state) {
-          return Column(
-            children: [
-              // Filtros por ubicación
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            decoration: InputDecoration(
-                              hintText: 'Manzana',
-                              prefixIcon: const Icon(Icons.home),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            onChanged: (value) {
-                              setState(() => _selectedManzana = value.isEmpty ? null : value);
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            decoration: InputDecoration(
-                              hintText: 'Villa',
-                              prefixIcon: const Icon(Icons.apartment),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            onChanged: (value) {
-                              setState(() => _selectedVilla = value.isEmpty ? null : value);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton.tonal(
-                            onPressed: _loadResidentsByLocation,
-                            child: const Text('Buscar Residentes'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _selectedManzana = null;
-                              _selectedVilla = null;
-                              _residents = [];
-                              _errorMessage = null;
-                            });
-                          },
-                          icon: const Icon(Icons.clear),
-                          tooltip: 'Limpiar filtros',
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+      body: BlocListener<ResidentBloc, ResidentState>(
+        listener: (context, state) {
+          if (state is ResidentDeactivated) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.orange,
               ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: _isLoading
-                    ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const CircularProgressIndicator(),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Cargando residentes...',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ],
-                      ),
-                    )
-                    : _errorMessage != null
-                        ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                size: 64,
-                                color: Colors.red.shade400,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                _errorMessage!,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.red),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              FilledButton.tonal(
-                                onPressed: _loadResidents,
-                                child: const Text('Reintentar'),
-                              ),
-                            ],
-                          ),
-                        )
-                        : filteredResidents.isEmpty
-                            ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.person_off,
-                                    size: 64,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'No se encontraron residentes',
-                                    style: Theme.of(context).textTheme.titleMedium,
-                                  ),
-                                ],
-                              ),
-                            )
-                            : ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              itemCount: filteredResidents.length,
-                              itemBuilder: (context, index) {
-                                final resident = filteredResidents[index];
-                                return _ResidentCard(
-                                  resident: resident,
-                                  onBlock: () => _showBlockDialog(context, resident),
-                                  onDelete: () => _showDeleteDialog(context, resident),
-                                  onDetails: () => _showDetailsDialog(context, resident),
-                                );
-                              },
-                            ),
+            );
+            _reloadResidentsFromLastSearch();
+          } else if (state is ResidentReactivated) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.green,
               ),
-            ],
-          );
+            );
+            _reloadResidentsFromLastSearch();
+          } else if (state is ResidentDeleted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+            _reloadResidentsFromLastSearch();
+          }
         },
-      ),
-    );
-  }
-
-  void _showBlockDialog(BuildContext context, ResidentData resident) {
-    final TextEditingController reasonController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(resident.isBlocked ? 'Reactivar residente' : 'Desactivar residente'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Residente: ${resident.name}'),
-              const SizedBox(height: 16),
-              const Text('Motivo (obligatorio):'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: reasonController,
-                decoration: InputDecoration(
-                  hintText: resident.isBlocked ? 'Motivo de reactivación' : 'Motivo de desactivación',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                maxLines: 3,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final reason = reasonController.text.trim();
-              if (reason.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('El motivo es obligatorio'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-                return;
-              }
-              try {
-                if (resident.isBlocked) {
-                  await _adminApi.reactivateResident(resident.id, reason);
-                } else {
-                  await _adminApi.deactivateResident(resident.id, reason);
-                }
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      resident.isBlocked
-                          ? '${resident.name} ha sido reactivado'
-                          : '${resident.name} ha sido desactivado',
-                    ),
-                  ),
-                );
-                _loadResidentsByLocation();
-              } catch (e) {
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                );
-              }
-            },
-            child: Text(resident.isBlocked ? 'Reactivar' : 'Desactivar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteDialog(BuildContext context, ResidentData resident) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminar residente'),
-        content: Text(
-          '¿Desea eliminar la cuenta de ${resident.name}? Esta acción no se puede deshacer.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
-            onPressed: () async {
-              try {
-                await _adminApi.deleteAccount(resident.id);
-                if (!mounted) return;
-                setState(() => _residents.remove(resident));
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${resident.name} ha sido eliminado')),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                );
-              }
-            },
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDetailsDialog(BuildContext context, ResidentData resident) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundColor: Colors.blue.shade200,
-                    child: Icon(Icons.person, size: 32, color: Colors.blue.shade700),
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(
                     children: [
-                      Text(
-                        resident.name,
-                        style: Theme.of(context).textTheme.titleLarge,
+                      Expanded(
+                        child: TextField(
+                          controller: _manzanaController,
+                          decoration: InputDecoration(
+                            hintText: 'Manzana',
+                            prefixIcon: const Icon(Icons.home),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                        ),
                       ),
-                      Text(
-                        resident.villa,
-                        style: Theme.of(context).textTheme.bodySmall,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _villaController,
+                          decoration: InputDecoration(
+                            hintText: 'Villa',
+                            prefixIcon: const Icon(Icons.apartment),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.tonal(
+                          onPressed: _handleFilterByLocation,
+                          child: const Text('Buscar Residentes'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: _clearFilters,
+                        icon: const Icon(Icons.clear),
+                        tooltip: 'Limpiar filtros',
                       ),
                     ],
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              _DetailItem(label: 'Identificación', value: resident.identificacion),
-              _DetailItem(label: 'Email', value: resident.email),
-              _DetailItem(label: 'Teléfono', value: resident.phone),
-              _DetailItem(label: 'Ubicación', value: '${resident.manzana} - ${resident.villa}'),
-              _DetailItem(
-                label: 'Estado',
-                value: resident.estado.replaceFirst(resident.estado[0], resident.estado[0].toUpperCase()),
-                valueColor: resident.isBlocked ? Colors.red : Colors.green,
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showBlockDialog(context, resident);
-                      },
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStateProperty.all(
-                          resident.isBlocked ? Colors.green : Colors.orange,
-                        ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: BlocBuilder<ResidentBloc, ResidentState>(
+                builder: (context, state) {
+                  if (state is ResidentLoading) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('Cargando residentes...'),
+                        ],
                       ),
-                      child: Text(resident.isBlocked ? 'Desbloquear' : 'Bloquear'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showDeleteDialog(context, resident);
-                      },
-                      style: ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
-                      child: const Text('Eliminar'),
-                    ),
-                  ),
-                ],
+                    );
+                  }
+
+                  if (state is ResidentError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.red.shade400,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            state.message,
+                            style: const TextStyle(color: Colors.red),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          FilledButton.tonal(
+                            onPressed: _handleFilterByLocation,
+                            child: const Text('Reintentar'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (state is ResidentInitial) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.search, size: 48, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('Busca residentes por manzana y villa'),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (state is ResidentsByLocationLoaded && state.residents.isEmpty) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.person_off, size: 64, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('No se encontraron residentes'),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final residents = (state is ResidentsByLocationLoaded ? state.residents : <Map<String, dynamic>>[]);
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: residents.length,
+                    itemBuilder: (context, index) {
+                      final resident = residents[index];
+                      return _ResidentCard(
+                        resident: resident,
+                        onDetails: () => _showResidentDetails(resident),
+                        onBlock: () {
+                          final nombres = resident['nombres'] ?? '';
+                          final apellidos = resident['apellidos'] ?? '';
+                          final nombreCompleto = '$nombres $apellidos'.trim();
+                          final estado = resident['estado'] ?? 'activo';
+                          final isBlocked = estado.toLowerCase() == 'inactivo';
+                          _showBlockDialog(resident, nombreCompleto, isBlocked);
+                        },
+                        onDelete: () {
+                          final nombres = resident['nombres'] ?? '';
+                          final apellidos = resident['apellidos'] ?? '';
+                          final nombreCompleto = '$nombres $apellidos'.trim();
+                          _showDeleteDialog(resident, nombreCompleto);
+                        },
+                      );
+                    },
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -598,7 +538,7 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
 }
 
 class _ResidentCard extends StatelessWidget {
-  final ResidentData resident;
+  final Map<String, dynamic> resident;
   final VoidCallback onBlock;
   final VoidCallback onDelete;
   final VoidCallback onDetails;
@@ -612,24 +552,32 @@ class _ResidentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nombres = resident['nombres'] ?? '';
+    final apellidos = resident['apellidos'] ?? '';
+    final nombreCompleto = '$nombres $apellidos'.trim();
+    final manzana = resident['manzana'] ?? '';
+    final villa = resident['villa'] ?? '';
+    final estado = resident['estado'] ?? 'activo';
+    final isBlocked = estado.toLowerCase() == 'inactivo';
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: resident.isBlocked ? Colors.red.shade200 : Colors.blue.shade200,
+          backgroundColor: isBlocked ? Colors.red.shade200 : Colors.blue.shade200,
           child: Icon(
             Icons.person,
-            color: resident.isBlocked ? Colors.red : Colors.blue,
+            color: isBlocked ? Colors.red : Colors.blue,
           ),
         ),
-        title: Text(resident.name),
-        subtitle: Text('${resident.manzana} - ${resident.villa}'),
+        title: Text(nombreCompleto),
+        subtitle: Text('$manzana - $villa'),
         trailing: Wrap(
           spacing: 4,
           children: [
-            if (resident.isBlocked)
+            if (isBlocked)
               Chip(
-                label: const Text('Bloqueado', style: TextStyle(fontSize: 11)),
+                label: const Text('Inactivo', style: TextStyle(fontSize: 11)),
                 backgroundColor: Colors.red.shade100,
                 labelStyle: TextStyle(color: Colors.red.shade700),
                 side: BorderSide(color: Colors.red.shade300),
@@ -637,7 +585,10 @@ class _ResidentCard extends StatelessWidget {
             PopupMenuButton(
               itemBuilder: (context) => [
                 PopupMenuItem(onTap: onDetails, child: const Text('Ver detalles')),
-                PopupMenuItem(onTap: onBlock, child: Text(resident.isBlocked ? 'Desbloquear' : 'Bloquear')),
+                PopupMenuItem(
+                  onTap: onBlock,
+                  child: Text(isBlocked ? 'Reactivar' : 'Desactivar'),
+                ),
                 PopupMenuItem(
                   onTap: onDelete,
                   child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
@@ -666,44 +617,20 @@ class _DetailItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600)),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-              color: valueColor,
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(color: valueColor ?? Colors.grey.shade700),
             ),
           ),
         ],
       ),
     );
   }
-}
-
-class ResidentData {
-  final int id;
-  final String name;
-  final String manzana;
-  final String villa;
-  final String email;
-  final String phone;
-  final String identificacion;
-  final String estado;
-
-  ResidentData({
-    required this.id,
-    required this.name,
-    required this.manzana,
-    required this.villa,
-    required this.email,
-    required this.phone,
-    required this.identificacion,
-    required this.estado,
-  });
-
-  bool get isBlocked => estado != 'activo';
 }
