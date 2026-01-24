@@ -37,7 +37,7 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<Map<String, dynamic>> addMember({
-    required int residenteId,
+    required String residenteId,
     required String identificacion,
     required String tipoIdentificacion,
     required String nombres,

@@ -130,11 +130,13 @@ class _AdminCreateOwnerPageState extends State<AdminCreateOwnerPage> {
 
             if (mounted) {
               Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminOwners',
-                (route) => false,
+                '/adminFacialEnrollment',
+                (route) => route.settings.name == '/adminOwners',
                 arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
+                  'personaId': state.owner['persona_id'] ?? 0,
+                  'nombres': _nombresController.text.trim(),
+                  'apellidos': _apellidosController.text.trim(),
+                  'type': 'owner',
                 },
               );
             }
@@ -422,7 +424,7 @@ class _AdminCreateOwnerPageState extends State<AdminCreateOwnerPage> {
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
-                                        'El propietario se registrará automáticamente como residente de la vivienda.',
+                                        'Después de registrar, se abrirá la pantalla de registro facial.',
                                         style: theme.textTheme.bodySmall,
                                       ),
                                     ),

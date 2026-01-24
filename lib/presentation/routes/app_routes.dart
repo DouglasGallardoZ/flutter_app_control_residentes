@@ -17,6 +17,7 @@ import '../pages/admin_members_page.dart';
 import '../pages/admin_accounts_page.dart';
 import '../pages/admin_create_resident_page.dart';
 import '../pages/admin_create_owner_page.dart';
+import '../pages/admin_create_member_page.dart';
 import '../pages/admin_facial_enrollment_page.dart';
 import '../pages/family_dashboard_page.dart';
 
@@ -38,6 +39,7 @@ class AppRoutes {
   static const String adminAccounts = '/adminAccounts';
   static const String adminCreateResident = '/adminCreateResident';
   static const String adminCreateOwner = '/adminCreateOwner';
+  static const String adminCreateMember = '/adminCreateMember';
   static const String adminFacialEnrollment = '/adminFacialEnrollment';
   static const String adminProfile = '/adminProfile';
   static const String familyDashboard = '/familyDashboard';
@@ -194,11 +196,20 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => AdminCreateOwnerPage(personaId: personaId, identificacion: identificacion));
       }
 
+      case adminCreateMember: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
+        final identificacion = args?['identificacion'] as String?;
+        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminCreateMemberPage');
+        return MaterialPageRoute(builder: (_) => AdminCreateMemberPage(personaId: personaId, identificacion: identificacion));
+      }
+
       case adminFacialEnrollment: {
         final args = settings.arguments as Map<String, dynamic>?;
         final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final nombres = args?['nombres'] as String?;
         final apellidos = args?['apellidos'] as String?;
+        final type = args?['type'] as String?;
         if (personaId == null || nombres == null || apellidos == null) {
           return _errorRoute('Faltan argumentos en AdminFacialEnrollmentPage');
         }
@@ -207,6 +218,7 @@ class AppRoutes {
             personaId: personaId,
             nombres: nombres,
             apellidos: apellidos,
+            type: type,
           ),
         );
       }

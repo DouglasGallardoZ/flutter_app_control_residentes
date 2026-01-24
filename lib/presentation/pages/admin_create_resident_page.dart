@@ -443,7 +443,7 @@ class _AdminCreateResidentPageState extends State<AdminCreateResidentPage> {
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
-                                        'Los campos de Dirección Alternativa y Documento de Autorización son opcionales.',
+                                        'Después de registrar, se abrirá la pantalla de registro facial.',
                                         style: theme.textTheme.bodySmall,
                                       ),
                                     ),

@@ -16,7 +16,7 @@ abstract class MemberRepository {
 
   /// Agregar/crear un miembro de familia
   Future<Map<String, dynamic>> addMember({
-    required int residenteId,
+    required String residenteId,
     required String identificacion,
     required String tipoIdentificacion,
     required String nombres,

@@ -14,12 +14,14 @@ class AdminFacialEnrollmentPage extends StatefulWidget {
   final int personaId;
   final String nombres;
   final String apellidos;
+  final String? type; // 'member', 'resident', 'owner' o null
 
   const AdminFacialEnrollmentPage({
     super.key,
     required this.personaId,
     required this.nombres,
     required this.apellidos,
+    this.type,
   });
 
   @override
@@ -196,12 +198,19 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
                         await Future.delayed(const Duration(milliseconds: 100));
                         
                         if (mounted) {
-                          // Mostrar notificación de éxito
+                          // Mostrar notificación de éxito con mensaje dinámico
+                          String successMessage = 'Residente registrado correctamente';
+                          if (widget.type == 'member') {
+                            successMessage = 'Miembro de familia registrado correctamente';
+                          } else if (widget.type == 'owner') {
+                            successMessage = 'Propietario registrado correctamente';
+                          }
+                          
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Residente registrado correctamente'),
+                            SnackBar(
+                              content: Text(successMessage),
                               behavior: SnackBarBehavior.floating,
-                              duration: Duration(seconds: 3),
+                              duration: const Duration(seconds: 3),
                             ),
                           );
                           

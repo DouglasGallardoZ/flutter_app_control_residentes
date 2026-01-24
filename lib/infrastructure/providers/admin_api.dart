@@ -690,9 +690,9 @@ class AdminApi {
   }
 
   /// Agregar miembro de familia a un residente
-  /// Endpoint: POST /api/v1/miembros/{residente_id}/agregar
+  /// Endpoint: POST /api/v1/miembros/agregar
   Future<Map<String, dynamic>> addFamilyMember({
-    required int residenteId,
+    required String residenteId,
     required String identificacion,
     required String tipoIdentificacion,
     required String nombres,
@@ -710,6 +710,7 @@ class AdminApi {
   }) async {
     try {
       final requestBody = {
+        'identificacion_residente': residenteId,
         'manzana': manzana,
         'villa': villa,
         'identificacion': identificacion,
@@ -729,7 +730,7 @@ class AdminApi {
       };
 
       final response = await dio.post(
-        '/miembros/$residenteId/agregar',
+        '/miembros/agregar',
         data: requestBody,
       );
       return response.data ?? {};

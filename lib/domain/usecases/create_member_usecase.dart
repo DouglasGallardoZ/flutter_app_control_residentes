@@ -8,7 +8,7 @@ class CreateMemberUseCase {
   /// Agregar un nuevo miembro de familia a un residente
   /// Retorna la respuesta del servidor con el miembro_id asignado
   Future<Map<String, dynamic>> call({
-    required int residenteId,
+    required String residenteId,
     required String identificacion,
     required String tipoIdentificacion,
     required String nombres,

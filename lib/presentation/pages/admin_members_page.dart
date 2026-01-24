@@ -278,7 +278,26 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           },
         );
       },
-      actions: [],
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: Center(
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pushNamed(
+                  '/adminCreateMember',
+                  arguments: {
+                    'personaId': widget.personaId,
+                    'identificacion': widget.identificacion,
+                  },
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Registrar'),
+            ),
+          ),
+        ),
+      ],
       onTabSelected: (index) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           switch (index) {

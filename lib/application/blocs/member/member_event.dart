@@ -61,7 +61,7 @@ class DeleteMemberEvent extends MemberEvent {
 
 /// Crear/agregar un nuevo miembro de familia
 class CreateMemberEvent extends MemberEvent {
-  final int residenteId;
+  final String residenteId;
   final String identificacion;
   final String tipoIdentificacion;
   final String nombres;
