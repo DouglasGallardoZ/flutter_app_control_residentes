@@ -294,6 +294,52 @@ class _AdminOwnersPageState extends State<AdminOwnersPage> {
           },
         );
       },
+      onTabSelected: (index) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          switch (index) {
+            case 0:
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/adminDashboard',
+                (route) => false,
+                arguments: {
+                  'personaId': widget.personaId,
+                  'identificacion': widget.identificacion,
+                },
+              );
+              break;
+            case 1:
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/adminAccessHistory',
+                (route) => false,
+                arguments: {
+                  'personaId': widget.personaId,
+                  'identificacion': widget.identificacion,
+                },
+              );
+              break;
+            case 2:
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/adminUsers',
+                (route) => false,
+                arguments: {
+                  'personaId': widget.personaId,
+                  'identificacion': widget.identificacion,
+                },
+              );
+              break;
+            case 3:
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/adminProfile',
+                (route) => false,
+                arguments: {
+                  'personaId': widget.personaId,
+                  'identificacion': widget.identificacion,
+                },
+              );
+              break;
+          }
+        });
+      },
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 8),
