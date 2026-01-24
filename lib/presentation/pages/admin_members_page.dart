@@ -5,6 +5,7 @@ import '../../application/blocs/member/member_bloc.dart';
 import '../../application/blocs/member/member_event.dart';
 import '../../application/blocs/member/member_state.dart';
 import '../widgets/admin_scaffold.dart';
+import '../theme/theme_controller.dart';
 
 class AdminMembersPage extends StatefulWidget {
   final int personaId;
@@ -278,6 +279,14 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           },
         );
       },
+      actions: [
+        IconButton(
+          onPressed: () => ThemeController.toggle(),
+          icon: Icon(
+            Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
+          ),
+        ),
+      ],
       onTabSelected: (index) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           switch (index) {

@@ -4,6 +4,7 @@ import '../../application/blocs/admin_account/admin_account_bloc.dart';
 import '../../application/blocs/admin_account/admin_account_event.dart';
 import '../../application/blocs/admin_account/admin_account_state.dart';
 import '../widgets/admin_scaffold.dart';
+import '../theme/theme_controller.dart';
 
 class AdminAccountsPage extends StatefulWidget {
   final int personaId;
@@ -323,6 +324,14 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
           },
         );
       },
+      actions: [
+        IconButton(
+          onPressed: () => ThemeController.toggle(),
+          icon: Icon(
+            Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
+          ),
+        ),
+      ],
       onTabSelected: (index) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           switch (index) {

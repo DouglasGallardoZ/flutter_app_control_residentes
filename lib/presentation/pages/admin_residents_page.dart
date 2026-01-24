@@ -5,6 +5,7 @@ import '../../application/blocs/resident/resident_bloc.dart';
 import '../../application/blocs/resident/resident_event.dart';
 import '../../application/blocs/resident/resident_state.dart';
 import '../widgets/admin_scaffold.dart';
+import '../theme/theme_controller.dart';
 
 class AdminResidentsPage extends StatefulWidget {
   final int personaId;
@@ -275,6 +276,12 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
         );
       },
       actions: [
+        IconButton(
+          onPressed: () => ThemeController.toggle(),
+          icon: Icon(
+            Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: Center(

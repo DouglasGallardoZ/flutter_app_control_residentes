@@ -4,6 +4,7 @@ import '../../application/blocs/admin/admin_dashboard_bloc.dart';
 import '../../application/blocs/admin/admin_dashboard_event.dart';
 import '../../application/blocs/admin/admin_dashboard_state.dart';
 import '../widgets/admin_scaffold.dart';
+import '../theme/theme_controller.dart';
 
 class AdminUsersPage extends StatefulWidget {
   final int personaId;
@@ -34,6 +35,14 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     return AdminScaffold(
       title: 'Gestión de Usuarios',
       routeName: '/adminUsers',
+      actions: [
+        IconButton(
+          onPressed: () => ThemeController.toggle(),
+          icon: Icon(
+            Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
+          ),
+        ),
+      ],
       onTabSelected: (index) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           switch (index) {

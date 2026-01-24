@@ -6,6 +6,7 @@ import '../../application/blocs/admin/admin_dashboard_state.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_state.dart';
 import '../widgets/admin_scaffold.dart';
+import '../theme/theme_controller.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   final int personaId;
@@ -152,17 +153,29 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildHeader(String adminName) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Hola, $adminName',
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Hola, $adminName',
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Panel de Administración',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Panel de Administración',
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+        IconButton(
+          onPressed: () => ThemeController.toggle(),
+          icon: Icon(
+            Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
       ],
     );

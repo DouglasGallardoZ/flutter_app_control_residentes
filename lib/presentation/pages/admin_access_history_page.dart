@@ -6,6 +6,7 @@ import '../../application/blocs/admin/admin_dashboard_state.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_state.dart';
 import '../widgets/admin_scaffold.dart';
+import '../theme/theme_controller.dart';
 
 class AdminAccessHistoryPage extends StatefulWidget {
   final int personaId;
@@ -48,6 +49,14 @@ class _AdminAccessHistoryPageState extends State<AdminAccessHistoryPage> {
     return AdminScaffold(
       title: 'Historial de Accesos',
       routeName: '/adminAccessHistory',
+      actions: [
+        IconButton(
+          onPressed: () => ThemeController.toggle(),
+          icon: Icon(
+            Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
+          ),
+        ),
+      ],
       onTabSelected: (index) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           switch (index) {

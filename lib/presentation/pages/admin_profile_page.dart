@@ -5,6 +5,7 @@ import '../../application/blocs/auth/auth_event.dart';
 import '../../application/blocs/auth/auth_state.dart';
 import '../widgets/admin_scaffold.dart';
 import '../routes/app_routes.dart';
+import '../theme/theme_controller.dart';
 
 class AdminProfilePage extends StatefulWidget {
   final int personaId;
@@ -125,6 +126,19 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // Toggle tema
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    onPressed: () => ThemeController.toggle(),
+                    icon: Icon(
+                      Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
               // Header del perfil
               Center(
                 child: Column(
