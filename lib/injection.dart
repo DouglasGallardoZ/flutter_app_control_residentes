@@ -52,10 +52,12 @@ import 'domain/usecases/block_owner_usecase.dart';
 import 'domain/usecases/unblock_owner_usecase.dart';
 import 'domain/usecases/delete_owner_usecase.dart';
 import 'domain/usecases/get_owner_properties_usecase.dart';
+import 'domain/usecases/create_owner_usecase.dart';
 import 'domain/usecases/load_members_by_location_usecase.dart';
 import 'domain/usecases/deactivate_member_usecase.dart';
 import 'domain/usecases/reactivate_member_usecase.dart';
 import 'domain/usecases/delete_member_usecase.dart';
+import 'domain/usecases/create_member_usecase.dart';
 import 'domain/usecases/search_account_by_email_usecase.dart';
 import 'domain/usecases/search_account_by_location_usecase.dart';
 import 'domain/usecases/block_account_usecase.dart';
@@ -238,6 +240,10 @@ Future<void> inject() async {
     () => GetOwnerPropertiesUseCase(sl<OwnerRepository>()),
   );
 
+  sl.registerLazySingleton<CreateOwnerUseCase>(
+    () => CreateOwnerUseCase(sl<OwnerRepository>()),
+  );
+
   sl.registerLazySingleton<LoadMembersByLocationUseCase>(
     () => LoadMembersByLocationUseCase(sl<MemberRepository>()),
   );
@@ -252,6 +258,10 @@ Future<void> inject() async {
 
   sl.registerLazySingleton<DeleteMemberUseCase>(
     () => DeleteMemberUseCase(sl<MemberRepository>()),
+  );
+
+  sl.registerLazySingleton<CreateMemberUseCase>(
+    () => CreateMemberUseCase(sl<MemberRepository>()),
   );
 
   sl.registerLazySingleton<SearchAccountByEmailUseCase>(
@@ -305,6 +315,7 @@ Future<void> inject() async {
       unblockOwnerUseCase: sl<UnblockOwnerUseCase>(),
       deleteOwnerUseCase: sl<DeleteOwnerUseCase>(),
       getOwnerPropertiesUseCase: sl<GetOwnerPropertiesUseCase>(),
+      createOwnerUseCase: sl<CreateOwnerUseCase>(),
     ),
   );
 
@@ -314,6 +325,7 @@ Future<void> inject() async {
       deactivateMemberUseCase: sl<DeactivateMemberUseCase>(),
       reactivateMemberUseCase: sl<ReactivateMemberUseCase>(),
       deleteMemberUseCase: sl<DeleteMemberUseCase>(),
+      createMemberUseCase: sl<CreateMemberUseCase>(),
       memberRepository: sl<MemberRepository>(),
     ),
   );

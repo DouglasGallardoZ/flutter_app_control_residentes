@@ -645,4 +645,96 @@ class AdminApi {
       ],
     };
   }
+
+  /// Crear un nuevo propietario
+  /// Endpoint: POST /api/v1/propietarios
+  Future<Map<String, dynamic>> createOwner({
+    required String identificacion,
+    required String tipoIdentificacion,
+    required String nombres,
+    required String apellidos,
+    required String fechaNacimiento,
+    required String correo,
+    required String celular,
+    required String manzana,
+    required String villa,
+    String? nacionalidad,
+    String? direccionAlternativa,
+    String? usuarioCreado,
+  }) async {
+    try {
+      final requestBody = {
+        'identificacion': identificacion,
+        'tipo_identificacion': tipoIdentificacion,
+        'nombres': nombres,
+        'apellidos': apellidos,
+        'fecha_nacimiento': fechaNacimiento,
+        'correo': correo,
+        'celular': celular,
+        'manzana': manzana,
+        'villa': villa,
+        if (nacionalidad != null && nacionalidad.isNotEmpty) 'nacionalidad': nacionalidad,
+        if (direccionAlternativa != null && direccionAlternativa.isNotEmpty)
+          'direccion_alternativa': direccionAlternativa,
+        'usuario_creado': usuarioCreado ?? 'admin_system',
+      };
+
+      final response = await dio.post(
+        '/propietarios',
+        data: requestBody,
+      );
+      return response.data ?? {};
+    } catch (e) {
+      throw Exception(_extractErrorMessage(e));
+    }
+  }
+
+  /// Agregar miembro de familia a un residente
+  /// Endpoint: POST /api/v1/miembros/{residente_id}/agregar
+  Future<Map<String, dynamic>> addFamilyMember({
+    required int residenteId,
+    required String identificacion,
+    required String tipoIdentificacion,
+    required String nombres,
+    required String apellidos,
+    required String fechaNacimiento,
+    required String manzana,
+    required String villa,
+    required String parentesco,
+    String? nacionalidad,
+    String? correo,
+    String? celular,
+    String? direccionAlternativa,
+    String? parentescoOtroDesc,
+    String? usuarioCreado,
+  }) async {
+    try {
+      final requestBody = {
+        'manzana': manzana,
+        'villa': villa,
+        'identificacion': identificacion,
+        'tipo_identificacion': tipoIdentificacion,
+        'nombres': nombres,
+        'apellidos': apellidos,
+        'fecha_nacimiento': fechaNacimiento,
+        'parentesco': parentesco,
+        if (nacionalidad != null && nacionalidad.isNotEmpty) 'nacionalidad': nacionalidad,
+        if (correo != null && correo.isNotEmpty) 'correo': correo,
+        if (celular != null && celular.isNotEmpty) 'celular': celular,
+        if (direccionAlternativa != null && direccionAlternativa.isNotEmpty)
+          'direccion_alternativa': direccionAlternativa,
+        if (parentesco == 'otro' && parentescoOtroDesc != null && parentescoOtroDesc.isNotEmpty)
+          'parentesco_otro_desc': parentescoOtroDesc,
+        'usuario_creado': usuarioCreado ?? 'admin_system',
+      };
+
+      final response = await dio.post(
+        '/miembros/$residenteId/agregar',
+        data: requestBody,
+      );
+      return response.data ?? {};
+    } catch (e) {
+      throw Exception(_extractErrorMessage(e));
+    }
+  }
 }

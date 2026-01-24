@@ -4,6 +4,7 @@ import '../../../domain/usecases/block_owner_usecase.dart';
 import '../../../domain/usecases/unblock_owner_usecase.dart';
 import '../../../domain/usecases/delete_owner_usecase.dart';
 import '../../../domain/usecases/get_owner_properties_usecase.dart';
+import '../../../domain/usecases/create_owner_usecase.dart';
 import 'owner_event.dart';
 import 'owner_state.dart';
 
@@ -13,6 +14,7 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
   final UnblockOwnerUseCase unblockOwnerUseCase;
   final DeleteOwnerUseCase deleteOwnerUseCase;
   final GetOwnerPropertiesUseCase getOwnerPropertiesUseCase;
+  final CreateOwnerUseCase createOwnerUseCase;
 
   OwnerBloc({
     required this.loadOwnersByLocationUseCase,
@@ -20,12 +22,14 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
     required this.unblockOwnerUseCase,
     required this.deleteOwnerUseCase,
     required this.getOwnerPropertiesUseCase,
+    required this.createOwnerUseCase,
   }) : super(const OwnerInitial()) {
     on<LoadOwnersByLocationEvent>(_onLoadOwnersByLocation);
     on<BlockOwnerEvent>(_onBlockOwner);
     on<UnblockOwnerEvent>(_onUnblockOwner);
     on<DeleteOwnerEvent>(_onDeleteOwner);
     on<GetOwnerPropertiesEvent>(_onGetOwnerProperties);
+    on<CreateOwnerEvent>(_onCreateOwner);
   }
 
   /// Cargar propietarios por ubicación
@@ -127,6 +131,36 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
     try {
       final properties = await getOwnerPropertiesUseCase(event.ownerId);
       emit(OwnerPropertiesLoaded(properties));
+    } catch (e) {
+      emit(OwnerError(e.toString()));
+    }
+  }
+
+  /// Crear un nuevo propietario
+  Future<void> _onCreateOwner(
+    CreateOwnerEvent event,
+    Emitter<OwnerState> emit,
+  ) async {
+    emit(const OwnerLoading());
+    try {
+      final response = await createOwnerUseCase(
+        identificacion: event.identificacion,
+        tipoIdentificacion: event.tipoIdentificacion,
+        nombres: event.nombres,
+        apellidos: event.apellidos,
+        fechaNacimiento: event.fechaNacimiento,
+        correo: event.correo,
+        celular: event.celular,
+        manzana: event.manzana,
+        villa: event.villa,
+        nacionalidad: event.nacionalidad,
+        direccionAlternativa: event.direccionAlternativa,
+        usuarioCreado: event.usuarioCreado,
+      );
+      emit(OwnerCreated(
+        message: response['mensaje'] ?? 'Propietario registrado exitosamente',
+        owner: response,
+      ));
     } catch (e) {
       emit(OwnerError(e.toString()));
     }

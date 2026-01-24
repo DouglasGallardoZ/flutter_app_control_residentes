@@ -64,6 +64,16 @@ class OwnerDeleted extends OwnerState {
   List<Object?> get props => [message];
 }
 
+class OwnerCreated extends OwnerState {
+  final String message;
+  final Map<String, dynamic> owner;
+
+  const OwnerCreated({required this.message, required this.owner});
+
+  @override
+  List<Object?> get props => [message, owner];
+}
+
 class OwnerPropertiesLoaded extends OwnerState {
   final List<Map<String, dynamic>> properties;
 

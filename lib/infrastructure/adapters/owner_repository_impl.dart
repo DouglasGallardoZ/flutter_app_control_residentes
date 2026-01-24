@@ -101,4 +101,40 @@ class OwnerRepositoryImpl implements OwnerRepository {
       throw Exception('Error al cargar propiedades del propietario: $e');
     }
   }
+
+  @override
+  Future<Map<String, dynamic>> createOwner({
+    required String identificacion,
+    required String tipoIdentificacion,
+    required String nombres,
+    required String apellidos,
+    required String fechaNacimiento,
+    required String correo,
+    required String celular,
+    required String manzana,
+    required String villa,
+    String? nacionalidad,
+    String? direccionAlternativa,
+    required String usuarioCreado,
+  }) async {
+    try {
+      final response = await adminApi.createOwner(
+        identificacion: identificacion,
+        tipoIdentificacion: tipoIdentificacion,
+        nombres: nombres,
+        apellidos: apellidos,
+        fechaNacimiento: fechaNacimiento,
+        correo: correo,
+        celular: celular,
+        manzana: manzana,
+        villa: villa,
+        nacionalidad: nacionalidad,
+        direccionAlternativa: direccionAlternativa,
+        usuarioCreado: usuarioCreado,
+      );
+      return response;
+    } catch (e) {
+      throw Exception('Error al crear propietario: $e');
+    }
+  }
 }

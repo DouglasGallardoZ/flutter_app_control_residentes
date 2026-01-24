@@ -27,4 +27,20 @@ abstract class OwnerRepository {
 
   /// Obtener propiedades de un propietario
   Future<List<Map<String, dynamic>>> getOwnerProperties(int ownerId);
+
+  /// Crear un nuevo propietario
+  Future<Map<String, dynamic>> createOwner({
+    required String identificacion,
+    required String tipoIdentificacion,
+    required String nombres,
+    required String apellidos,
+    required String fechaNacimiento,
+    required String correo,
+    required String celular,
+    required String manzana,
+    required String villa,
+    String? nacionalidad,
+    String? direccionAlternativa,
+    required String usuarioCreado,
+  });
 }

@@ -58,3 +58,59 @@ class DeleteMemberEvent extends MemberEvent {
   @override
   List<Object?> get props => [memberId];
 }
+
+/// Crear/agregar un nuevo miembro de familia
+class CreateMemberEvent extends MemberEvent {
+  final int residenteId;
+  final String identificacion;
+  final String tipoIdentificacion;
+  final String nombres;
+  final String apellidos;
+  final String fechaNacimiento;
+  final String manzana;
+  final String villa;
+  final String parentesco;
+  final String? nacionalidad;
+  final String? correo;
+  final String? celular;
+  final String? direccionAlternativa;
+  final String? parentescoOtroDesc;
+  final String usuarioCreado;
+
+  const CreateMemberEvent({
+    required this.residenteId,
+    required this.identificacion,
+    required this.tipoIdentificacion,
+    required this.nombres,
+    required this.apellidos,
+    required this.fechaNacimiento,
+    required this.manzana,
+    required this.villa,
+    required this.parentesco,
+    this.nacionalidad,
+    this.correo,
+    this.celular,
+    this.direccionAlternativa,
+    this.parentescoOtroDesc,
+    required this.usuarioCreado,
+  });
+
+  @override
+  List<Object?> get props => [
+    residenteId,
+    identificacion,
+    tipoIdentificacion,
+    nombres,
+    apellidos,
+    fechaNacimiento,
+    manzana,
+    villa,
+    parentesco,
+    nacionalidad,
+    correo,
+    celular,
+    direccionAlternativa,
+    parentescoOtroDesc,
+    usuarioCreado,
+  ];
+}

@@ -34,4 +34,42 @@ class MemberRepositoryImpl implements MemberRepository {
   Future<void> deleteMember(int memberId) async {
     await adminApi.deleteAccount(memberId);
   }
+
+  @override
+  Future<Map<String, dynamic>> addMember({
+    required int residenteId,
+    required String identificacion,
+    required String tipoIdentificacion,
+    required String nombres,
+    required String apellidos,
+    required String fechaNacimiento,
+    required String manzana,
+    required String villa,
+    required String parentesco,
+    String? nacionalidad,
+    String? correo,
+    String? celular,
+    String? direccionAlternativa,
+    String? parentescoOtroDesc,
+    required String usuarioCreado,
+  }) async {
+    final response = await adminApi.addFamilyMember(
+      residenteId: residenteId,
+      identificacion: identificacion,
+      tipoIdentificacion: tipoIdentificacion,
+      nombres: nombres,
+      apellidos: apellidos,
+      fechaNacimiento: fechaNacimiento,
+      manzana: manzana,
+      villa: villa,
+      parentesco: parentesco,
+      nacionalidad: nacionalidad,
+      correo: correo,
+      celular: celular,
+      direccionAlternativa: direccionAlternativa,
+      parentescoOtroDesc: parentescoOtroDesc,
+      usuarioCreado: usuarioCreado,
+    );
+    return response;
+  }
 }

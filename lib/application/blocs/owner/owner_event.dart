@@ -62,3 +62,49 @@ class GetOwnerPropertiesEvent extends OwnerEvent {
   @override
   List<Object?> get props => [ownerId];
 }
+
+class CreateOwnerEvent extends OwnerEvent {
+  final String identificacion;
+  final String tipoIdentificacion;
+  final String nombres;
+  final String apellidos;
+  final String fechaNacimiento;
+  final String correo;
+  final String celular;
+  final String manzana;
+  final String villa;
+  final String? nacionalidad;
+  final String? direccionAlternativa;
+  final String usuarioCreado;
+
+  const CreateOwnerEvent({
+    required this.identificacion,
+    required this.tipoIdentificacion,
+    required this.nombres,
+    required this.apellidos,
+    required this.fechaNacimiento,
+    required this.correo,
+    required this.celular,
+    required this.manzana,
+    required this.villa,
+    this.nacionalidad,
+    this.direccionAlternativa,
+    required this.usuarioCreado,
+  });
+
+  @override
+  List<Object?> get props => [
+    identificacion,
+    tipoIdentificacion,
+    nombres,
+    apellidos,
+    fechaNacimiento,
+    correo,
+    celular,
+    manzana,
+    villa,
+    nacionalidad,
+    direccionAlternativa,
+    usuarioCreado,
+  ];
+}

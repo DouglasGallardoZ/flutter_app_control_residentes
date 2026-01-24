@@ -71,6 +71,20 @@ class MemberDeleted extends MemberState {
   List<Object?> get props => [message];
 }
 
+/// Miembro creado/agregado
+class MemberCreated extends MemberState {
+  final String message;
+  final Map<String, dynamic> member;
+
+  const MemberCreated({
+    required this.message,
+    required this.member,
+  });
+
+  @override
+  List<Object?> get props => [message, member];
+}
+
 /// Error al procesar operación
 class MemberError extends MemberState {
   final String message;

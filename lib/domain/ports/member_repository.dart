@@ -13,4 +13,23 @@ abstract class MemberRepository {
 
   /// Eliminar un miembro
   Future<void> deleteMember(int memberId);
+
+  /// Agregar/crear un miembro de familia
+  Future<Map<String, dynamic>> addMember({
+    required int residenteId,
+    required String identificacion,
+    required String tipoIdentificacion,
+    required String nombres,
+    required String apellidos,
+    required String fechaNacimiento,
+    required String manzana,
+    required String villa,
+    required String parentesco,
+    String? nacionalidad,
+    String? correo,
+    String? celular,
+    String? direccionAlternativa,
+    String? parentescoOtroDesc,
+    required String usuarioCreado,
+  });
 }

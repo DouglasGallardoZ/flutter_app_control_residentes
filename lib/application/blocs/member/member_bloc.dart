@@ -3,6 +3,7 @@ import '../../../domain/usecases/load_members_by_location_usecase.dart';
 import '../../../domain/usecases/deactivate_member_usecase.dart';
 import '../../../domain/usecases/reactivate_member_usecase.dart';
 import '../../../domain/usecases/delete_member_usecase.dart';
+import '../../../domain/usecases/create_member_usecase.dart';
 import '../../../domain/ports/member_repository.dart';
 import 'member_event.dart';
 import 'member_state.dart';
@@ -12,6 +13,7 @@ class MemberBloc extends Bloc<MemberEvent, MemberState> {
   final DeactivateMemberUseCase deactivateMemberUseCase;
   final ReactivateMemberUseCase reactivateMemberUseCase;
   final DeleteMemberUseCase deleteMemberUseCase;
+  final CreateMemberUseCase createMemberUseCase;
   final MemberRepository memberRepository;
 
   MemberBloc({
@@ -19,12 +21,14 @@ class MemberBloc extends Bloc<MemberEvent, MemberState> {
     required this.deactivateMemberUseCase,
     required this.reactivateMemberUseCase,
     required this.deleteMemberUseCase,
+    required this.createMemberUseCase,
     required this.memberRepository,
   }) : super(const MemberInitial()) {
     on<LoadMembersByLocationEvent>(_onLoadMembersByLocation);
     on<DeactivateMemberEvent>(_onDeactivateMember);
     on<ReactivateMemberEvent>(_onReactivateMember);
     on<DeleteMemberEvent>(_onDeleteMember);
+    on<CreateMemberEvent>(_onCreateMember);
   }
 
   /// Cargar miembros por ubicación
@@ -114,6 +118,39 @@ class MemberBloc extends Bloc<MemberEvent, MemberState> {
       }
     } catch (e) {
       emit(MemberError(message: 'Error al eliminar miembro: $e'));
+    }
+  }
+
+  /// Crear/agregar un nuevo miembro de familia
+  Future<void> _onCreateMember(
+    CreateMemberEvent event,
+    Emitter<MemberState> emit,
+  ) async {
+    emit(const MemberLoading());
+    try {
+      final response = await createMemberUseCase(
+        residenteId: event.residenteId,
+        identificacion: event.identificacion,
+        tipoIdentificacion: event.tipoIdentificacion,
+        nombres: event.nombres,
+        apellidos: event.apellidos,
+        fechaNacimiento: event.fechaNacimiento,
+        manzana: event.manzana,
+        villa: event.villa,
+        parentesco: event.parentesco,
+        nacionalidad: event.nacionalidad,
+        correo: event.correo,
+        celular: event.celular,
+        direccionAlternativa: event.direccionAlternativa,
+        parentescoOtroDesc: event.parentescoOtroDesc,
+        usuarioCreado: event.usuarioCreado,
+      );
+      emit(MemberCreated(
+        message: response['mensaje'] ?? 'Miembro de familia agregado exitosamente',
+        member: response,
+      ));
+    } catch (e) {
+      emit(MemberError(message: 'Error al crear miembro: $e'));
     }
   }
 }

@@ -16,7 +16,7 @@
 4. [Endpoints - Cuentas (8)](#cuentas)
 5. [Endpoints - QR (5)](#qr)
 6. [Endpoints - Residentes (6)](#residentes)
-7. [Endpoints - Propietarios (5)](#propietarios)
+7. [Endpoints - Propietarios (8)](#propietarios)
 8. [Endpoints - Miembros de Familia (6)](#miembros-de-familia)
 9. [Modelos de Datos (Schemas)](#modelos-de-datos)
 10. [Códigos de Error](#códigos-de-error)
@@ -753,7 +753,7 @@ Obtiene la información completa de un usuario buscando por correo electrónico.
 ## QR
 
 **Prefijo:** `/api/v1/qr`  
-**Total Endpoints:** 4
+**Total Endpoints:** 5
 
 ### 1. Generar QR Propio
 
@@ -1435,14 +1435,24 @@ Registra una nueva persona como residente en una vivienda.
   "correo": "juan.perez@example.com",
   "celular": "+593987654321",
   "direccion_alternativa": "Calle 5 # 123",
-  "vivienda_id": 1,
+  "manzana": "A",
+  "villa": "101",
   "doc_autorizacion_pdf": "https://storage.com/doc.pdf",
   "usuario_creado": "admin_001"
 }
 ```
 
+**Request Fields:**
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|----------|-------------|
+| manzana | string | ✅ | Manzana de la vivienda |
+| villa | string | ✅ | Villa de la vivienda |
+| doc_autorizacion_pdf | string | ❌ | URL del documento de autorización |
+| usuario_creado | string | ⚙️ | Usuario que realiza la acción (default: "api_user") |
+
 **Validaciones:**
-- ✅ Vivienda debe existir y estar activa
+- ✅ Vivienda debe existir y estar activa (se busca por manzana y villa)
+- ✅ No debe existir residente activo en esa vivienda
 - ✅ Identificación debe ser única (no puede existir persona activa con mismo documento)
 - ✅ Email debe ser válido (formato)
 - ✅ Teléfono <= 15 caracteres
@@ -1468,6 +1478,11 @@ Registra una nueva persona como residente en una vivienda.
 {
   "detail": "El identificación ya está registrada"
 }
+
+// 409 - Ya existe residente activo
+{
+  "detail": "Ya existe un residente activo registrado en esta vivienda"
+}
 ```
 
 ---
@@ -1489,10 +1504,14 @@ Desactiva un residente (cambiar estado a "inactivo"). El residente no puede acce
 **Request Body:**
 ```json
 {
-  "motivo": "Cambio de domicilio",
   "usuario_actualizado": "admin_001"
 }
 ```
+
+**Request Fields:**
+| Campo | Tipo | Requerido | Descripción | Defecto |
+|-------|------|----------|-------------|---------|
+| usuario_actualizado | string | ✅ | Usuario que realiza la acción | - |
 
 **Success Response (200 OK):**
 ```json
@@ -1513,9 +1532,6 @@ Desactiva un residente (cambiar estado a "inactivo"). El residente no puede acce
 }
 ```
 
-**TODO Pendiente:**
-- Desactivar automáticamente miembros de familia asociados
-
 ---
 
 ### 3. Reactivar Residente
@@ -1527,19 +1543,39 @@ Desactiva un residente (cambiar estado a "inactivo"). El residente no puede acce
 **Descripción:**
 Reactiva un residente previamente desactivado.
 
+**Path Parameters:**
+```
+{residente_id} = ID de registro en tabla ResidenteVivienda
+```
+
 **Request Body:**
 ```json
 {
-  "motivo": "Retorno a domicilio anterior",
   "usuario_actualizado": "admin_001"
 }
 ```
+
+**Request Fields:**
+| Campo | Tipo | Requerido | Descripción | Defecto |
+|-------|------|----------|-------------|---------|
+| usuario_actualizado | string | ✅ | Usuario que realiza la acción | - |
 
 **Success Response (200 OK):**
 ```json
 {
   "mensaje": "Residente reactivado correctamente",
   "residente_id": 10
+}
+```
+
+**Validaciones:**
+- ✅ Residente debe existir
+- ✅ No puede estar ya activo
+
+**Error Responses:**
+```json
+{
+  "detail": "El residente ya se encuentra activo"
 }
 ```
 
@@ -1681,7 +1717,7 @@ Obtiene todos los residentes activos de una vivienda especificada por su manzana
 **Auth:** Bearer token (admin)
 
 **Descripción:**
-Registra un nuevo propietario y lo asigna a una vivienda. El propietario se registra automáticamente como residente.
+Registra un nuevo propietario y lo asigna a una vivienda identificada por su manzana y villa. El propietario se registra automáticamente como residente.
 
 **Request Body:**
 ```json
@@ -1695,14 +1731,23 @@ Registra un nuevo propietario y lo asigna a una vivienda. El propietario se regi
   "correo": "maria.garcia@example.com",
   "celular": "+593998765432",
   "direccion_alternativa": "Avenida 10 # 456",
-  "vivienda_id": 1,
+  "manzana": "A",
+  "villa": "101",
   "usuario_creado": "admin_001"
 }
 ```
 
+**Request Fields:**
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|----------|-------------|
+| manzana | string | ✅ | Manzana de la vivienda |
+| villa | string | ✅ | Villa de la vivienda |
+| usuario_creado | string | ⚙️ | Usuario que realiza la acción (default: "api_user") |
+
 **Validaciones:**
-- ✅ Vivienda debe existir
+- ✅ Vivienda debe existir (se busca por manzana y villa)
 - ✅ Identificación debe ser única
+- ✅ Manzana y villa son obligatorios
 
 **Success Response (201 Created):**
 ```json
@@ -1711,11 +1756,59 @@ Registra un nuevo propietario y lo asigna a una vivienda. El propietario se regi
   "persona_id": 2,
   "propietario_id": 5,
   "residente_id": 11,
+  "vivienda_id": 1,
   "mensaje": "Propietario registrado y automáticamente registrado como residente"
 }
 ```
 
+**Error Responses:**
+```json
+// 404 - Vivienda no encontrada
+{
+  "detail": "Vivienda no encontrada para manzana 'A' y villa '101'"
+}
+
+// 400 - Identificación duplicada
+{
+  "detail": "Ya existe una persona con identificación 9876543210"
+}
+```
+
 **Note:** El propietario se registra automáticamente como residente activo.
+
+**Ejemplo en Dart/Flutter:**
+```dart
+Future<void> registrarPropietario() async {
+  final response = await http.post(
+    Uri.parse('$baseUrl/propietarios'),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $accessToken',
+    },
+    body: jsonEncode({
+      'identificacion': '9876543210',
+      'tipo_identificacion': 'cedula',
+      'nombres': 'María',
+      'apellidos': 'García López',
+      'fecha_nacimiento': '1985-08-22',
+      'nacionalidad': 'Ecuador',
+      'correo': 'maria.garcia@example.com',
+      'celular': '+593998765432',
+      'direccion_alternativa': 'Avenida 10 # 456',
+      'manzana': 'A',
+      'villa': '101',
+      'usuario_creado': 'flutter_app'
+    }),
+  );
+
+  if (response.statusCode == 201) {
+    final data = jsonDecode(response.body);
+    print('Propietario creado: ${data['persona_id']}');
+  } else {
+    throw Exception('Error: ${response.body}');
+  }
+}
+```
 
 ---
 
@@ -1749,6 +1842,13 @@ Registra un cónyuge como copropietario de la vivienda.
 }
 ```
 
+**Request Fields:**
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|----------|-------------|
+| identificacion | string | ✅ | Identificación de la persona |
+| nombres | string | ✅ | Nombre(s) del cónyuge |
+| usuario_creado | string | ⚙️ | Usuario que realiza la acción (default: "api_user") |
+
 **Success Response (201 Created):**
 ```json
 {
@@ -1756,6 +1856,38 @@ Registra un cónyuge como copropietario de la vivienda.
   "persona_id": 3,
   "propietario_id": 6,
   "mensaje": "Cónyuge registrado como copropietario"
+}
+```
+
+**Ejemplo en Dart/Flutter:**
+```dart
+Future<void> registrarConyuge(int propietarioId) async {
+  final response = await http.post(
+    Uri.parse('$baseUrl/propietarios/$propietarioId/conyuge'),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $accessToken',
+    },
+    body: jsonEncode({
+      'identificacion': '1111111111',
+      'tipo_identificacion': 'cedula',
+      'nombres': 'Carlos',
+      'apellidos': 'García Rodríguez',
+      'fecha_nacimiento': '1988-03-10',
+      'nacionalidad': 'Ecuador',
+      'correo': 'carlos.garcia@example.com',
+      'celular': '+593991234567',
+      'direccion_alternativa': 'Avenida 10 # 456',
+      'usuario_creado': 'flutter_app'
+    }),
+  );
+
+  if (response.statusCode == 201) {
+    final data = jsonDecode(response.body);
+    print('Cónyuge registrado: ${data['persona_id']}');
+  } else {
+    throw Exception('Error: ${response.body}');
+  }
 }
 ```
 
@@ -1828,6 +1960,11 @@ Elimina (soft delete) un propietario de la vivienda.
 **Descripción:**
 Actualiza la información de contacto y dirección de un propietario.
 
+**Path Parameters:**
+```
+{propietario_id} = ID del propietario (de tabla PropietarioVivienda)
+```
+
 **Request Body:**
 ```json
 {
@@ -1838,6 +1975,14 @@ Actualiza la información de contacto y dirección de un propietario.
 }
 ```
 
+**Request Fields:**
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|----------|-------------|
+| correo | string | ❌ | Nuevo email del propietario |
+| celular | string | ❌ | Nuevo teléfono del propietario |
+| direccion_alternativa | string | ❌ | Dirección alternativa |
+| usuario_actualizado | string | ⚙️ | Usuario que realiza la acción (default: "api_user") |
+
 **Success Response (200 OK):**
 ```json
 {
@@ -1845,6 +1990,18 @@ Actualiza la información de contacto y dirección de un propietario.
   "mensaje": "Información del propietario actualizada",
   "propietario_id": 5,
   "correo": "nuevo.correo@example.com"
+}
+```
+
+**Validaciones:**
+- ✅ Propietario debe existir
+- ✅ Email debe ser válido (si se proporciona)
+- ✅ Teléfono <= 15 caracteres (si se proporciona)
+
+**Error Responses:**
+```json
+{
+  "detail": "Propietario no encontrado"
 }
 ```
 
@@ -1898,13 +2055,20 @@ Transfiere la propiedad: inactiva propietario anterior, activa nuevo propietario
 **Request Body:**
 ```json
 {
-  "propietario_anterior_id": 5,
-  "persona_nueva_id": 10,
   "vivienda_id": 1,
-  "motivo": "Venta de propiedad",
+  "nuevo_propietario_id": 10,
+  "motivo_cambio": "Venta de propiedad",
   "usuario_actualizado": "admin_001"
 }
 ```
+
+**Request Fields:**
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|----------|-------------|
+| vivienda_id | integer | ✅ | ID de la vivienda a transferir |
+| nuevo_propietario_id | integer | ✅ | ID de la persona que será nuevo propietario |
+| motivo_cambio | string | ✅ | Motivo de la transferencia |
+| usuario_actualizado | string | ⚙️ | Usuario que realiza la operación (default: "api_user") |
 
 **Cascada Logic:**
 - Propietario anterior → Inactivo
@@ -1976,7 +2140,7 @@ Obtiene todos los propietarios activos de una vivienda especificada por su manza
 **Auth:** Bearer token
 
 **Descripción:**
-Agrega un miembro de familia (padre, madre, hijo, etc.) vinculado a un residente.
+Agrega un miembro de familia (padre, madre, hijo, etc.) vinculado a un residente. La vivienda se identifica por su manzana y villa.
 
 **Path Parameters:**
 ```
@@ -1986,7 +2150,8 @@ Agrega un miembro de familia (padre, madre, hijo, etc.) vinculado a un residente
 **Request Body:**
 ```json
 {
-  "vivienda_id": 1,
+  "manzana": "A",
+  "villa": "101",
   "identificacion": "2222222222",
   "tipo_identificacion": "cedula",
   "nombres": "Ana",
@@ -2002,10 +2167,18 @@ Agrega un miembro de familia (padre, madre, hijo, etc.) vinculado a un residente
 }
 ```
 
+**Request Fields:**
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|----------|-------------|
+| manzana | string | ✅ | Manzana de la vivienda |
+| villa | string | ✅ | Villa de la vivienda |
+| parentesco | string | ✅ | Tipo de parentesco |
+| parentesco_otro_desc | string | ❌ | Descripción si parentesco = "otro" |
+
 **Validaciones:**
 - ✅ Parentescos válidos: `padre`, `madre`, `esposo`, `esposa`, `hijo`, `hija`, `otro`
 - ✅ Si parentesco = "otro", requerido campo `parentesco_otro_desc`
-- ✅ Vivienda debe existir
+- ✅ Vivienda debe existir (se busca por manzana y villa)
 - ✅ Residente debe existir en esa vivienda
 - ✅ Identificación debe ser única
 
@@ -2015,7 +2188,60 @@ Agrega un miembro de familia (padre, madre, hijo, etc.) vinculado a un residente
   "success": true,
   "miembro_id": 20,
   "persona_id": 4,
+  "vivienda_id": 1,
   "mensaje": "Miembro de familia agregado exitosamente"
+}
+```
+
+**Error Responses:**
+```json
+// 404 - Vivienda no encontrada
+{
+  "detail": "Vivienda no encontrada para manzana 'A' y villa '101'"
+}
+
+// 404 - Residente no existe en esa vivienda
+{
+  "detail": "Residente no encontrado en esta vivienda"
+}
+
+// 400 - Identificación duplicada
+{
+  "detail": "Ya existe una persona con identificación 2222222222"
+}
+```
+
+**Ejemplo en Dart/Flutter:**
+```dart
+Future<void> agregarMiembroFamilia(int residenteId) async {
+  final response = await http.post(
+    Uri.parse('$baseUrl/miembros/$residenteId/agregar'),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $accessToken',
+    },
+    body: jsonEncode({
+      'manzana': 'A',
+      'villa': '101',
+      'identificacion': '2222222222',
+      'tipo_identificacion': 'cedula',
+      'nombres': 'Ana',
+      'apellidos': 'Pérez García',
+      'fecha_nacimiento': '2010-06-20',
+      'nacionalidad': 'Ecuador',
+      'correo': 'ana.perez@example.com',
+      'celular': '+593987777777',
+      'parentesco': 'hija',
+      'usuario_creado': 'flutter_app'
+    }),
+  );
+
+  if (response.statusCode == 201) {
+    final data = jsonDecode(response.body);
+    print('Miembro agregado: ${data['persona_id']}');
+  } else {
+    throw Exception('Error: ${response.body}');
+  }
 }
 ```
 
@@ -2079,16 +2305,20 @@ Desactiva un miembro de familia.
 **Request Body:**
 ```json
 {
-  "motivo": "Cambio de residencia",
   "usuario_actualizado": "admin_001"
 }
 ```
 
+**Request Fields:**
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|----------|-------------|
+| usuario_actualizado | string | ⚙️ | Usuario que realiza la acción (default: "api_user") |
+
 **Success Response (200 OK):**
 ```json
 {
-  "mensaje": "Miembro de familia desactivado correctamente",
-  "miembro_id": 20
+  "success": true,
+  "mensaje": "Miembro desactivado correctamente"
 }
 ```
 
@@ -2105,16 +2335,20 @@ Reactiva un miembro de familia previamente desactivado.
 **Request Body:**
 ```json
 {
-  "motivo": "Retorno de residencia",
   "usuario_actualizado": "admin_001"
 }
 ```
 
+**Request Fields:**
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|----------|-------------|
+| usuario_actualizado | string | ⚙️ | Usuario que realiza la acción (default: "api_user") |
+
 **Success Response (200 OK):**
 ```json
 {
-  "mensaje": "Miembro de familia reactivado correctamente",
-  "miembro_id": 20
+  "success": true,
+  "mensaje": "Miembro reactivado correctamente"
 }
 ```
 

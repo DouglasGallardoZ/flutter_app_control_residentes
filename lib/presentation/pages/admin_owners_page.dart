@@ -294,6 +294,26 @@ class _AdminOwnersPageState extends State<AdminOwnersPage> {
           },
         );
       },
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: Center(
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pushNamed(
+                  '/adminCreateOwner',
+                  arguments: {
+                    'personaId': widget.personaId,
+                    'identificacion': widget.identificacion,
+                  },
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Registrar'),
+            ),
+          ),
+        ),
+      ],
       body: BlocListener<OwnerBloc, OwnerState>(
         listener: (context, state) {
           if (state is OwnerBlocked) {
