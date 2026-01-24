@@ -6,7 +6,6 @@ import '../../application/blocs/owner/owner_event.dart';
 import '../../application/blocs/owner/owner_state.dart';
 import '../../domain/entities/owner_entity.dart';
 import '../widgets/admin_scaffold.dart';
-import '../theme/theme_controller.dart';
 
 class AdminOwnersPage extends StatefulWidget {
   final int personaId;
@@ -296,12 +295,6 @@ class _AdminOwnersPageState extends State<AdminOwnersPage> {
         );
       },
       actions: [
-        IconButton(
-          onPressed: () => ThemeController.toggle(),
-          icon: Icon(
-            Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
-          ),
-        ),
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: Center(

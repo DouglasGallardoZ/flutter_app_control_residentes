@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_state.dart';
 import '../widgets/app_scaffold.dart';
-import '../../presentation/theme/theme_controller.dart';
 import '../widgets/activity_item.dart';
 import '../widgets/metric_card.dart';
 
@@ -97,13 +96,6 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage> {
                   Text('Residencia $displayResidence', style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor)),
                 ]),
               ]),
-              IconButton(
-                onPressed: () => ThemeController.toggle(),
-                icon: Icon(
-                  Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 16),

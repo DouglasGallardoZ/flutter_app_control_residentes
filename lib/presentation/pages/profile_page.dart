@@ -8,6 +8,7 @@ import '../../application/blocs/account/account_event.dart';
 import '../../application/blocs/account/account_state.dart';
 import '../widgets/app_scaffold.dart';
 import '../routes/app_routes.dart';
+import '../theme/theme_controller.dart';
 
 class ProfilePage extends StatefulWidget {
   final int personaId;
@@ -285,10 +286,19 @@ class _ProfilePageState extends State<ProfilePage> {
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(8),
-                      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                        const Text('Notificaciones'),
-                        Switch(value: notificationsEnabled, onChanged: (v) => setState(() => notificationsEnabled = v)),
-                      ]),
+                      child: Column(
+                        children: [
+                          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                            const Text('Notificaciones'),
+                            Switch(value: notificationsEnabled, onChanged: (v) => setState(() => notificationsEnabled = v)),
+                          ]),
+                          const Divider(height: 16),
+                          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                            const Text('Tema Oscuro'),
+                            Switch(value: Theme.of(context).brightness == Brightness.dark, onChanged: (v) => ThemeController.toggle()),
+                          ]),
+                        ],
+                      ),
                     ),
                   ),
 

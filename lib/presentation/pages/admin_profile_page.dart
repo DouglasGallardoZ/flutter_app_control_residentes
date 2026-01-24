@@ -126,19 +126,6 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // Toggle tema
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  IconButton(
-                    onPressed: () => ThemeController.toggle(),
-                    icon: Icon(
-                      Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
               // Header del perfil
               Center(
                 child: Column(
@@ -330,13 +317,28 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
                     children: [
-                      const Text('Notificaciones'),
-                      Switch(
-                        value: notificationsEnabled,
-                        onChanged: (value) => setState(() => notificationsEnabled = value),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Notificaciones'),
+                          Switch(
+                            value: notificationsEnabled,
+                            onChanged: (value) => setState(() => notificationsEnabled = value),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Tema Oscuro'),
+                          Switch(
+                            value: theme.brightness == Brightness.dark,
+                            onChanged: (value) => ThemeController.toggle(),
+                          ),
+                        ],
                       ),
                     ],
                   ),

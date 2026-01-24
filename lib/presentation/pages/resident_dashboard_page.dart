@@ -9,7 +9,6 @@ import '../widgets/app_scaffold.dart';
 import '../widgets/metric_card.dart';
 import '../widgets/activity_item.dart';
 import '../routes/app_routes.dart';
-import '../../presentation/theme/theme_controller.dart';
 
 class ResidentDashboardPage extends StatefulWidget {
   final int personaId;
@@ -106,13 +105,6 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
                   Text('Residencia $displayResidence', style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor)),
                 ]),
               ]),
-              IconButton(
-                onPressed: () => ThemeController.toggle(),
-                icon: Icon(
-                  Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 16),
