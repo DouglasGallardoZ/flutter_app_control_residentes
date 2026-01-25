@@ -48,6 +48,8 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
     final authState = context.read<AuthBloc>().state;
     
     // Extraer datos del AuthBloc - SIEMPRE deben estar disponibles después del login
+    String nombres = '';
+    String apellidos = '';
     String displayName = 'Usuario';
     int personaId = 0;
     String identificacion = '';
@@ -56,9 +58,9 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
     
     if (authState is AuthSuccess) {
       // SIEMPRE usar datos del AuthBloc (son la fuente de verdad)
-      displayName = (authState.user['name'] ?? 
-                    authState.user['nombreCompleto'] ?? 
-                    authState.user['nombres'] ?? 'Usuario') as String;
+      nombres = (authState.user['nombres'] ?? '') as String;
+      apellidos = (authState.user['apellidos'] ?? '') as String;
+      displayName = '$nombres $apellidos'.trim().isNotEmpty ? '$nombres $apellidos' : 'Usuario';
       personaId = authState.user['personaId'] as int? ?? 0;
       identificacion = (authState.user['identificacion'] ?? 
                        authState.user['identification'] ?? 

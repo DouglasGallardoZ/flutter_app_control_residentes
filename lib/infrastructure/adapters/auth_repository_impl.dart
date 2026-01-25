@@ -54,6 +54,10 @@ class AuthRepositoryImpl implements AuthRepository {
       
       if (perfil.vivienda != null) {
         loginResponse['vivienda'] = perfil.vivienda!.toJson();
+        // Agregar residence_id para fácil acceso
+        if (perfil.vivienda!.viviendaId != null) {
+          loginResponse['residence_id'] = perfil.vivienda!.viviendaId;
+        }
       }
       
       if (perfil.parentesco != null) {

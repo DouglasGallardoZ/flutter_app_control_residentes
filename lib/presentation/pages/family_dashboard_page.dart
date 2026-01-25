@@ -38,15 +38,17 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage> {
 
     // Para familia miembro, usar datos del AuthBloc
     final authState = context.read<AuthBloc>().state;
+    String nombres = '';
+    String apellidos = '';
     String displayName = 'Usuario';
     int personaId = 0;
     String identificacion = '';
     String residenceId = '';
     
     if (authState is AuthSuccess) {
-      displayName = (authState.user['name'] ?? 
-                    authState.user['nombreCompleto'] ?? 
-                    authState.user['nombres'] ?? 'Usuario') as String;
+      nombres = (authState.user['nombres'] ?? '') as String;
+      apellidos = (authState.user['apellidos'] ?? '') as String;
+      displayName = '$nombres $apellidos'.trim().isNotEmpty ? '$nombres $apellidos' : 'Usuario';
       personaId = authState.user['personaId'] as int? ?? 0;
       identificacion = (authState.user['identificacion'] ?? 
                        authState.user['identification'] ?? 
