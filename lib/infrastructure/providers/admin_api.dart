@@ -568,8 +568,8 @@ class AdminApi {
     try {
       final formData = FormData();
       
-      // Agregar persona ID como user_id
-      formData.fields.add(MapEntry('user_id', personaId));
+      // Agregar persona ID como persona_id
+      formData.fields.add(MapEntry('persona_id', personaId));
       
       // Agregar usuario_creado para auditoría
       formData.fields.add(MapEntry('usuario_creado', usuarioCreado ?? 'flutter_app'));

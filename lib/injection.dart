@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'infrastructure/providers/http_client.dart';
 import 'infrastructure/providers/firebase_auth_provider.dart';
 import 'infrastructure/providers/qr_api.dart';
+import 'infrastructure/providers/qr_list_api.dart';
 import 'infrastructure/providers/access_history_api.dart';
 import 'infrastructure/providers/visitor_api.dart';
 import 'infrastructure/providers/family_members_api.dart';
@@ -64,6 +65,7 @@ import 'domain/usecases/block_account_usecase.dart';
 import 'domain/usecases/unblock_account_usecase.dart';
 import 'domain/usecases/delete_account_usecase.dart';
 import 'domain/usecases/reset_password_usecase.dart';
+import 'domain/usecases/get_qr_list_usecase.dart';
 
 // BLoCs
 import 'application/blocs/admin/admin_dashboard_bloc.dart';
@@ -73,6 +75,7 @@ import 'application/blocs/owner/owner_bloc.dart';
 import 'application/blocs/member/member_bloc.dart';
 import 'application/blocs/admin_account/admin_account_bloc.dart';
 import 'application/blocs/qr_display/qr_display_bloc.dart';
+import 'application/blocs/qr_list/qr_list_bloc.dart';
 import 'application/blocs/auth/auth_bloc.dart';
 
 final sl = GetIt.instance;
@@ -119,6 +122,10 @@ Future<void> inject() async {
 
   sl.registerLazySingleton<AdminApi>(
     () => AdminApi(apiHttpClient.dio),
+  );
+
+  sl.registerLazySingleton<QrListApi>(
+    () => QrListApi(apiHttpClient.dio),
   );
 
   // Adapters (Repositories)
@@ -290,6 +297,10 @@ Future<void> inject() async {
     () => ResetPasswordUseCase(sl<AdminAccountRepository>()),
   );
 
+  sl.registerLazySingleton<GetQrListUseCase>(
+    () => GetQrListUseCaseImpl(qrListApi: sl<QrListApi>()),
+  );
+
   // BLoCs
   sl.registerLazySingleton<AuthBloc>(
     () => AuthBloc(login: sl<LoginUseCase>(), authRepo: sl<AuthRepository>()),
@@ -350,5 +361,9 @@ Future<void> inject() async {
 
   sl.registerLazySingleton<QrDisplayBloc>(
     () => QrDisplayBloc(authBloc: sl<AuthBloc>()),
+  );
+
+  sl.registerFactory<QrListBloc>(
+    () => QrListBloc(getQrListUseCase: sl<GetQrListUseCase>()),
   );
 }

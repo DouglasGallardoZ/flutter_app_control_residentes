@@ -1,6 +1,9 @@
 // lib/presentation/routes/app_routes.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:guardin/presentation/pages/members_page.dart';
+import 'package:guardin/presentation/pages/qr_list_page.dart';
 import '../pages/login_page.dart';
 import '../pages/resident_dashboard_page.dart';
 import '../pages/qr_self_page.dart';
@@ -20,12 +23,14 @@ import '../pages/admin_create_owner_page.dart';
 import '../pages/admin_create_member_page.dart';
 import '../pages/admin_facial_enrollment_page.dart';
 import '../pages/family_dashboard_page.dart';
+import '../../application/blocs/qr_list/qr_list_bloc.dart';
 
 class AppRoutes {
   static const String login = '/login';
   static const String residentDashboard = '/residentDashboard';
   static const String qrSelf = '/qrSelf';
   static const String qrVisit = '/qrVisit';
+  static const String qrList = '/qrList';
   static const String accessHistory = '/accessHistory';
   static const String profile = '/profile';
   static const String members = '/members';
@@ -86,6 +91,22 @@ class AppRoutes {
         }
         return MaterialPageRoute(
           builder: (_) => QrVisitPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId),
+        );
+      }
+
+      case qrList: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
+        final identificacion = args?['identificacion'] as String?;
+        final residenceId = args?['residenceId'] as String?;
+        if (personaId == null || identificacion == null || residenceId == null) {
+          return _errorRoute('Faltan argumentos en QrListPage');
+        }
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider<QrListBloc>(
+            create: (_) => GetIt.instance<QrListBloc>(),
+            child: QrListPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId),
+          ),
         );
       }
 

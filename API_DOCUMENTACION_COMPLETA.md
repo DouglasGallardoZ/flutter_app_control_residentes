@@ -762,7 +762,7 @@ Obtiene la información completa de un usuario buscando por correo electrónico.
 **Auth:** Bearer token (usuario autenticado)
 
 **Descripción:**
-Genera un código QR temporal para que el residente pueda acceder a la vivienda en un horario específico. Se usa para auto-acceso.
+Genera un código QR temporal para que el residente pueda acceder a la vivienda en un horario específico. Se usa para auto-acceso. Tanto la fecha como la hora de inicio son opcionales; si no se proporcionan, se usan la fecha y hora actual.
 
 **Request Body:**
 ```json
@@ -778,9 +778,26 @@ Genera un código QR temporal para que el residente pueda acceder a la vivienda 
 | Campo | Tipo | Validación | Descripción |
 |-------|------|-----------|-----------|
 | duracion_horas | integer | > 0 | Horas de vigencia del QR |
-| fecha_acceso | date | YYYY-MM-DD, >= hoy | Fecha de acceso |
-| hora_inicio | string | HH:MM formato | Hora de inicio |
+| fecha_acceso | date | YYYY-MM-DD (opcional) | Fecha de acceso. Si no se proporciona, usa la fecha actual |
+| hora_inicio | string | HH:MM formato (opcional) | Hora de inicio. Si no se proporciona, usa la hora actual |
 | usuario_creado | string | requerido | Usuario que genera (tracking) |
+
+**Ejemplo SIN hora_inicio Y SIN fecha_acceso (usa fecha y hora actual):**
+```json
+{
+  "duracion_horas": 8,
+  "usuario_creado": "flutter_app"
+}
+```
+
+**Ejemplo SIN hora_inicio (usa hora actual):**
+```json
+{
+  "duracion_horas": 8,
+  "fecha_acceso": "2024-12-25",
+  "usuario_creado": "flutter_app"
+}
+```
 
 **Success Response (201 Created):**
 ```json
@@ -796,9 +813,10 @@ Genera un código QR temporal para que el residente pueda acceder a la vivienda 
 
 **Validaciones:**
 - ✅ Usuario debe tener cuenta activa
-- ✅ Usuario debe ser residente activo
-- ✅ Fecha y hora deben ser futuras (comparadas con servidor)
+- ✅ Usuario debe ser residente activo o miembro de familia activo
+- ✅ Si hora_inicio se proporciona, debe cumplir con formato HH:MM
 - ✅ Duración debe ser > 0 horas
+- ✅ Fecha y hora resultante no pueden ser pasadas
 - ✅ Usuario debe tener vivienda asignada
 
 **Error Responses:**
@@ -810,34 +828,49 @@ Genera un código QR temporal para que el residente pueda acceder a la vivienda 
 
 // 400 - Datos inválidos
 {
-  "detail": "La fecha y hora deben ser futuras"
+  "detail": "La fecha y hora no pueden ser pasadas"
 }
 
-// 400 - Sin vivienda
+// 400 - Formato de hora inválido
 {
-  "detail": "Usuario no tiene una vivienda asignada como residente activo"
+  "detail": "Formato de hora inválido. Use HH:MM"
+}
+
+// 403 - Sin vivienda
+{
+  "detail": "Usuario no tiene una vivienda asignada como residente o miembro de familia activo"
 }
 ```
 
 **Ejemplo en Dart/Flutter:**
 ```dart
-Future<Map<String, dynamic>> generarQRPropio(
-  int duracionHoras,
-  DateTime fecha,
-  TimeOfDay hora,
-) async {
+Future<Map<String, dynamic>> generarQRPropio({
+  required int duracionHoras,
+  DateTime? fecha,  // Opcional, usa fecha actual si null
+  TimeOfDay? hora,  // Opcional, usa hora actual si null
+}) async {
+  final body = {
+    'duracion_horas': duracionHoras,
+    'usuario_creado': 'flutter_app'
+  };
+  
+  // Si se proporciona fecha, incluirla
+  if (fecha != null) {
+    body['fecha_acceso'] = DateFormat('yyyy-MM-dd').format(fecha);
+  }
+  
+  // Si se proporciona hora, incluirla
+  if (hora != null) {
+    body['hora_inicio'] = '${hora.hour.toString().padLeft(2, '0')}:${hora.minute.toString().padLeft(2, '0')}';
+  }
+  
   final response = await http.post(
     Uri.parse('$baseUrl/qr/generar-propio'),
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $accessToken',
     },
-    body: jsonEncode({
-      'duracion_horas': duracionHoras,
-      'fecha_acceso': DateFormat('yyyy-MM-dd').format(fecha),
-      'hora_inicio': '${hora.hour.toString().padLeft(2, '0')}:${hora.minute.toString().padLeft(2, '0')}',
-      'usuario_creado': 'flutter_app'
-    }),
+    body: jsonEncode(body),
   );
 
   if (response.statusCode == 201) {
@@ -857,7 +890,7 @@ Future<Map<String, dynamic>> generarQRPropio(
 **Auth:** Bearer token
 
 **Descripción:**
-Genera un código QR para una visita. Registra automáticamente los datos del visitante en la tabla `visita`, pero **evita duplicados**: si el visitante con esa identificación ya existe en la vivienda, reutiliza ese registro sin crear uno nuevo.
+Genera un código QR para una visita. Registra automáticamente los datos del visitante en la tabla `visita`, pero **evita duplicados**: si el visitante con esa identificación ya existe en la vivienda, reutiliza ese registro sin crear uno nuevo. Tanto la fecha como la hora de inicio son opcionales; si no se proporcionan, se usan la fecha y hora actual.
 
 **Request Body:**
 ```json
@@ -881,9 +914,34 @@ Genera un código QR para una visita. Registra automáticamente los datos del vi
 | visita_apellidos | string | requerido | Apellidos del visitante |
 | motivo_visita | string | requerido | Razón de la visita |
 | duracion_horas | integer | > 0 | Horas de vigencia |
-| fecha_acceso | date | futuro | Fecha de acceso |
-| hora_inicio | string | HH:MM | Hora de inicio |
+| fecha_acceso | date | (opcional) | Fecha de acceso. Si no se proporciona, usa la fecha actual |
+| hora_inicio | string | HH:MM formato (opcional) | Hora de inicio. Si no se proporciona, usa la hora actual |
 | usuario_creado | string | requerido | Sistema que genera |
+
+**Ejemplo SIN hora_inicio Y SIN fecha_acceso (usa fecha y hora actual):**
+```json
+{
+  "visita_identificacion": "1234567890",
+  "visita_nombres": "Carlos",
+  "visita_apellidos": "García",
+  "motivo_visita": "Revisión técnica",
+  "duracion_horas": 2,
+  "usuario_creado": "flutter_app"
+}
+```
+
+**Ejemplo SIN hora_inicio (usa hora actual):**
+```json
+{
+  "visita_identificacion": "1234567890",
+  "visita_nombres": "Carlos",
+  "visita_apellidos": "García",
+  "motivo_visita": "Revisión técnica",
+  "duracion_horas": 2,
+  "fecha_acceso": "2024-12-25",
+  "usuario_creado": "flutter_app"
+}
+```
 
 **Success Response (201 Created):**
 ```json
@@ -928,8 +986,9 @@ Genera un código QR para una visita. Registra automáticamente los datos del vi
 **Validaciones:**
 - ✅ Usuario debe tener cuenta activa
 - ✅ Datos de visitante son obligatorios
-- ✅ Fecha/hora deben ser futuras
+- ✅ Fecha/hora no pueden ser pasadas
 - ✅ Identificación visitante <= 20 caracteres
+- ✅ Si hora_inicio se proporciona, debe cumplir con formato HH:MM
 - ✅ **Se verifica si visitante con esa identificación YA EXISTE** en esa vivienda
 
 **Lógica de Duplicados:**
@@ -951,41 +1010,81 @@ Genera un código QR para una visita. Registra automáticamente los datos del vi
 - ✅ Histórico centralizado de visitas
 - ✅ Datos siempre sincronizados
 
-**Side Effects:**
-- Se registra en tabla `visita` SOLO si es la primera vez
-- Se crea entrada de QR siempre
-- Se crea entrada de auditoría
-
 **Error Responses:**
 ```json
+// 403 - No autorizado
+{
+  "detail": "Usuario no autorizado para generar QR"
+}
+
+// 400 - Datos faltantes
 {
   "detail": "Los datos de la visita son obligatorios"
+}
+
+// 400 - Hora inválida
+{
+  "detail": "Formato de hora inválido. Use HH:MM"
+}
+
+// 400 - Fecha/hora pasadas
+{
+  "detail": "La fecha y hora no pueden ser pasadas"
+}
+
+// 403 - Sin vivienda
+{
+  "detail": "Usuario no tiene una vivienda asignada como residente o miembro de familia activo"
 }
 ```
 
 **Ejemplo en Dart/Flutter:**
 ```dart
-Future<void> generarQRVisita() async {
+Future<void> generarQRVisita({
+  required String identificacion,
+  required String nombres,
+  required String apellidos,
+  required String motivo,
+  required int duracionHoras,
+  DateTime? fecha,  // Opcional, usa fecha actual si null
+  TimeOfDay? hora,  // Opcional, usa hora actual si null
+}) async {
+  final body = {
+    'visita_identificacion': identificacion,
+    'visita_nombres': nombres,
+    'visita_apellidos': apellidos,
+    'motivo_visita': motivo,
+    'duracion_horas': duracionHoras,
+    'usuario_creado': 'flutter_app'
+  };
+  
+  // Si se proporciona fecha, incluirla
+  if (fecha != null) {
+    body['fecha_acceso'] = DateFormat('yyyy-MM-dd').format(fecha);
+  }
+  
+  // Si se proporciona hora, incluirla
+  if (hora != null) {
+    body['hora_inicio'] = '${hora.hour.toString().padLeft(2, '0')}:${hora.minute.toString().padLeft(2, '0')}';
+  }
+  
   final response = await http.post(
     Uri.parse('$baseUrl/qr/generar-visita'),
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $accessToken',
     },
-    body: jsonEncode({
-      'visita_identificacion': '1234567890',
-      'visita_nombres': 'Carlos',
-      'visita_apellidos': 'García',
-      'motivo_visita': 'Reparación de ventilación',
-      'duracion_horas': 3,
-      'fecha_acceso': '2024-12-25',
-      'hora_inicio': '10:00',
-      'usuario_creado': 'flutter_app'
-    }),
+    body: jsonEncode(body),
   );
   
-  if (response.statusCode == 200) {
+  if (response.statusCode == 201) {
     final data = jsonDecode(response.body);
+    print('QR generado: ${data['token']}');
+  } else {
+    throw Exception('Error: ${response.body}');
+  }
+}
+```
     
     if (data['es_visitante_nuevo']) {
       print('✅ Nuevo visitante registrado');
@@ -1067,6 +1166,8 @@ Lista todos los QRs generados por una cuenta con soporte para paginación y filt
       "token": "aB3cDeFgHiJkLmNoPqRsTuVwXyZ123456",
       "estado": "vigente",
       "tipo_ingreso": "propio",
+      "autorizado_por_nombre": "Juan García",
+      "autorizado_para": "Juan García",
       "hora_inicio_vigencia": "2024-12-25T14:30:00",
       "hora_fin_vigencia": "2024-12-25T22:30:00",
       "fecha_creado": "2024-12-24T09:15:00"
@@ -1076,6 +1177,8 @@ Lista todos los QRs generados por una cuenta con soporte para paginación y filt
       "token": "xY9aBcDeFgHiJkLmNoPqRsTuVwXyZ789",
       "estado": "vigente",
       "tipo_ingreso": "visita",
+      "autorizado_por_nombre": "Juan García",
+      "autorizado_para": "Carlos García",
       "hora_inicio_vigencia": "2024-12-25T10:00:00",
       "hora_fin_vigencia": "2024-12-25T12:00:00",
       "fecha_creado": "2024-12-24T08:00:00"
@@ -1088,6 +1191,19 @@ Lista todos los QRs generados por una cuenta con soporte para paginación y filt
   "has_next": false
 }
 ```
+
+**Campos de Respuesta:**
+| Campo | Descripción |
+|-------|-----------|
+| qr_pk | ID del QR |
+| token | Token único del QR |
+| estado | Estado del QR (vigente, expirado, etc.) |
+| tipo_ingreso | "propio" (acceso personal) o "visita" (visitante) |
+| autorizado_por_nombre | Nombre completo de quien autoriza (titular de la cuenta) |
+| autorizado_para | Nombre completo de quien es autorizado (titular en acceso propio, visitante en visitas) |
+| hora_inicio_vigencia | Inicio de vigencia del QR |
+| hora_fin_vigencia | Fin de vigencia del QR |
+| fecha_creado | Fecha de creación del QR |
 
 **Paginación:**
 - El campo `has_next` indica si hay más páginas
@@ -1132,16 +1248,37 @@ Future<Map<String, dynamic>> listarQRs({
   );
 
   if (response.statusCode == 200) {
-    return jsonDecode(response.body);
+    final data = jsonDecode(response.body);
+    
+    // Procesar QRs
+    final qrs = (data['data'] as List).map((qr) {
+      return {
+        'id': qr['qr_pk'],
+        'token': qr['token'],
+        'tipo': qr['tipo_ingreso'],
+        'autorizado_por': qr['autorizado_por_nombre'],
+        'autorizado_para': qr['autorizado_para'],
+        'inicio': DateTime.parse(qr['hora_inicio_vigencia']),
+        'fin': DateTime.parse(qr['hora_fin_vigencia']),
+        'estado': qr['estado'],
+      };
+    }).toList();
+    
+    return {
+      'qrs': qrs,
+      'total': data['total'],
+      'tiene_mas': data['has_next'],
+      'pagina_actual': data['page'],
+    };
   } else {
     throw Exception('Error: ${response.body}');
   }
 }
 
 // Uso
-final qrs = await listarQRs(page: 1, tipoIngreso: 'propio');
-print('Total QRs: ${qrs['total']}');
-print('Hay más: ${qrs['has_next']}');
+final resultado = await listarQRs(page: 1, tipoIngreso: 'propio');
+print('Total QRs: ${resultado['total']}');
+print('QR 1 autorizado para: ${resultado['qrs'][0]['autorizado_para']}');
 ```
 
 ---
@@ -2135,21 +2272,17 @@ Obtiene todos los propietarios activos de una vivienda especificada por su manza
 
 ### 1. Agregar Miembro de Familia
 
-**Endpoint:** `POST /{residente_id}/agregar`  
+**Endpoint:** `POST /agregar`  
 **Requirement:** RF-R02  
 **Auth:** Bearer token
 
 **Descripción:**
-Agrega un miembro de familia (padre, madre, hijo, etc.) vinculado a un residente. La vivienda se identifica por su manzana y villa.
-
-**Path Parameters:**
-```
-{residente_id} = ID del residente (tabla ResidenteVivienda)
-```
+Agrega un miembro de familia (padre, madre, hijo, etc.) vinculado a un residente. La vivienda se identifica por su manzana y villa. El residente se identifica por su identificación.
 
 **Request Body:**
 ```json
 {
+  "identificacion_residente": "1234567890",
   "manzana": "A",
   "villa": "101",
   "identificacion": "2222222222",
@@ -2170,6 +2303,7 @@ Agrega un miembro de familia (padre, madre, hijo, etc.) vinculado a un residente
 **Request Fields:**
 | Campo | Tipo | Requerido | Descripción |
 |-------|------|----------|-------------|
+| identificacion_residente | string | ✅ | Identificación del residente titular |
 | manzana | string | ✅ | Manzana de la vivienda |
 | villa | string | ✅ | Villa de la vivienda |
 | parentesco | string | ✅ | Tipo de parentesco |
@@ -2179,8 +2313,9 @@ Agrega un miembro de familia (padre, madre, hijo, etc.) vinculado a un residente
 - ✅ Parentescos válidos: `padre`, `madre`, `esposo`, `esposa`, `hijo`, `hija`, `otro`
 - ✅ Si parentesco = "otro", requerido campo `parentesco_otro_desc`
 - ✅ Vivienda debe existir (se busca por manzana y villa)
-- ✅ Residente debe existir en esa vivienda
-- ✅ Identificación debe ser única
+- ✅ Residente debe existir en esa vivienda (se busca por identificación)
+- ✅ Residente debe estar activo
+- ✅ Identificación del miembro debe ser única
 
 **Success Response (201 Created):**
 ```json
@@ -2202,7 +2337,7 @@ Agrega un miembro de familia (padre, madre, hijo, etc.) vinculado a un residente
 
 // 404 - Residente no existe en esa vivienda
 {
-  "detail": "Residente no encontrado en esta vivienda"
+  "detail": "Residente con identificación '1234567890' no está registrado como residente activo en esa vivienda"
 }
 
 // 400 - Identificación duplicada
@@ -2213,14 +2348,15 @@ Agrega un miembro de familia (padre, madre, hijo, etc.) vinculado a un residente
 
 **Ejemplo en Dart/Flutter:**
 ```dart
-Future<void> agregarMiembroFamilia(int residenteId) async {
+Future<void> agregarMiembroFamilia() async {
   final response = await http.post(
-    Uri.parse('$baseUrl/miembros/$residenteId/agregar'),
+    Uri.parse('$baseUrl/miembros/agregar'),
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $accessToken',
     },
     body: jsonEncode({
+      'identificacion_residente': '1234567890',
       'manzana': 'A',
       'villa': '101',
       'identificacion': '2222222222',

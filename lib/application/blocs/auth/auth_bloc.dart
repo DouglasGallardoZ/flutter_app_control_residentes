@@ -21,9 +21,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
         emit(AuthSuccess(user));
       } catch (ex) {
-        emit(AuthFailure(
-          'Error en autenticación: ${ex.toString()}',
-        ));
+        // Extraer mensaje de error legible para el usuario
+        String errorMessage = _extractErrorMessage(ex);
+        emit(AuthFailure(errorMessage));
       }
     });
 
@@ -35,5 +35,40 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthFailure('Error al cerrar sesión: ${ex.toString()}'));
       }
     });
+  }
+
+  /// Extrae un mensaje de error legible del objeto excepción
+  String _extractErrorMessage(Object ex) {
+    final message = ex.toString();
+    
+    // Remover prefijo "Exception: " si existe
+    if (message.startsWith('Exception: ')) {
+      final cleanMessage = message.substring('Exception: '.length);
+      // El mensaje ya está traducido por Firebase o API, solo retornarlo
+      return cleanMessage;
+    }
+    
+    // Si aún contiene patrones sin traducir, intentar mapearlos
+    if (message.contains('user-not-found')) {
+      return 'Usuario no encontrado';
+    }
+    if (message.contains('wrong-password')) {
+      return 'Contraseña incorrecta';
+    }
+    if (message.contains('invalid-credential')) {
+      return 'Correo o contraseña incorrectos';
+    }
+    if (message.contains('too-many-requests')) {
+      return 'Demasiados intentos de acceso. Intente más tarde';
+    }
+    if (message.contains('user-disabled')) {
+      return 'Esta cuenta ha sido deshabilitada';
+    }
+    if (message.contains('network-request-failed')) {
+      return 'Error de conexión. Verifique su internet';
+    }
+    
+    // Retornar mensaje como está si no coincide con ningún patrón
+    return message.isEmpty ? 'Error en autenticación' : message;
   }
 }

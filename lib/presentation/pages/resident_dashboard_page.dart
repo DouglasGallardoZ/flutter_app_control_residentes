@@ -163,6 +163,9 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
               _QuickCard(icon: Icons.family_restroom, label: 'Familia', onTap: () {
                 Navigator.pushNamed(context, AppRoutes.members, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
               }),
+              _QuickCard(icon: Icons.list_alt, label: 'Mis QRs', onTap: () {
+                Navigator.pushNamed(context, AppRoutes.qrList, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
+              }),
             ],
           ),
           const SizedBox(height: 16),

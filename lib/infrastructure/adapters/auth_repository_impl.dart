@@ -79,6 +79,9 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       return loginResponse;
+    } on Exception catch (e) {
+      // Pasar el mensaje detallado del error
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
     } catch (e) {
       rethrow;
     }

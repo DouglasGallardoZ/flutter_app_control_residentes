@@ -13,10 +13,14 @@ class FirebaseAuthProvider {
   }
 
   Future<UserCredential> signInWithEmail(String email, String password) async {
-    return await auth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    try {
+      return await auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+    } on FirebaseAuthException catch (e) {
+      throw Exception(_mapFirebaseErrorToMessage(e.code));
+    }
   }
 
   Future<String?> getIdToken({bool forceRefresh = false}) async {
@@ -34,6 +38,42 @@ class FirebaseAuthProvider {
   User? get currentUser => auth.currentUser;
 
   Stream<User?> get authStateChanges => auth.authStateChanges();
+
+  /// Mapea códigos de error de Firebase a mensajes en español
+  String _mapFirebaseErrorToMessage(String code) {
+    switch (code) {
+      case 'invalid-email':
+        return 'Correo electrónico inválido';
+      case 'user-disabled':
+        return 'Esta cuenta ha sido deshabilitada';
+      case 'user-not-found':
+        return 'Usuario no encontrado. Verifique su correo';
+      case 'wrong-password':
+        return 'Contraseña incorrecta';
+      case 'invalid-credential':
+        return 'Correo o contraseña incorrectos';
+      case 'operation-not-allowed':
+        return 'Operación no permitida. Contacte con administrador';
+      case 'too-many-requests':
+        return 'Demasiados intentos fallidos. Intente más tarde';
+      case 'email-already-in-use':
+        return 'Este correo ya está registrado';
+      case 'weak-password':
+        return 'La contraseña es muy débil';
+      case 'requires-recent-login':
+        return 'Debe iniciar sesión nuevamente para continuar';
+      case 'account-exists-with-different-credential':
+        return 'Esta cuenta ya existe con otro método de autenticación';
+      case 'invalid-api-key':
+        return 'Error de configuración. Contacte con administrador';
+      case 'network-request-failed':
+        return 'Error de conexión. Verifique su internet';
+      case 'internal-error':
+        return 'Error interno. Intente nuevamente';
+      default:
+        return 'Error en autenticación: $code';
+    }
+  }
 
   static FirebaseAuthProvider create() => FirebaseAuthProvider(FirebaseAuth.instance);
 }
@@ -65,9 +105,28 @@ class ApiAuthProvider {
     try {
       final response = await dio.get('/cuentas/perfil/$firebaseUid');
       return response.data;
+    } on DioException catch (e) {
+      // Extraer mensaje de detail si existe en la respuesta del error
+      final errorMessage = _extractErrorDetail(e);
+      throw Exception(errorMessage);
     } catch (e) {
       rethrow;
     }
+  }
+
+  /// Extrae el mensaje "detail" de la respuesta del error del API
+  String _extractErrorDetail(DioException e) {
+    try {
+      if (e.response != null && e.response!.data is Map<String, dynamic>) {
+        final data = e.response!.data as Map<String, dynamic>;
+        if (data.containsKey('detail')) {
+          return data['detail'].toString();
+        }
+      }
+    } catch (_) {
+      // Si hay error extrayendo el detail, continuar con el mensaje general
+    }
+    return e.message ?? 'Error desconocido';
   }
 
   /// Crear cuenta de residente con Firebase

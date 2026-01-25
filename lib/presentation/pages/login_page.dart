@@ -49,52 +49,44 @@ class _LoginPageState extends State<LoginPage> {
                 child: BlocConsumer<AuthBloc, AuthState>(
                   listener: (ctx, state) {
                     if (state is AuthSuccess) {
+                      // Lógica de navegación en la capa de presentación
                       final rol = state.user['rol'] as String? ?? 'residente';
                       final personaId = state.user['personaId'] as int? ?? 0;
                       final identificacion = state.user['identificacion'] as String? ?? '';
                       final vivienda = state.user['vivienda'] as Map<String, dynamic>?;
                       final nombreCompleto = state.user['name'] as String? ?? 'Usuario';
+                      final residenceId = vivienda != null ? '${vivienda['manzana']}-${vivienda['villa']}' : '';
 
-                      // Navegar según rol
-                      if (rol == 'residente') {
-                        Navigator.pushReplacementNamed(
-                          context,
-                          AppRoutes.residentDashboard,
-                          arguments: {
-                            'personaId': personaId,
-                            'identificacion': identificacion,
-                            'residenceId':
-                                '${vivienda?['manzana']}-${vivienda?['villa']}',
-                            'userName': nombreCompleto,
-                          },
-                        );
-                      } else if (rol == 'miembro_familia') {
-                        Navigator.pushReplacementNamed(
-                          context,
-                          AppRoutes.familyDashboard,
-                          arguments: {
-                            'personaId': personaId,
-                            'identificacion': identificacion,
-                            'residenceId':
-                                '${vivienda?['manzana']}-${vivienda?['villa']}',
-                            'userName': nombreCompleto,
-                          },
-                        );
-                      } else {
-                        Navigator.pushReplacementNamed(
-                          context,
-                          AppRoutes.adminDashboard,
-                          arguments: {
-                            'personaId': personaId,
-                            'identificacion': identificacion,
-                            'userName': nombreCompleto,
-                          },
-                        );
+                      final args = {
+                        'personaId': personaId,
+                        'identificacion': identificacion,
+                        'residenceId': residenceId,
+                        'userName': nombreCompleto,
+                      };
+
+                      // Determinar ruta según rol
+                      late final String route;
+                      switch (rol.toLowerCase()) {
+                        case 'residente':
+                          route = AppRoutes.residentDashboard;
+                          break;
+                        case 'miembro_familia':
+                        case 'family':
+                          route = AppRoutes.familyDashboard;
+                          break;
+                        case 'admin':
+                        case 'administrador':
+                          route = AppRoutes.adminDashboard;
+                          break;
+                        default:
+                          route = AppRoutes.residentDashboard;
                       }
+
+                      Navigator.pushReplacementNamed(ctx, route, arguments: args);
                     } else if (state is AuthFailure) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Usuario o contraseña incorrectos'),
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(
+                          content: Text(state.message),
                           backgroundColor: Colors.red,
                         ),
                       );

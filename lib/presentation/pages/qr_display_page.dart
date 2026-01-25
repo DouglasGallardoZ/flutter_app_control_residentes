@@ -21,6 +21,7 @@ class QrDisplayPage extends StatefulWidget {
   // Datos opcionales de la visita (si es QR de visita)
   final String? visitName;
   final String? visitIdentificacion;
+  final bool isModal; // true cuando se abre en modal, false en navegación normal
 
   const QrDisplayPage({
     super.key,
@@ -33,6 +34,7 @@ class QrDisplayPage extends StatefulWidget {
     required this.qrValue,
     this.visitName,
     this.visitIdentificacion,
+    this.isModal = false,
   });
 
   @override
@@ -102,6 +104,68 @@ class _QrDisplayPageState extends State<QrDisplayPage> {
     final theme = Theme.of(context);
     final separatorColor = theme.brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade300;
 
+    // Contenido principal del QR
+    final qrContent = BlocBuilder<QrDisplayBloc, QrDisplayState>(
+      builder: (context, state) {
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Center(
+              child: Container(
+                width: 220,
+                height: 220,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: separatorColor),
+                ),
+                child: RepaintBoundary(
+                  key: qrBoundaryKey,
+                  child: QrImageView(
+                    data: widget.qrValue,
+                    version: QrVersions.auto,
+                    size: 200,
+                    foregroundColor: Colors.black,
+                    backgroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('Tu Código de Acceso', style: theme.textTheme.titleMedium),
+            Text('Muestra este código en el punto de acceso', style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor)),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: separatorColor),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Column(children: [
+                _DetailRow(
+                  label: 'Válido para:',
+                  value: widget.visitName ?? widget.userName,
+                ),
+                _DetailRow(
+                  label: 'Identificación:',
+                  value: widget.visitIdentificacion ?? widget.identificacion,
+                ),
+                _DetailRow(label: 'Válido desde:', value: _fmtShortES(widget.validFrom)),
+                _DetailRow(label: 'Válido hasta:', value: _fmtShortES(widget.validUntil)),
+                _DetailRow(label: 'Duración:', value: '${widget.durationHours} horas'),
+              ]),
+            ),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(child: OutlinedButton.icon(onPressed: _shareQr, icon: const Icon(Icons.share), label: const Text('Compartir'))),
+            ]),
+          ],
+        );
+      },
+    );
+
     return BlocListener<QrDisplayBloc, QrDisplayState>(
       listener: (context, state) {
         if (state is NavigationRequested) {
@@ -112,76 +176,27 @@ class _QrDisplayPageState extends State<QrDisplayPage> {
           );
         }
       },
-      child: AppScaffold(
-        title: 'Código QR',
-        routeName: '/qrSelf',
-        onTabSelected: (i) {
-          if (i == 1) return; // Stay on QR tab
-          context.read<QrDisplayBloc>().add(NavigateToScreen(i));
-        },
-        body: BlocBuilder<QrDisplayBloc, QrDisplayState>(
-          builder: (context, state) {
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Center(
-                  child: Container(
-                    width: 220,
-                    height: 220,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: separatorColor),
-                    ),
-                    child: RepaintBoundary(
-                      key: qrBoundaryKey,
-                      child: QrImageView(
-                        data: widget.qrValue,
-                        version: QrVersions.auto,
-                        size: 200,
-                        foregroundColor: Colors.black,
-                        backgroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
+      child: widget.isModal
+          ? Scaffold(
+              appBar: AppBar(
+                title: const Text('Código QR'),
+                leading: IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
-                const SizedBox(height: 16),
-                Text('Tu Código de Acceso', style: theme.textTheme.titleMedium),
-                Text('Muestra este código en el punto de acceso', style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor)),
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: separatorColor),
-                  ),
-                  padding: const EdgeInsets.all(12),
-                  child: Column(children: [
-                    _DetailRow(
-                      label: 'Válido para:',
-                      value: widget.visitName ?? widget.userName,
-                    ),
-                    _DetailRow(
-                      label: 'Identificación:',
-                      value: widget.visitIdentificacion ?? widget.identificacion,
-                    ),
-                    _DetailRow(label: 'Válido desde:', value: _fmtShortES(widget.validFrom)),
-                    _DetailRow(label: 'Válido hasta:', value: _fmtShortES(widget.validUntil)),
-                    _DetailRow(label: 'Duración:', value: '${widget.durationHours} horas'),
-                  ]),
-                ),
-                const SizedBox(height: 12),
-                Row(children: [
-                  Expanded(child: OutlinedButton.icon(onPressed: _shareQr, icon: const Icon(Icons.share), label: const Text('Compartir'))),
-                  const SizedBox(width: 8),
-                  Expanded(child: OutlinedButton.icon(onPressed: _downloadQr, icon: const Icon(Icons.download), label: const Text('Descargar'))),
-                ]),
-              ],
-            );
-          },
-        ),
-      ),
+                elevation: 0,
+              ),
+              body: qrContent,
+            )
+          : AppScaffold(
+              title: 'Código QR',
+              routeName: '/qrSelf',
+              onTabSelected: (i) {
+                if (i == 1) return; // Stay on QR tab
+                context.read<QrDisplayBloc>().add(NavigateToScreen(i));
+              },
+              body: qrContent,
+            ),
     );
   }
 }

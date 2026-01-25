@@ -11,6 +11,7 @@ class AppScaffold extends StatelessWidget {
   final List<Widget>? actions;
   final bool isRoot; // 👈 marca pantallas raíz (sin back)
   final String? routeName; // 👈 nombre explícito de la ruta para calcular el índice
+  final bool showBackButton; // 👈 mostrar botón de back
 
   const AppScaffold({
     super.key,
@@ -21,6 +22,7 @@ class AppScaffold extends StatelessWidget {
     this.actions,
     this.isRoot = false,
     this.routeName,
+    this.showBackButton = false,
   });
 
   /// Determina si el usuario es miembro familiar basado en su rol
@@ -89,9 +91,14 @@ class AppScaffold extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        // Siempre ocultamos la flecha de navegación atrás en las pantallas
-        automaticallyImplyLeading: false,
-        leading: null,
+        // Mostrar back button si showBackButton es true
+        automaticallyImplyLeading: showBackButton,
+        leading: showBackButton
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : null,
         actions: actions,
       ),
       body: body,

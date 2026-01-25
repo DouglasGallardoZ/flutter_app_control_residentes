@@ -133,6 +133,9 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage> {
               _QuickCard(icon: Icons.history, label: 'Historial', onTap: () {
                 Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
               }),
+              _QuickCard(icon: Icons.list_alt, label: 'Mis QRs', onTap: () {
+                Navigator.pushNamed(context, AppRoutes.qrList, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
+              }),
             ],
           ),
           const SizedBox(height: 16),
