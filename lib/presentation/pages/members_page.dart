@@ -60,35 +60,29 @@ class _MembersPageState extends State<MembersPage> {
       onTabSelected: (i) {
         if (i == 3) return;
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          final pid = maybePersonaId > 0 ? maybePersonaId : (authUserId != null ? int.tryParse(authUserId!) ?? 0 : 0);
+          final idn = maybeIdentificacion.isNotEmpty ? maybeIdentificacion : (authState is AuthSuccess ? authState.user['identificacion'] as String? : null) ?? '';
+          final rid = maybeResidenceId ?? authResidence ?? '';
+          final uname = authName ?? '';
+          
+          if (pid <= 0 || idn.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos de usuario')));
+            return;
+          }
+          
           switch (i) {
             case 0:
-              final pid = maybePersonaId;
-              final rid = maybeResidenceId;
-              final idn = maybeIdentificacion;
-              final uname = authName;
-              if (pid != null && rid != null && idn.isNotEmpty && uname != null) {
-                final route = isFamilyMember ? '/familyDashboard' : '/residentDashboard';
-                Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false, arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': uname});
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
-              }
+              final route = isFamilyMember ? '/familyDashboard' : '/residentDashboard';
+              Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false, arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': uname});
               break;
             case 1:
-              final pid1 = maybePersonaId;
-              final idn1 = maybeIdentificacion;
-              final uname1 = authName;
-              if (pid1 != null && idn1.isNotEmpty && uname1 != null) Navigator.of(context).pushNamedAndRemoveUntil('/qrSelf', (route) => false, arguments: {'personaId': pid1, 'identificacion': idn1, 'userName': uname1}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
+              Navigator.of(context).pushNamedAndRemoveUntil('/qrSelf', (route) => false, arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid});
               break;
             case 2:
-              final pid2 = maybePersonaId;
-              final idn2 = maybeIdentificacion;
-              final rid2 = maybeResidenceId;
-              if (pid2 != null && idn2.isNotEmpty) Navigator.of(context).pushNamedAndRemoveUntil('/accessHistory', (route) => false, arguments: {'personaId': pid2, 'identificacion': idn2, 'residenceId': rid2}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
+              Navigator.of(context).pushNamedAndRemoveUntil('/accessHistory', (route) => false, arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid});
               break;
             case 4:
-              final pid4 = maybePersonaId;
-              final idn4 = maybeIdentificacion;
-              if (pid4 != null && idn4.isNotEmpty) Navigator.of(context).pushNamedAndRemoveUntil('/profile', (route) => false, arguments: {'personaId': pid4, 'identificacion': idn4}); else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos')));
+              Navigator.of(context).pushNamedAndRemoveUntil('/profile', (route) => false, arguments: {'personaId': pid, 'identificacion': idn});
               break;
           }
         });

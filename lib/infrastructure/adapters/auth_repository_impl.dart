@@ -43,6 +43,14 @@ class AuthRepositoryImpl implements AuthRepository {
         'estado': perfil.estado,
       };
 
+      // Agregar nombre completo para fácil acceso
+      final nombres = perfil.nombres ?? '';
+      final apellidos = perfil.apellidos ?? '';
+      final fullName = '$nombres $apellidos'.trim();
+      if (fullName.isNotEmpty) {
+        loginResponse['name'] = fullName;
+      }
+
       // Agregar campos opcionales solo si no es null
       if (perfil.personaId != null) {
         loginResponse['personaId'] = perfil.personaId;
@@ -54,9 +62,15 @@ class AuthRepositoryImpl implements AuthRepository {
       
       if (perfil.vivienda != null) {
         loginResponse['vivienda'] = perfil.vivienda!.toJson();
-        // Agregar residence_id para fácil acceso
+        // Agregar residence_id y residence para fácil acceso
         if (perfil.vivienda!.viviendaId != null) {
           loginResponse['residence_id'] = perfil.vivienda!.viviendaId;
+        }
+        // Construir residence string "Manzana X, Villa Y"
+        final manzana = perfil.vivienda!.manzana ?? '';
+        final villa = perfil.vivienda!.villa ?? '';
+        if (manzana.isNotEmpty && villa.isNotEmpty) {
+          loginResponse['residence'] = 'Manzana $manzana, Villa $villa';
         }
       }
       

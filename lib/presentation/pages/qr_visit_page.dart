@@ -39,16 +39,25 @@ class _QrVisitPageState extends State<QrVisitPage> {
   final nameCtrl = TextEditingController();
   final idCtrl = TextEditingController();
 
+  bool useCustomDateTime = false; // Toggle para usar fecha/hora personalizadas
   DateTime? startDate;
   TimeOfDay? startTime;
   int? durationHours;
 
   bool qrGenerated = false;
-  String? successBadge; // “Visitante registrado exitosamente” cuando es new
+  String? successBadge; // "Visitante registrado exitosamente" cuando es new
 
   DateTime? get validFrom {
-    if (startDate == null || startTime == null) return null;
-    return DateTime(startDate!.year, startDate!.month, startDate!.day, startTime!.hour, startTime!.minute);
+    if (!useCustomDateTime) {
+      // Usar fecha/hora actual
+      final now = DateTime.now();
+      return now;
+    }
+    // Usar fecha/hora personalizadas
+    if (startDate == null) return null;
+    // Si startTime es null, usa la hora actual
+    final time = startTime ?? TimeOfDay.now();
+    return DateTime(startDate!.year, startDate!.month, startDate!.day, time.hour, time.minute);
   }
 
   DateTime? get validUntil {
@@ -116,10 +125,14 @@ class _QrVisitPageState extends State<QrVisitPage> {
     if ((mode == 'new' && (nameCtrl.text.trim().isEmpty || idCtrl.text.trim().isEmpty))) {
       return _error('Complete nombre e identificación');
     }
-    if (startDate == null) return _error('La fecha de inicio es obligatoria');
-    if (startTime == null) return _error('La hora de inicio es obligatoria');
+    // Si se usan fechas personalizadas, validar que estén completas
+    if (useCustomDateTime) {
+      if (startDate == null) return _error('La fecha de inicio es obligatoria');
+      if (startTime == null) return _error('La hora de inicio es obligatoria');
+      // Validar que no sea en el pasado solo si se personalizó
+      if (validFrom!.isBefore(DateTime.now())) return _error('La fecha y hora de inicio no puede ser en el pasado');
+    }
     if (durationHours == null || durationHours! <= 0) return _error('La duración debe ser mayor a 0 horas');
-    if (validFrom!.isBefore(DateTime.now())) return _error('La fecha y hora de inicio no puede ser en el pasado');
 
     final visitorName = nameCtrl.text.trim();
     final visitorId = idCtrl.text.trim();
@@ -163,7 +176,7 @@ class _QrVisitPageState extends State<QrVisitPage> {
                 child: ElevatedButton.icon(
                   onPressed: () => Navigator.pop(context, true),
                   icon: const Icon(Icons.check_circle),
-                  label: const Text('Confirmar y Generar'),
+                  label: const Text('Confirmar'),
                 ),
               ),
             ]),
@@ -297,6 +310,15 @@ class _QrVisitPageState extends State<QrVisitPage> {
               ),
             );
             setState(() => qrGenerated = false);
+          } else if (qrState is QrVisitError) {
+            setState(() => qrGenerated = false);
+            ScaffoldMessenger.of(listenerCtx).showSnackBar(
+              SnackBar(
+                content: Text(qrState.message),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: Theme.of(listenerCtx).colorScheme.error,
+              ),
+            );
           }
         },
         child: BlocBuilder<VisitorBloc, VisitorState>(
@@ -523,27 +545,78 @@ class _QrVisitPageState extends State<QrVisitPage> {
                           if (mode != 'new') ...[
                             Text('Configurar vigencia del acceso', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                             const SizedBox(height: 12),
+                            
+                            // Toggle para habilitar fecha/hora personalizadas
+                            Container(
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
+                              ),
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Personalizar Fecha y Hora', style: theme.textTheme.labelLarge),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          useCustomDateTime
+                                              ? 'Define la fecha y hora de inicio'
+                                              : 'Usa la fecha y hora actual del servidor',
+                                          style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Switch(
+                                    value: useCustomDateTime,
+                                    onChanged: (value) => setState(() => useCustomDateTime = value),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
                           ],
-                          // Fecha
-                          Align(alignment: Alignment.centerLeft, child: Text('Fecha de Inicio', style: theme.textTheme.labelLarge)),
-                          const SizedBox(height: 6),
-                          TextField(
-                            readOnly: true,
-                            decoration: const InputDecoration(prefixIcon: Icon(Icons.calendar_today), hintText: 'mm / dd / yyyy', border: OutlineInputBorder()),
-                            controller: TextEditingController(text: startDate == null ? '' : '${startDate!.month}/${startDate!.day}/${startDate!.year}'),
-                            onTap: _pickDate,
+
+                          // Campos de fecha/hora - Solo habilitados si useCustomDateTime es true o si mode es 'new'
+                          AbsorbPointer(
+                            absorbing: !useCustomDateTime && mode != 'new',
+                            child: Opacity(
+                              opacity: (useCustomDateTime || mode == 'new') ? 1.0 : 0.5,
+                              child: Column(
+                                children: [
+                                  Align(alignment: Alignment.centerLeft, child: Text('Fecha de Inicio', style: theme.textTheme.labelLarge)),
+                                  const SizedBox(height: 6),
+                                  TextField(
+                                    readOnly: true,
+                                    decoration: const InputDecoration(prefixIcon: Icon(Icons.calendar_today), hintText: 'mm / dd / yyyy', border: OutlineInputBorder()),
+                                    controller: TextEditingController(text: startDate == null ? '' : '${startDate!.month}/${startDate!.day}/${startDate!.year}'),
+                                    onTap: (useCustomDateTime || mode == 'new') ? _pickDate : null,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // Hora
+                                  Align(alignment: Alignment.centerLeft, child: Text('Hora de Inicio', style: theme.textTheme.labelLarge)),
+                                  const SizedBox(height: 6),
+                                  TextField(
+                                    readOnly: true,
+                                    decoration: const InputDecoration(
+                                      prefixIcon: Icon(Icons.schedule),
+                                      hintText: '-- : -- --',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    controller: TextEditingController(text: startTime == null ? '' : startTime!.format(context)),
+                                    onTap: (useCustomDateTime || mode == 'new') ? _pickTime : null,
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
+                              ),
+                            ),
                           ),
-                          const SizedBox(height: 12),
-                          // Hora
-                          Align(alignment: Alignment.centerLeft, child: Text('Hora de Inicio', style: theme.textTheme.labelLarge)),
-                          const SizedBox(height: 6),
-                          TextField(
-                            readOnly: true,
-                            decoration: const InputDecoration(prefixIcon: Icon(Icons.schedule), hintText: '-- : -- --', border: OutlineInputBorder()),
-                            controller: TextEditingController(text: startTime == null ? '' : startTime!.format(context)),
-                            onTap: _pickTime,
-                          ),
-                          const SizedBox(height: 12),
+                          
                           // Duración
                           Align(alignment: Alignment.centerLeft, child: Text('Duración (horas)', style: theme.textTheme.labelLarge)),
                           const SizedBox(height: 6),

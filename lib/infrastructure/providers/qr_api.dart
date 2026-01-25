@@ -11,20 +11,25 @@ class QrApi {
     required int personaId,
     required int duracionHoras,
     required String fechaAcceso, // YYYY-MM-DD
-    required String horaInicio, // HH:MM
+    String? horaInicio, // HH:MM (opcional - servidor usa hora actual si no se especifica)
   }) async {
     try {
+      final data = {
+        'duracion_horas': duracionHoras,
+        'fecha_acceso': fechaAcceso,
+        'usuario_creado': 'flutter_app',
+      };
+      // Si horaInicio se proporciona, incluirla; si no, servidor usa hora actual
+      if (horaInicio != null) {
+        data['hora_inicio'] = horaInicio;
+      }
+      
       final response = await dio.post(
         '/qr/generar-propio',
         queryParameters: {
           'usuario_id': personaId,
         },
-        data: {
-          'duracion_horas': duracionHoras,
-          'fecha_acceso': fechaAcceso,
-          'hora_inicio': horaInicio,
-          'usuario_creado': 'flutter_app',
-        },
+        data: data,
       );
       return response.data;
     } catch (e) {
@@ -41,24 +46,29 @@ class QrApi {
     required String motivoVisita,
     required int duracionHoras,
     required String fechaAcceso, // YYYY-MM-DD
-    required String horaInicio, // HH:MM
+    String? horaInicio, // HH:MM (opcional - servidor usa hora actual si no se especifica)
   }) async {
     try {
+      final data = {
+        'visita_identificacion': visitaIdentificacion,
+        'visita_nombres': visitaNombres,
+        'visita_apellidos': visitaApellidos,
+        'motivo_visita': motivoVisita,
+        'duracion_horas': duracionHoras,
+        'fecha_acceso': fechaAcceso,
+        'usuario_creado': 'flutter_app',
+      };
+      // Si horaInicio se proporciona, incluirla; si no, servidor usa hora actual
+      if (horaInicio != null) {
+        data['hora_inicio'] = horaInicio;
+      }
+      
       final response = await dio.post(
         '/qr/generar-visita',
         queryParameters: {
           'usuario_id': personaId,
         },
-        data: {
-          'visita_identificacion': visitaIdentificacion,
-          'visita_nombres': visitaNombres,
-          'visita_apellidos': visitaApellidos,
-          'motivo_visita': motivoVisita,
-          'duracion_horas': duracionHoras,
-          'fecha_acceso': fechaAcceso,
-          'hora_inicio': horaInicio,
-          'usuario_creado': 'flutter_app',
-        },
+        data: data,
       );
       return response.data;
     } catch (e) {

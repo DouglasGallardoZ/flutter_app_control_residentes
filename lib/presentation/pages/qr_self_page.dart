@@ -28,16 +28,24 @@ class QrSelfPage extends StatefulWidget {
 class _QrSelfPageState extends State<QrSelfPage> {
   final GlobalKey qrBoundaryKey = GlobalKey();
 
+  bool useCustomDateTime = false; // Toggle para usar fecha/hora personalizadas
   DateTime? startDate;
   TimeOfDay? startTime;
   int? durationHours; // 1,3,6,12
   bool qrGenerated = false;
 
   DateTime? get validFrom {
-    if (startDate == null || startTime == null) return null;
+    if (!useCustomDateTime) {
+      // Usar fecha/hora actual
+      final now = DateTime.now();
+      return now;
+    }
+    // Usar fecha/hora personalizadas
+    if (startDate == null) return null;
+    final time = startTime ?? TimeOfDay.now();
     return DateTime(
       startDate!.year, startDate!.month, startDate!.day,
-      startTime!.hour, startTime!.minute,
+      time.hour, time.minute,
     );
   }
 
@@ -80,10 +88,14 @@ class _QrSelfPageState extends State<QrSelfPage> {
   }
 
   Future<void> _confirmAndGenerate(int personaId) async {
-    if (startDate == null) return _error('La fecha de inicio es obligatoria');
-    if (startTime == null) return _error('La hora de inicio es obligatoria');
+    // Si se usan fechas personalizadas, validar que estén completas
+    if (useCustomDateTime) {
+      if (startDate == null) return _error('La fecha de inicio es obligatoria');
+      if (startTime == null) return _error('La hora de inicio es obligatoria');
+      // Validar que no sea en el pasado solo si se personalizó
+      if (validFrom!.isBefore(DateTime.now())) return _error('La fecha y hora de inicio no puede ser en el pasado');
+    }
     if (durationHours == null || durationHours! <= 0) return _error('La duración debe ser mayor a 0 horas');
-    if (validFrom!.isBefore(DateTime.now())) return _error('La fecha y hora de inicio no puede ser en el pasado');
 
     final ok = await showDialog<bool>(
       context: context,
@@ -112,17 +124,22 @@ class _QrSelfPageState extends State<QrSelfPage> {
               }
               return _DetailRow(label: 'Para:', value: authUserName);
             }),
+            const SizedBox(height: 12),
             _DetailRow(label: 'Inicio:', value: _fmtShortES(validFrom!, includeWeek: true)),
             _DetailRow(label: 'Fin:', value: _fmtShortES(validUntil!, includeWeek: true)),
             _DetailRow(label: 'Duración:', value: '${durationHours} horas'),
             const SizedBox(height: 16),
             Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-              OutlinedButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+              Flexible(
+                child: OutlinedButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+              ),
               const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: () => Navigator.pop(context, true),
-                icon: const Icon(Icons.check_circle),
-                label: const Text('Confirmar y Generar'),
+              Flexible(
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(context, true),
+                  icon: const Icon(Icons.check_circle),
+                  label: const Text('Confirmar'),
+                ),
               ),
             ]),
           ]),
@@ -176,16 +193,23 @@ class _QrSelfPageState extends State<QrSelfPage> {
       onTabSelected: (i) {
         if (i == 1) return;
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (personaId <= 0 || identificacion.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos de usuario')));
+            return;
+          }
+          
+          final rid = residenceId ?? '';
+          
           switch (i) {
             case 0:
               final route = isFamilyMember ? AppRoutes.familyDashboard : AppRoutes.residentDashboard;
-              Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId ?? ''});
+              Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': rid});
               break;
             case 2:
-              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.accessHistory, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion});
+              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.accessHistory, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': rid});
               break;
             case 3:
-              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.members, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion});
+              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.members, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': rid});
               break;
             case 4:
               Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.profile, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion});
@@ -227,6 +251,15 @@ class _QrSelfPageState extends State<QrSelfPage> {
               ),
             );
             setState(() => qrGenerated = false);
+          } else if (state is QrError) {
+            setState(() => qrGenerated = false);
+            ScaffoldMessenger.of(ctx).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: Theme.of(ctx).colorScheme.error,
+              ),
+            );
           }
         },
         builder: (ctx, state) {
@@ -290,35 +323,81 @@ class _QrSelfPageState extends State<QrSelfPage> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(children: [
-                    Align(alignment: Alignment.centerLeft, child: Text('Fecha de Inicio', style: theme.textTheme.labelLarge)),
-                    const SizedBox(height: 6),
-                    TextField(
-                      readOnly: true,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.calendar_today),
-                        hintText: 'mm / dd / yyyy',
-                        border: OutlineInputBorder(),
+                    // Toggle para habilitar fecha/hora personalizadas
+                    Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
                       ),
-                      controller: TextEditingController(
-                        text: startDate == null ? '' : '${startDate!.month}/${startDate!.day}/${startDate!.year}',
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Personalizar Fecha y Hora', style: theme.textTheme.labelLarge),
+                                const SizedBox(height: 4),
+                                Text(
+                                  useCustomDateTime
+                                      ? 'Define la fecha y hora de inicio'
+                                      : 'Usa la fecha y hora actual del servidor',
+                                  style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: useCustomDateTime,
+                            onChanged: (value) => setState(() => useCustomDateTime = value),
+                          ),
+                        ],
                       ),
-                      onTap: _pickDate,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
 
-                    Align(alignment: Alignment.centerLeft, child: Text('Hora de Inicio', style: theme.textTheme.labelLarge)),
-                    const SizedBox(height: 6),
-                    TextField(
-                      readOnly: true,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.schedule),
-                        hintText: '-- : -- --',
-                        border: OutlineInputBorder(),
+                    // Campos de fecha/hora - Solo habilitados si useCustomDateTime es true
+                    AbsorbPointer(
+                      absorbing: !useCustomDateTime,
+                      child: Opacity(
+                        opacity: useCustomDateTime ? 1.0 : 0.5,
+                        child: Column(
+                          children: [
+                            Align(alignment: Alignment.centerLeft, child: Text('Fecha de Inicio', style: theme.textTheme.labelLarge)),
+                            const SizedBox(height: 6),
+                            TextField(
+                              readOnly: true,
+                              decoration: const InputDecoration(
+                                prefixIcon: Icon(Icons.calendar_today),
+                                hintText: 'mm / dd / yyyy',
+                                border: OutlineInputBorder(),
+                              ),
+                              controller: TextEditingController(
+                                text: startDate == null ? '' : '${startDate!.month}/${startDate!.day}/${startDate!.year}',
+                              ),
+                              onTap: useCustomDateTime ? _pickDate : null,
+                            ),
+                            const SizedBox(height: 12),
+
+                            Align(alignment: Alignment.centerLeft, child: Text('Hora de Inicio', style: theme.textTheme.labelLarge)),
+                            const SizedBox(height: 6),
+                            TextField(
+                              readOnly: true,
+                              decoration: const InputDecoration(
+                                prefixIcon: Icon(Icons.schedule),
+                                hintText: '-- : -- --',
+                                border: OutlineInputBorder(),
+                              ),
+                              controller: TextEditingController(text: startTime == null ? '' : startTime!.format(context)),
+                              onTap: useCustomDateTime ? _pickTime : null,
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
                       ),
-                      controller: TextEditingController(text: startTime == null ? '' : startTime!.format(context)),
-                      onTap: _pickTime,
                     ),
-                    const SizedBox(height: 12),
 
                     Align(alignment: Alignment.centerLeft, child: Text('Duración (horas)', style: theme.textTheme.labelLarge)),
                     const SizedBox(height: 6),
