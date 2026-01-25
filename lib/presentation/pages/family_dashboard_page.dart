@@ -47,7 +47,7 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage> {
       displayName = (authState.user['name'] ?? 
                     authState.user['nombreCompleto'] ?? 
                     authState.user['nombres'] ?? 'Usuario') as String;
-      personaId = int.tryParse(authState.user['id']?.toString() ?? '') ?? 0;
+      personaId = authState.user['personaId'] as int? ?? 0;
       identificacion = (authState.user['identificacion'] ?? 
                        authState.user['identification'] ?? 
                        authState.user['dni'] ?? '') as String;

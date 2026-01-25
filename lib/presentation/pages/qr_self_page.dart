@@ -151,7 +151,7 @@ class _QrSelfPageState extends State<QrSelfPage> {
       // SIEMPRE usar datos del AuthBloc (son la fuente de verdad)
       final role = authState.user['rol'] as String?;
       isFamilyMember = role?.toLowerCase() == 'miembro_familia' || role?.toLowerCase() == 'family' || role?.toLowerCase() == 'miembro de familia';
-      personaId = int.tryParse(authState.user['id']?.toString() ?? '') ?? 0;
+      personaId = authState.user['personaId'] as int? ?? 0;
       identificacion = (authState.user['identificacion'] ?? 
                        authState.user['identification'] ?? 
                        authState.user['dni'] ?? '') as String;

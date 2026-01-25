@@ -258,7 +258,8 @@ class _QrVisitPageState extends State<QrVisitPage> {
         listener: (listenerCtx, qrState) {
           if (qrState is QrVisitReady && qrGenerated) {
             // Recargar lista de visitantes después de generar QR
-            listenerCtx.read<VisitorBloc>().add(LoadVisitors(widget.residenceId));
+            // Use widget.personaId que ya fue pasado por los parámetros de navegación
+            listenerCtx.read<VisitorBloc>().add(LoadVisitors(widget.residenceId, widget.personaId > 0 ? widget.personaId : null));
             
             // Obtener datos del usuario del AuthBloc
             final authData = getUserDataFromAuth(listenerCtx);

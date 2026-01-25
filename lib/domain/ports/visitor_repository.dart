@@ -2,7 +2,7 @@
 import '../entities/visitor.dart';
 
 abstract class VisitorRepository {
-  Future<List<Visitor>> listByResidence(String residenceId);
+  Future<List<Visitor>> listByResidence(String residenceId, {int? personaId});
   Future<Visitor?> findById(String id, String residenceId);
   Future<Visitor> upsert(String residenceId, Visitor visitor);
   Future<List<Visitor>> getVisitantesVivienda();

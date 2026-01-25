@@ -11,7 +11,8 @@ class VisitorBloc extends Bloc<VisitorEvent, VisitorState> {
     on<LoadVisitors>((e, emit) async {
       emit(VisitorLoading());
       try {
-        final list = await usecase.list(e.residenceId);
+        
+        final list = await usecase.list(e.residenceId, personaId: e.personaId);
         final helper = list.isEmpty
           ? 'No hay visitantes guardados. Cree el primero en "Nuevo Visitante".'
           : 'Seleccione un visitante o busque por nombre/identificación.';

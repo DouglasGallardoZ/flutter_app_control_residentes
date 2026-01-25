@@ -13,9 +13,10 @@ class VisitorRepositoryImpl implements VisitorRepository {
   });
 
   @override
-  Future<List<Visitor>> listByResidence(String residenceId) async {
+  Future<List<Visitor>> listByResidence(String residenceId, {int? personaId}) async {
     try {
-      final response = await api.listByResidence(personaId: personaId);
+      final effectivePersonaId = personaId ?? this.personaId;
+      final response = await api.listByResidence(personaId: effectivePersonaId);
       final data = response['data'] as List<dynamic>? ?? [];
       return data.map((item) {
         final map = item as Map<String, dynamic>;

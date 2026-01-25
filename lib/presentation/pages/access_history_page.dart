@@ -45,7 +45,7 @@ class _AccessHistoryPageState extends State<AccessHistoryPage> {
     if (authState is AuthSuccess) {
       final role = authState.user['rol'] as String?;
       isFamilyMember = role?.toLowerCase() == 'miembro_familia' || role?.toLowerCase() == 'family' || role?.toLowerCase() == 'miembro de familia';
-      authUserId = (authState.user['id'] ?? authState.user['uid'])?.toString();
+      authUserId = (authState.user['personaId']?.toString() ?? authState.user['uid'])?.toString();
       authResidence = authState.user['residence'] as String?;
       authName = authState.user['name'] as String?;
     }
