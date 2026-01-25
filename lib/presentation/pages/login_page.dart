@@ -16,6 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   final emailCtrl = TextEditingController();
   final passCtrl = TextEditingController();
   final formKey = GlobalKey<FormState>();
+  bool showPassword = false;
 
   @override
   void dispose() {
@@ -92,8 +93,8 @@ class _LoginPageState extends State<LoginPage> {
                       }
                     } else if (state is AuthFailure) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(state.message),
+                        const SnackBar(
+                          content: Text('Usuario o contraseña incorrectos'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -142,12 +143,18 @@ class _LoginPageState extends State<LoginPage> {
                           const SizedBox(height: 16),
                           TextFormField(
                             controller: passCtrl,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Contraseña',
                               hintText: 'Ingrese su contraseña',
-                              prefixIcon: Icon(Icons.lock),
+                              prefixIcon: const Icon(Icons.lock),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  showPassword ? Icons.visibility : Icons.visibility_off,
+                                ),
+                                onPressed: () => setState(() => showPassword = !showPassword),
+                              ),
                             ),
-                            obscureText: true,
+                            obscureText: !showPassword,
                             validator: (v) {
                               if (v == null || v.isEmpty) {
                                 return 'Ingrese su contraseña';

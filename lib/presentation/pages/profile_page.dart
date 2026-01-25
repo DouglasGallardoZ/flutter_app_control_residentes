@@ -463,15 +463,13 @@ class _ProfilePageState extends State<ProfilePage> {
                   label: 'Apellidos',
                   value: apellidos.isNotEmpty ? apellidos : '—',
                 ),
-                if (!isFamilyRole) ...[
-                  const Divider(height: 24),
-                  _buildInfoRow(
-                    context: context,
-                    icon: Icons.home_work_outlined,
-                    label: 'Residencia',
-                    value: residence,
-                  ),
-                ],
+                const Divider(height: 24),
+                _buildInfoRow(
+                  context: context,
+                  icon: Icons.home_work_outlined,
+                  label: 'Residencia',
+                  value: residence,
+                ),
               ],
             ),
           ),

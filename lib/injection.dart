@@ -72,6 +72,8 @@ import 'application/blocs/resident/resident_bloc.dart';
 import 'application/blocs/owner/owner_bloc.dart';
 import 'application/blocs/member/member_bloc.dart';
 import 'application/blocs/admin_account/admin_account_bloc.dart';
+import 'application/blocs/qr_display/qr_display_bloc.dart';
+import 'application/blocs/auth/auth_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -289,6 +291,10 @@ Future<void> inject() async {
   );
 
   // BLoCs
+  sl.registerLazySingleton<AuthBloc>(
+    () => AuthBloc(login: sl<LoginUseCase>(), authRepo: sl<AuthRepository>()),
+  );
+
   sl.registerLazySingleton<AdminDashboardBloc>(
     () => AdminDashboardBloc(sl<GetAdminMetricsUseCase>()),
   );
@@ -340,5 +346,9 @@ Future<void> inject() async {
       resetPasswordUseCase: sl<ResetPasswordUseCase>(),
       accountRepository: sl<AdminAccountRepository>(),
     ),
+  );
+
+  sl.registerLazySingleton<QrDisplayBloc>(
+    () => QrDisplayBloc(authBloc: sl<AuthBloc>()),
   );
 }

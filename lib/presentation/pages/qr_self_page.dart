@@ -103,7 +103,13 @@ class _QrSelfPageState extends State<QrSelfPage> {
             const SizedBox(height: 12),
             Builder(builder: (builderCtx) {
               final authState = builderCtx.read<AuthBloc>().state;
-              final authUserName = (authState is AuthSuccess) ? (authState.user['name'] as String? ?? 'Usuario') : 'Usuario';
+              String authUserName = 'Usuario';
+              if (authState is AuthSuccess) {
+                final nombres = (authState.user['nombres'] ?? '') as String;
+                final apellidos = (authState.user['apellidos'] ?? '') as String;
+                authUserName = '$nombres $apellidos'.trim();
+                if (authUserName.isEmpty) authUserName = 'Usuario';
+              }
               return _DetailRow(label: 'Para:', value: authUserName);
             }),
             _DetailRow(label: 'Inicio:', value: _fmtShortES(validFrom!, includeWeek: true)),
@@ -253,7 +259,13 @@ class _QrSelfPageState extends State<QrSelfPage> {
                         const Text('Nombre', style: TextStyle(fontWeight: FontWeight.w600)),
                         Builder(builder: (builderCtx) {
                           final authState = builderCtx.read<AuthBloc>().state;
-                          final authUserName = (authState is AuthSuccess) ? (authState.user['name'] as String? ?? 'Usuario') : 'Usuario';
+                          String authUserName = 'Usuario';
+                          if (authState is AuthSuccess) {
+                            final nombres = (authState.user['nombres'] ?? '') as String;
+                            final apellidos = (authState.user['apellidos'] ?? '') as String;
+                            authUserName = '$nombres $apellidos'.trim();
+                            if (authUserName.isEmpty) authUserName = 'Usuario';
+                          }
                           return Text(authUserName);
                         }),
                       ]),
