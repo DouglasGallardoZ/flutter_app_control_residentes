@@ -29,9 +29,11 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+            colors: Theme.of(context).brightness == Brightness.light
+                ? const [Color(0xFFFFFFFF), Color(0xFFDCDBE5)]
+                : const [Color(0xFF1A1A2E), Color(0xFF2D1B3D)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
