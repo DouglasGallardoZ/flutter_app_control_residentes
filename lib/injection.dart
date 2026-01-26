@@ -10,6 +10,7 @@ import 'infrastructure/providers/access_history_api.dart';
 import 'infrastructure/providers/visitor_api.dart';
 import 'infrastructure/providers/family_members_api.dart';
 import 'infrastructure/providers/admin_api.dart';
+import 'infrastructure/providers/account_api_provider.dart';
 
 // Infrastructure - Adapters
 import 'infrastructure/adapters/auth_repository_impl.dart';
@@ -77,6 +78,8 @@ import 'application/blocs/admin_account/admin_account_bloc.dart';
 import 'application/blocs/qr_display/qr_display_bloc.dart';
 import 'application/blocs/qr_list/qr_list_bloc.dart';
 import 'application/blocs/auth/auth_bloc.dart';
+import 'application/blocs/prospecto_validation/prospecto_validation_bloc.dart';
+import 'application/blocs/registro_residente/registro_residente_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -147,6 +150,10 @@ Future<void> inject() async {
     () => QrListApi(apiHttpClient.dio),
   );
 
+  sl.registerLazySingleton<AccountApiProvider>(
+    () => AccountApiProvider(dio: apiHttpClient.dio),
+  );
+
   // Adapters (Repositories)
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
@@ -156,7 +163,11 @@ Future<void> inject() async {
   );
 
   sl.registerLazySingleton<AccountRepository>(
-    () => AccountRepositoryImpl(sl<ApiAuthProvider>(), sl<FamilyMembersApi>()),
+    () => AccountRepositoryImpl(
+      sl<ApiAuthProvider>(),
+      sl<FamilyMembersApi>(),
+      sl<AccountApiProvider>(),
+    ),
   );
 
   sl.registerLazySingleton<QrRepository>(
@@ -322,7 +333,11 @@ Future<void> inject() async {
 
   // BLoCs
   sl.registerLazySingleton<AuthBloc>(
-    () => AuthBloc(login: sl<LoginUseCase>(), authRepo: sl<AuthRepository>()),
+    () => AuthBloc(
+      login: sl<LoginUseCase>(),
+      authRepo: sl<AuthRepository>(),
+      accountRepo: sl<AccountRepository>(),
+    ),
   );
 
   sl.registerLazySingleton<AdminDashboardBloc>(
@@ -384,5 +399,13 @@ Future<void> inject() async {
 
   sl.registerFactory<QrListBloc>(
     () => QrListBloc(getQrListUseCase: sl<GetQrListUseCase>()),
+  );
+
+  sl.registerLazySingleton<ProspectoValidationBloc>(
+    () => ProspectoValidationBloc(sl<AccountRepository>()),
+  );
+
+  sl.registerLazySingleton<RegistroResidenteBloc>(
+    () => RegistroResidenteBloc(sl<AccountRepository>()),
   );
 }

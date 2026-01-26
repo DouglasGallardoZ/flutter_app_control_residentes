@@ -189,7 +189,7 @@ POST /auth/login
 ## CUENTAS
 
 **Prefijo:** `/api/v1/cuentas`  
-**Total Endpoints:** 8
+**Total Endpoints:** 10
 
 ### 1. Crear Cuenta de Residente con Firebase
 
@@ -747,6 +747,371 @@ Obtiene la información completa de un usuario buscando por correo electrónico.
   "detail": "El usuario no tiene una cuenta activa"
 }
 ```
+
+---
+
+### 9. Validar Prospecto Residente
+
+**Endpoint:** `GET /prospecto/residente/{identificacion}`  
+**Auth:** No requiere
+
+**Descripción:**
+Valida que una persona esté registrada como residente o propietario en el sistema y que NO tenga una cuenta de usuario creada. Usado en el flujo pre-registro para verificar que el usuario existe como residente antes de crear su cuenta de acceso.
+
+**Path Parameters:**
+```
+{identificacion} = Número de cédula o identificación
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "persona_id": 1,
+  "identificacion": "1234567890",
+  "nombres": "Juan",
+  "apellidos": "Pérez",
+  "correo": "juan@example.com",
+  "celular": "+593987654321",
+  "tipo_registro": "residente",
+  "vivienda": {
+    "vivienda_id": 1,
+    "manzana": "A",
+    "villa": "101"
+  },
+  "puede_crear_cuenta": true
+}
+```
+
+**Response Fields (tipo_registro = "propietario"):**
+```json
+{
+  "persona_id": 2,
+  "identificacion": "9876543210",
+  "nombres": "María",
+  "apellidos": "García",
+  "correo": "maria@example.com",
+  "celular": "+593998765432",
+  "tipo_registro": "propietario",
+  "vivienda": {
+    "vivienda_id": 1,
+    "manzana": "A",
+    "villa": "101"
+  },
+  "puede_crear_cuenta": true
+}
+```
+
+**Validaciones:**
+- ✅ Identificación debe existir en el sistema
+- ✅ Persona debe estar activa
+- ✅ Persona DEBE estar registrada como residente o propietario
+- ✅ Persona NO debe tener cuenta previa
+
+**Error Responses:**
+
+```json
+// 404 - Persona no encontrada
+{
+  "detail": "Persona no encontrada con esa identificación"
+}
+
+// 404 - No es residente ni propietario
+{
+  "detail": "Persona no está registrada como residente o propietario"
+}
+
+// 409 - Ya tiene cuenta creada
+{
+  "detail": "Esta persona ya tiene una cuenta de usuario creada"
+}
+```
+
+**Uso en Flutter:**
+
+```dart
+Future<ProspectoResidente> validarProspectoResidente(String identificacion) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/cuentas/prospecto/residente/$identificacion'),
+    headers: {'Content-Type': 'application/json'},
+  );
+  
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return ProspectoResidente.fromJson(data);
+  } else if (response.statusCode == 404) {
+    throw Exception('Prospecto no encontrado o no es residente');
+  } else if (response.statusCode == 409) {
+    throw Exception('Esta persona ya tiene una cuenta creada');
+  } else {
+    throw Exception('Error: ${response.body}');
+  }
+}
+
+// Modelo Dart
+class ProspectoResidente {
+  final int personaId;
+  final String identificacion;
+  final String nombres;
+  final String apellidos;
+  final String? correo;
+  final String? celular;
+  final String tipoRegistro; // "residente" o "propietario"
+  final ViviendaInfo vivienda;
+  final bool puedeCrearCuenta;
+  
+  ProspectoResidente({
+    required this.personaId,
+    required this.identificacion,
+    required this.nombres,
+    required this.apellidos,
+    this.correo,
+    this.celular,
+    required this.tipoRegistro,
+    required this.vivienda,
+    required this.puedeCrearCuenta,
+  });
+  
+  factory ProspectoResidente.fromJson(Map<String, dynamic> json) {
+    return ProspectoResidente(
+      personaId: json['persona_id'],
+      identificacion: json['identificacion'],
+      nombres: json['nombres'],
+      apellidos: json['apellidos'],
+      correo: json['correo'],
+      celular: json['celular'],
+      tipoRegistro: json['tipo_registro'],
+      vivienda: ViviendaInfo.fromJson(json['vivienda']),
+      puedeCrearCuenta: json['puede_crear_cuenta'],
+    );
+  }
+}
+
+// Flujo en la app
+void registrarResidente(String identificacion) async {
+  try {
+    final prospecto = await validarProspectoResidente(identificacion);
+    
+    // Mostrar confirmación
+    print('Nombre: ${prospecto.nombres}');
+    print('Vivienda: ${prospecto.vivienda.manzana}-${prospecto.vivienda.villa}');
+    
+    // Proceder a crear cuenta en Firebase
+    await crearCuentaEnFirebase(prospecto.personaId);
+    
+  } on Exception catch (e) {
+    mostrarError('No se puede crear cuenta: $e');
+  }
+}
+```
+
+**Casos de Uso:**
+
+1. **Validar antes de registro en Firebase:**
+   ```dart
+   // Usuario ingresa cédula en el app
+   // App valida que esté en el sistema
+   final prospecto = await validarProspectoResidente(cedula);
+   // Si es válido, permitir continuar con registro en Firebase
+   ```
+
+2. **Prevenir duplicados:**
+   ```dart
+   // Si retorna 409, mostrar: "Esta persona ya tiene cuenta"
+   // Sugerir: "¿Olvidó su contraseña?"
+   ```
+
+---
+
+### 10. Validar Prospecto Miembro de Familia
+
+**Endpoint:** `GET /prospecto/miembro/{identificacion}`  
+**Auth:** No requiere
+
+**Descripción:**
+Valida que una persona esté registrada como miembro de familia en el sistema. A diferencia del endpoint de residente, este NO genera error si no existe (devuelve `existe: false`). Tampoco genera error si la persona existe pero no está registrada como miembro. Solo valida que NO tenga cuenta previa.
+
+**Path Parameters:**
+```
+{identificacion} = Número de cédula o identificación
+```
+
+**Success Response - Miembro Existe (200 OK):**
+```json
+{
+  "existe": true,
+  "persona_id": 5,
+  "identificacion": "5555555555",
+  "nombres": "Carlos",
+  "apellidos": "Pérez",
+  "correo": "carlos@example.com",
+  "celular": "+593987777777",
+  "parentesco": "hijo",
+  "vivienda": {
+    "vivienda_id": 1,
+    "manzana": "A",
+    "villa": "101"
+  },
+  "puede_crear_cuenta": true
+}
+```
+
+**Response - Miembro NO Existe (200 OK):**
+```json
+{
+  "existe": false,
+  "persona_encontrada": false
+}
+```
+
+**Response - Persona Existe pero NO es Miembro (200 OK):**
+```json
+{
+  "existe": false,
+  "persona_encontrada": true,
+  "identificacion": "3333333333",
+  "nombres": "Ana",
+  "apellidos": "García",
+  "mensaje": "Persona existe pero no está registrada como miembro de familia"
+}
+```
+
+**Validaciones:**
+- ✅ Identidad puede no existir (no es error)
+- ✅ Persona NO debe tener cuenta previa (es error si la tiene)
+- ✅ Si existe y es miembro: retorna datos completos
+- ✅ Si existe pero no es miembro: retorna existe=false con datos básicos
+- ✅ Si no existe: retorna existe=false
+
+**Error Responses:**
+
+```json
+// 409 - Persona ya tiene cuenta creada
+{
+  "detail": "Esta persona ya tiene una cuenta de usuario creada"
+}
+```
+
+**Uso en Flutter:**
+
+```dart
+Future<ProspectoMiembro> validarProspectoMiembro(String identificacion) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/cuentas/prospecto/miembro/$identificacion'),
+    headers: {'Content-Type': 'application/json'},
+  );
+  
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return ProspectoMiembro.fromJson(data);
+  } else if (response.statusCode == 409) {
+    throw Exception('Esta persona ya tiene una cuenta creada');
+  } else {
+    throw Exception('Error: ${response.body}');
+  }
+}
+
+// Modelo Dart
+class ProspectoMiembro {
+  final bool existe;
+  final bool? personaEncontrada;
+  final int? personaId;
+  final String? identificacion;
+  final String? nombres;
+  final String? apellidos;
+  final String? correo;
+  final String? celular;
+  final String? parentesco;
+  final ViviendaInfo? vivienda;
+  final bool? puedeCrearCuenta;
+  final String? mensaje;
+  
+  ProspectoMiembro({
+    required this.existe,
+    this.personaEncontrada,
+    this.personaId,
+    this.identificacion,
+    this.nombres,
+    this.apellidos,
+    this.correo,
+    this.celular,
+    this.parentesco,
+    this.vivienda,
+    this.puedeCrearCuenta,
+    this.mensaje,
+  });
+  
+  factory ProspectoMiembro.fromJson(Map<String, dynamic> json) {
+    return ProspectoMiembro(
+      existe: json['existe'],
+      personaEncontrada: json['persona_encontrada'],
+      personaId: json['persona_id'],
+      identificacion: json['identificacion'],
+      nombres: json['nombres'],
+      apellidos: json['apellidos'],
+      correo: json['correo'],
+      celular: json['celular'],
+      parentesco: json['parentesco'],
+      vivienda: json['vivienda'] != null ? ViviendaInfo.fromJson(json['vivienda']) : null,
+      puedeCrearCuenta: json['puede_crear_cuenta'],
+      mensaje: json['mensaje'],
+    );
+  }
+}
+
+// Flujo en la app
+void registrarMiembroDeFamilia(String identificacion) async {
+  try {
+    final prospecto = await validarProspectoMiembro(identificacion);
+    
+    if (prospecto.existe) {
+      // Miembro existe y está registrado
+      print('Nombre: ${prospecto.nombres}');
+      print('Parentesco: ${prospecto.parentesco}');
+      print('Vivienda: ${prospecto.vivienda?.manzana}-${prospecto.vivienda?.villa}');
+      
+      // Proceder a crear cuenta
+      await crearCuentaEnFirebase(prospecto.personaId!);
+      
+    } else if (prospecto.personaEncontrada!) {
+      // Persona existe pero no es miembro registrado
+      mostrarInfo('${prospecto.nombres} no está registrado como miembro de familia');
+      
+    } else {
+      // Persona no existe
+      mostrarInfo('No se encontró esta cédula en el sistema');
+    }
+    
+  } on Exception catch (e) {
+    mostrarError('Error: $e');
+  }
+}
+```
+
+**Casos de Uso:**
+
+1. **Búsqueda sin error:**
+   ```dart
+   // Usuario ingresa cédula
+   // App valida pero NO muestra error si no existe
+   // Solo muestra: "Esta persona no está registrada"
+   ```
+
+2. **Diferencial para residentes vs miembros:**
+   ```dart
+   // Residente: DEBE estar en el sistema (error 404)
+   // Miembro: PUEDE no estar (solo existe: false)
+   ```
+
+3. **Informar a usuario:**
+   ```dart
+   if (prospecto.existe) {
+     // "Listo para crear cuenta"
+   } else if (prospecto.personaEncontrada) {
+     // "Debe ser agregado como miembro de familia primero"
+   } else {
+     // "No encontrado en el sistema"
+   }
+   ```
 
 ---
 

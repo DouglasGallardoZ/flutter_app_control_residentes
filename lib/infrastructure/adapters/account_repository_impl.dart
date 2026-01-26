@@ -1,14 +1,21 @@
 import '../../domain/ports/account_repository.dart';
 import '../../domain/entities/account.dart';
+import '../../domain/entities/prospecto_residente.dart';
 import '../providers/firebase_auth_provider.dart';
 import '../providers/family_members_api.dart';
+import '../providers/account_api_provider.dart';
 import '../dtos/perfil_usuario_dto.dart';
 
 class AccountRepositoryImpl implements AccountRepository {
   final ApiAuthProvider apiProvider;
   final FamilyMembersApi familyMembersApi;
+  final AccountApiProvider accountApiProvider;
 
-  AccountRepositoryImpl(this.apiProvider, this.familyMembersApi);
+  AccountRepositoryImpl(
+    this.apiProvider,
+    this.familyMembersApi,
+    this.accountApiProvider,
+  );
 
   @override
   Future<Account> register(Account account) async {
@@ -110,4 +117,57 @@ class AccountRepositoryImpl implements AccountRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<ProspectoResidente> validarProspectoResidente(String identificacion) async {
+    try {
+      return await accountApiProvider.validarProspectoResidente(identificacion);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<ProspectoMiembro> validarProspectoMiembro(String identificacion) async {
+    try {
+      return await accountApiProvider.validarProspectoMiembro(identificacion);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CuentaResponse> crearCuentaResidente({
+    required int personaId,
+    required String firebaseUid,
+    required String username,
+  }) async {
+    try {
+      return await accountApiProvider.crearCuentaResidente(
+        personaId: personaId,
+        firebaseUid: firebaseUid,
+        username: username,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CuentaResponse> crearCuentaMiembro({
+    required int personaId,
+    required String firebaseUid,
+    required String username,
+  }) async {
+    try {
+      return await accountApiProvider.crearCuentaMiembro(
+        personaId: personaId,
+        firebaseUid: firebaseUid,
+        username: username,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
+

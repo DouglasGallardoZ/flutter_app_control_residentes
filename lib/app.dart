@@ -19,6 +19,8 @@ import 'application/blocs/owner/owner_bloc.dart';
 import 'application/blocs/member/member_bloc.dart';
 import 'application/blocs/admin_account/admin_account_bloc.dart';
 import 'application/blocs/qr_display/qr_display_bloc.dart';
+import 'application/blocs/prospecto_validation/prospecto_validation_bloc.dart';
+import 'application/blocs/registro_residente/registro_residente_bloc.dart';
 import 'injection.dart';
 
 class App extends StatelessWidget {
@@ -40,6 +42,8 @@ class App extends StatelessWidget {
         BlocProvider<FacialEnrollmentBloc>(create: (_) => sl<FacialEnrollmentBloc>()),
         BlocProvider<OwnerBloc>(create: (_) => sl<OwnerBloc>()),
         BlocProvider<QrDisplayBloc>(create: (_) => sl<QrDisplayBloc>()),
+        BlocProvider<ProspectoValidationBloc>(create: (_) => sl<ProspectoValidationBloc>()),
+        BlocProvider<RegistroResidenteBloc>(create: (_) => sl<RegistroResidenteBloc>()),
       ],
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: ThemeController.mode,

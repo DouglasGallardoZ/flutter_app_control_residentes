@@ -23,10 +23,21 @@ import '../pages/admin_create_owner_page.dart';
 import '../pages/admin_create_member_page.dart';
 import '../pages/admin_facial_enrollment_page.dart';
 import '../pages/family_dashboard_page.dart';
+import '../pages/register_option_page.dart';
+import '../pages/prospecto_residente_page.dart';
+import '../pages/facial_verification_page.dart';
+import '../pages/credentials_residente_page.dart';
+import '../../domain/entities/prospecto_residente.dart';
 import '../../application/blocs/qr_list/qr_list_bloc.dart';
+import '../../application/blocs/prospecto_validation/prospecto_validation_bloc.dart';
+import '../../application/blocs/registro_residente/registro_residente_bloc.dart';
 
 class AppRoutes {
   static const String login = '/login';
+  static const String registerOption = '/registerOption';
+  static const String prospectoResidente = '/prospectoResidente';
+  static const String facialVerification = '/facialVerification';
+  static const String credentialsResidente = '/credentialsResidente';
   static const String residentDashboard = '/residentDashboard';
   static const String qrSelf = '/qrSelf';
   static const String qrVisit = '/qrVisit';
@@ -53,6 +64,45 @@ class AppRoutes {
     switch (settings.name) {
       case login:
         return MaterialPageRoute(builder: (_) => const LoginPage());
+
+      case registerOption:
+        return MaterialPageRoute(builder: (_) => const RegisterOptionPage());
+
+      case prospectoResidente:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider<ProspectoValidationBloc>(
+            create: (_) => GetIt.instance<ProspectoValidationBloc>(),
+            child: const ProspectoResidentePage(),
+          ),
+        );
+
+      case facialVerification: {
+        final prospecto = settings.arguments as ProspectoResidente?;
+        if (prospecto != null) {
+          return MaterialPageRoute(
+            builder: (_) => FacialVerificationPage(prospecto: prospecto),
+          );
+        }
+        return _errorRoute('Faltan argumentos en FacialVerificationPage');
+      }
+
+      case credentialsResidente: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final prospecto = args?['prospecto'];
+        final imagePath = args?['imagePath'] as String?;
+        if (prospecto != null && imagePath != null) {
+          return MaterialPageRoute(
+            builder: (_) => BlocProvider<RegistroResidenteBloc>(
+              create: (_) => GetIt.instance<RegistroResidenteBloc>(),
+              child: CredentialsResidentePage(
+                prospecto: prospecto,
+                imagePath: imagePath,
+              ),
+            ),
+          );
+        }
+        return _errorRoute('Faltan argumentos en CredentialsResidentePage');
+      }
 
       case residentDashboard: {
         // Ya no requiere argumentos - obtiene datos del AuthBloc y QrBloc

@@ -597,6 +597,43 @@ class AdminApi {
     }
   }
 
+  /// Verificar identidad facial
+  /// Endpoint: POST /verify (biometry service)
+  Future<Map<String, dynamic>> verificarFacial({
+    required int personaId,
+    required String fotoPath,
+  }) async {
+    try {
+      final formData = FormData();
+      
+      // Agregar persona ID
+      formData.fields.add(MapEntry('persona_id', personaId.toString()));
+      
+      // Agregar imagen
+      final archivo = await MultipartFile.fromFile(
+        fotoPath,
+        filename: 'face.jpg',
+      );
+      formData.files.add(MapEntry('image', archivo));
+
+      // Usar el cliente de biometría si está disponible
+      final dioClient = biometryDio ?? dio;
+
+      final response = await dioClient.post(
+        '/verify',
+        data: formData,
+      );
+      
+      return {
+        'match': response.data['match'] ?? false,
+        'distance': (response.data['distance'] as num?)?.toDouble() ?? 1.0,
+        'personaId': response.data['persona_id'],
+      };
+    } catch (e) {
+      throw Exception(_extractErrorMessage(e));
+    }
+  }
+
   /// Generar datos ficticios para métricas
   /// TODO: Reemplazar con /api/v1/admin/metrics cuando backend lo implemente
   Map<String, dynamic> _generateMockMetrics() {

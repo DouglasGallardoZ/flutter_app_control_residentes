@@ -98,10 +98,11 @@ class _LoginPageState extends State<LoginPage> {
                     final loading = state is AuthLoading;
                     return Form(
                       key: formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
                             Icons.shield,
                             size: 48,
                             color: Color(0xFF3B82F6),
@@ -186,7 +187,29 @@ class _LoginPageState extends State<LoginPage> {
                                   : const Text('Ingresar'),
                             ),
                           ),
+                          const SizedBox(height: 24),
+                          const Divider(),
+                          const SizedBox(height: 16),
+                          Text(
+                            '¿No tienes cuenta?',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: loading
+                                  ? null
+                                  : () {
+                                      Navigator.of(context)
+                                          .pushNamed('/registerOption');
+                                    },
+                              icon: const Icon(Icons.person_add),
+                              label: const Text('Crear Cuenta'),
+                            ),
+                          ),
                         ],
+                        ),
                       ),
                     );
                   },
