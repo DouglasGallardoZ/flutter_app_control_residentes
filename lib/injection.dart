@@ -82,18 +82,29 @@ final sl = GetIt.instance;
 
 Future<void> inject() async {
   // Configuration
-  const String apiBaseUrl = 'http://192.168.1.3:8080/api/v1'; // Cambiar según ambiente
+  const String apiBaseUrl = 'http://192.168.1.3:8080/api/v1'; // API general
+  const String biometryBaseUrl = 'http://192.168.1.3:8000/api/v1'; // Servicio de biometría (puerto diferente)
 
   // Firebase
   final firebaseAuth = FirebaseAuth.instance;
   sl.registerLazySingleton<FirebaseAuth>(() => firebaseAuth);
 
-  // HTTP Client
+  // HTTP Client - API General
   final apiHttpClient = ApiHttpClient(
     baseUrl: apiBaseUrl,
     firebaseAuth: firebaseAuth,
   );
   sl.registerLazySingleton<ApiHttpClient>(() => apiHttpClient);
+
+  // HTTP Client - Servicio de Biometría
+  final biometryHttpClient = ApiHttpClient(
+    baseUrl: biometryBaseUrl,
+    firebaseAuth: firebaseAuth,
+  );
+  sl.registerLazySingleton<ApiHttpClient>(
+    () => biometryHttpClient,
+    instanceName: 'biometryClient',
+  );
 
   // Providers
   sl.registerLazySingleton<FirebaseAuthProvider>(
@@ -122,6 +133,14 @@ Future<void> inject() async {
 
   sl.registerLazySingleton<AdminApi>(
     () => AdminApi(apiHttpClient.dio),
+  );
+
+  sl.registerLazySingleton<AdminApi>(
+    () => AdminApi(
+      apiHttpClient.dio,
+      biometryDio: sl<ApiHttpClient>(instanceName: 'biometryClient').dio,
+    ),
+    instanceName: 'biometryAdminApi',
   );
 
   sl.registerLazySingleton<QrListApi>(
@@ -322,7 +341,7 @@ Future<void> inject() async {
   );
 
   sl.registerLazySingleton<FacialEnrollmentBloc>(
-    () => FacialEnrollmentBloc(adminApi: sl<AdminApi>()),
+    () => FacialEnrollmentBloc(adminApi: sl<AdminApi>(instanceName: 'biometryAdminApi')),
   );
 
   sl.registerLazySingleton<OwnerBloc>(

@@ -2,8 +2,9 @@ import 'package:dio/dio.dart';
 
 class AdminApi {
   final Dio dio;
+  final Dio? biometryDio; // Cliente opcional para servicios de biometría
 
-  AdminApi(this.dio);
+  AdminApi(this.dio, {this.biometryDio});
 
   /// Método auxiliar para extraer errores detallados de la respuesta API
   String _extractErrorMessage(dynamic error) {
@@ -557,9 +558,9 @@ class AdminApi {
   }
 
   /// Enroll facial data para residente/miembro
-  /// Servicio de biometría en puerto 8000
+  /// Servicio de biometría en puerto 8090
   /// Endpoint: POST /enroll
-  /// FormData: user_id (personaId), images (lista de archivos), usuario_creado
+  /// FormData: persona_id, images (lista de archivos), usuario_creado
   Future<Map<String, dynamic>> enrollFacialData({
     required String personaId,
     required List<String> imagenesRutas,
@@ -583,12 +584,11 @@ class AdminApi {
         formData.files.add(MapEntry('images', archivo));
       }
 
-      // Obtener la URL base y reemplazar el puerto por 8000 para biometría
-      final dioBaseUrl = dio.options.baseUrl;
-      final biometryUrl = dioBaseUrl.replaceAll(RegExp(r':\d+'), ':8000');
+      // Usar el cliente de biometría si está disponible
+      final dioClient = biometryDio ?? dio;
 
-      final response = await dio.post(
-        '$biometryUrl/enroll',
+      final response = await dioClient.post(
+        '/enroll',
         data: formData,
       );
       return response.data ?? {};
