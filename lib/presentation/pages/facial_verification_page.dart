@@ -9,7 +9,7 @@ import '../../application/blocs/registro_residente/registro_residente_event.dart
 import '../../injection.dart';
 
 class FacialVerificationPage extends StatefulWidget {
-  final ProspectoResidente prospecto;
+  final dynamic prospecto; // Acepta ProspectoResidente o ProspectoMiembro
 
   const FacialVerificationPage({
     super.key,
@@ -25,6 +25,26 @@ class _FacialVerificationPageState extends State<FacialVerificationPage> {
   bool _isCameraInitialized = false;
   DateTime? _lastCaptureTime;
   bool _isVerifying = false;
+
+  String get _tipoRegistro {
+    if (widget.prospecto is ProspectoMiembro) {
+      return 'miembro';
+    }
+    if (widget.prospecto is ProspectoResidente) {
+      return (widget.prospecto as ProspectoResidente).tipoRegistro;
+    }
+    return 'residente';
+  }
+
+  int? get _personaId {
+    if (widget.prospecto is ProspectoMiembro) {
+      return (widget.prospecto as ProspectoMiembro).personaId;
+    }
+    if (widget.prospecto is ProspectoResidente) {
+      return (widget.prospecto as ProspectoResidente).personaId;
+    }
+    return null;
+  }
 
   @override
   void initState() {
@@ -138,7 +158,7 @@ class _FacialVerificationPageState extends State<FacialVerificationPage> {
 
       // Llamar al API de biometría con /verify
       final response = await adminApi.verificarFacial(
-        personaId: widget.prospecto.personaId,
+        personaId: _personaId ?? 0,
         fotoPath: imageFile.path,
       );
 
@@ -229,9 +249,12 @@ class _FacialVerificationPageState extends State<FacialVerificationPage> {
                 ),
                 onPressed: () {
                   Navigator.of(context).pop();
-                  // Navegar a credenciales
+                  // Navegar a credenciales - puede ser residente o miembro
+                  final routeName = _tipoRegistro == 'miembro'
+                      ? '/credentialsMiembro'
+                      : '/credentialsResidente';
                   Navigator.of(context).pushNamed(
-                    '/credentialsResidente',
+                    routeName,
                     arguments: {
                       'prospecto': widget.prospecto,
                       'imagePath': imagePath,

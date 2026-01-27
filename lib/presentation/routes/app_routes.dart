@@ -25,19 +25,29 @@ import '../pages/admin_facial_enrollment_page.dart';
 import '../pages/family_dashboard_page.dart';
 import '../pages/register_option_page.dart';
 import '../pages/prospecto_residente_page.dart';
+import '../pages/prospecto_miembro_page.dart';
 import '../pages/facial_verification_page.dart';
 import '../pages/credentials_residente_page.dart';
+import '../pages/credentials_miembro_page.dart';
+import '../pages/member_create_registration_page.dart';
+import '../pages/member_facial_enrollment_page.dart';
 import '../../domain/entities/prospecto_residente.dart';
 import '../../application/blocs/qr_list/qr_list_bloc.dart';
 import '../../application/blocs/prospecto_validation/prospecto_validation_bloc.dart';
 import '../../application/blocs/registro_residente/registro_residente_bloc.dart';
+import '../../application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
+import '../../application/blocs/member/member_bloc.dart';
 
 class AppRoutes {
   static const String login = '/login';
   static const String registerOption = '/registerOption';
   static const String prospectoResidente = '/prospectoResidente';
+  static const String prospectoMiembro = '/prospectoMiembro';
   static const String facialVerification = '/facialVerification';
   static const String credentialsResidente = '/credentialsResidente';
+  static const String credentialsMiembro = '/credentialsMiembro';
+  static const String memberCreateRegistration = '/memberCreateRegistration';
+  static const String memberFacialEnrollment = '/memberFacialEnrollment';
   static const String residentDashboard = '/residentDashboard';
   static const String qrSelf = '/qrSelf';
   static const String qrVisit = '/qrVisit';
@@ -76,8 +86,16 @@ class AppRoutes {
           ),
         );
 
+      case prospectoMiembro:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider<ProspectoValidationBloc>(
+            create: (_) => GetIt.instance<ProspectoValidationBloc>(),
+            child: const ProspectoMiembroPage(),
+          ),
+        );
+
       case facialVerification: {
-        final prospecto = settings.arguments as ProspectoResidente?;
+        final prospecto = settings.arguments; // No hacer cast específico
         if (prospecto != null) {
           return MaterialPageRoute(
             builder: (_) => FacialVerificationPage(prospecto: prospecto),
@@ -102,6 +120,75 @@ class AppRoutes {
           );
         }
         return _errorRoute('Faltan argumentos en CredentialsResidentePage');
+      }
+
+      case credentialsMiembro: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final prospecto = args?['prospecto'];
+        final imagePath = args?['imagePath'] as String?;
+        
+        // Manejo flexible para ProspectoMiembro o ProspectoResidente
+        int? personaId;
+        String? nombres;
+        String? apellidos;
+        
+        if (prospecto is ProspectoMiembro) {
+          personaId = prospecto.personaId;
+          nombres = prospecto.nombres;
+          apellidos = prospecto.apellidos;
+        } else if (prospecto is ProspectoResidente) {
+          personaId = prospecto.personaId;
+          nombres = prospecto.nombres;
+          apellidos = prospecto.apellidos;
+        }
+        
+        if (personaId != null && nombres != null && apellidos != null) {
+          return MaterialPageRoute(
+            builder: (_) => BlocProvider<RegistroResidenteBloc>(
+              create: (_) => GetIt.instance<RegistroResidenteBloc>(),
+              child: CredentialsMiembroPage(
+                prospecto: prospecto is ProspectoResidente ? prospecto : null,
+                imagePath: imagePath,
+                personaId: personaId,
+                nombres: nombres,
+                apellidos: apellidos,
+              ),
+            ),
+          );
+        }
+        return _errorRoute('Faltan argumentos en CredentialsMiembroPage');
+      }
+
+      case memberCreateRegistration: {
+        final identificacion = settings.arguments as String?;
+        if (identificacion != null) {
+          return MaterialPageRoute(
+            builder: (_) => MemberCreateRegistrationPage(
+              identificacion: identificacion,
+            ),
+          );
+        }
+        return _errorRoute('Falta identificación en MemberCreateRegistrationPage');
+      }
+
+      case memberFacialEnrollment: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '0') ?? 0;
+        final nombres = args?['nombres'] as String? ?? '';
+        final apellidos = args?['apellidos'] as String? ?? '';
+        final type = args?['type'] as String? ?? 'member';
+        
+        if (personaId > 0 && nombres.isNotEmpty && apellidos.isNotEmpty) {
+          return MaterialPageRoute(
+            builder: (_) => MemberFacialEnrollmentPage(
+              personaId: personaId,
+              nombres: nombres,
+              apellidos: apellidos,
+              type: type,
+            ),
+          );
+        }
+        return _errorRoute('Falta información en MemberFacialEnrollmentPage');
       }
 
       case residentDashboard: {

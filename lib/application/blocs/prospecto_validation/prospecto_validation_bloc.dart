@@ -34,7 +34,14 @@ class ProspectoValidationBloc
     emit(ProspectoValidationLoading());
     try {
       final prospecto = await repo.validarProspectoMiembro(event.identificacion);
-      emit(ProspectoMiembroValidado(prospecto));
+      
+      // Verificar si el miembro existe
+      if (prospecto.existe && prospecto.personaEncontrada == true) {
+        emit(ProspectoMiembroValidado(prospecto));
+      } else {
+        // Si no existe, emitir error para que se muestre el formulario de registro
+        emit(ProspectoValidationError('Miembro no encontrado en el sistema'));
+      }
     } catch (e) {
       final message = e.toString().replaceAll('Exception: ', '');
       emit(ProspectoValidationError(message));

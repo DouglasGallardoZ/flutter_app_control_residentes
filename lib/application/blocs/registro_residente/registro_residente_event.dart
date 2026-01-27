@@ -35,4 +35,15 @@ class CrearCuentaResidente extends RegistroResidenteEvent {
   });
 }
 
+class CrearCuentaMiembro extends RegistroResidenteEvent {
+  final int personaId;
+  final String firebaseUid;
+  final String email;
+  CrearCuentaMiembro({
+    required this.personaId,
+    required this.firebaseUid,
+    required this.email,
+  });
+}
+
 class ResetRegistro extends RegistroResidenteEvent {}

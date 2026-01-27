@@ -14,6 +14,7 @@ class RegistroResidenteBloc
     on<VerificacionFacialCompleta>(_onVerificacionFacialCompleta);
     on<CredencialesIngresadas>(_onCredencialesIngresadas);
     on<CrearCuentaResidente>(_onCrearCuentaResidente);
+    on<CrearCuentaMiembro>(_onCrearCuentaMiembro);
     on<ResetRegistro>(_onResetRegistro);
   }
 
@@ -68,6 +69,23 @@ class RegistroResidenteBloc
   ) async {
     try {
       final response = await repo.crearCuentaResidente(
+        personaId: event.personaId,
+        firebaseUid: event.firebaseUid,
+        username: event.email,
+      );
+      emit(CuentaCreada(response));
+    } catch (e) {
+      final message = e.toString().replaceAll('Exception: ', '');
+      emit(RegistroResidenteError(message));
+    }
+  }
+
+  Future<void> _onCrearCuentaMiembro(
+    CrearCuentaMiembro event,
+    Emitter<RegistroResidenteState> emit,
+  ) async {
+    try {
+      final response = await repo.crearCuentaMiembro(
         personaId: event.personaId,
         firebaseUid: event.firebaseUid,
         username: event.email,

@@ -74,7 +74,7 @@ class RegisterOptionPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Opción: Miembro de Familia (deshabilitado por ahora)
+                  // Opción: Miembro de Familia
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
@@ -82,31 +82,27 @@ class RegisterOptionPage extends StatelessWidget {
                         vertical: 16,
                       ),
                       minimumSize: const Size(double.infinity, 56),
-                      backgroundColor: Colors.grey,
+                      backgroundColor: const Color(0xFF04345C),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: null, // Deshabilitado
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(
+                        '/prospectoMiembro',
+                      );
+                    },
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.people, color: Colors.white70),
+                        const Icon(Icons.people, color: Colors.white),
                         const SizedBox(height: 8),
                         Text(
                           'Crear Cuenta de Miembro de Familia',
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: Colors.white70,
+                                color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          '(Próximamente)',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                          ),
                         ),
                       ],
                     ),
