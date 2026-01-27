@@ -154,10 +154,12 @@ class _QrVisitPageState extends State<QrVisitPage> {
             const Text('¿Confirmas la generación del código QR con los siguientes datos?'),
             if (mode == 'new') ...[
               const SizedBox(height: 10),
-              Row(children: const [
-                Icon(Icons.check_circle, color: Color(0xFF10B981), size: 20),
-                SizedBox(width: 6),
-                Text('El visitante será registrado automáticamente en el sistema', style: TextStyle(color: Colors.blue, fontSize: 12)),
+              Row(children: [
+                const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 20),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text('El visitante será registrado automáticamente en el sistema', style: const TextStyle(color: Colors.blue, fontSize: 12)),
+                ),
               ]),
             ],
             const SizedBox(height: 12),
@@ -542,22 +544,21 @@ class _QrVisitPageState extends State<QrVisitPage> {
                           ],
 
                           const SizedBox(height: 20),
-                          if (mode != 'new') ...[
-                            Text('Configurar vigencia del acceso', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 12),
-                            
-                            // Toggle para habilitar fecha/hora personalizadas
-                            Container(
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primary.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
-                              ),
-                              padding: const EdgeInsets.all(12),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
+                          Text('Configurar vigencia del acceso', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 12),
+                          
+                          // Toggle para habilitar fecha/hora personalizadas
+                          Container(
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
+                            ),
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
@@ -580,13 +581,12 @@ class _QrVisitPageState extends State<QrVisitPage> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                          ],
 
-                          // Campos de fecha/hora - Solo habilitados si useCustomDateTime es true o si mode es 'new'
+                          // Campos de fecha/hora - Solo habilitados si useCustomDateTime es true
                           AbsorbPointer(
-                            absorbing: !useCustomDateTime && mode != 'new',
+                            absorbing: !useCustomDateTime,
                             child: Opacity(
-                              opacity: (useCustomDateTime || mode == 'new') ? 1.0 : 0.5,
+                              opacity: useCustomDateTime ? 1.0 : 0.5,
                               child: Column(
                                 children: [
                                   Align(alignment: Alignment.centerLeft, child: Text('Fecha de Inicio', style: theme.textTheme.labelLarge)),
@@ -595,7 +595,7 @@ class _QrVisitPageState extends State<QrVisitPage> {
                                     readOnly: true,
                                     decoration: const InputDecoration(prefixIcon: Icon(Icons.calendar_today), hintText: 'mm / dd / yyyy', border: OutlineInputBorder()),
                                     controller: TextEditingController(text: startDate == null ? '' : '${startDate!.month}/${startDate!.day}/${startDate!.year}'),
-                                    onTap: (useCustomDateTime || mode == 'new') ? _pickDate : null,
+                                    onTap: useCustomDateTime ? _pickDate : null,
                                   ),
                                   const SizedBox(height: 12),
                                   // Hora
@@ -609,7 +609,7 @@ class _QrVisitPageState extends State<QrVisitPage> {
                                       border: OutlineInputBorder(),
                                     ),
                                     controller: TextEditingController(text: startTime == null ? '' : startTime!.format(context)),
-                                    onTap: (useCustomDateTime || mode == 'new') ? _pickTime : null,
+                                    onTap: useCustomDateTime ? _pickTime : null,
                                   ),
                                   const SizedBox(height: 12),
                                 ],
@@ -674,7 +674,6 @@ class _QrVisitPageState extends State<QrVisitPage> {
                         ]),
                       ),
                     ),
-                  ],
 
                   const SizedBox(height: 16),
                   Divider(color: separatorColor),
@@ -754,7 +753,7 @@ class _QrVisitPageState extends State<QrVisitPage> {
                       ),
                     ),
                   ],
-                  ]),
+                  ]]),
                 ));
               },
             );
