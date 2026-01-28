@@ -21,6 +21,10 @@ class AdminDashboardPage extends StatefulWidget {
 }
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
+  String _selectedTimeFilter = 'today'; // 'today', 'week', 'month', 'custom'
+  String? _customFechaInicio;
+  String? _customFechaFin;
+
   @override
   void initState() {
     super.initState();
@@ -111,7 +115,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
           if (state is AdminDashboardLoaded) {
             final metrics = state.metrics;
-            return _buildDashboard(context, adminName, metrics);
+            // Actualizar el filtro seleccionado en el estado local
+            _selectedTimeFilter = state.currentTimeFilter;
+            _customFechaInicio = state.customFechaInicio;
+            _customFechaFin = state.customFechaFin;
+            
+            return _buildDashboard(context, adminName, metrics, state);
           }
 
           return const SizedBox.shrink();
@@ -120,7 +129,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  Widget _buildDashboard(BuildContext context, String adminName, dynamic metrics) {
+  Widget _buildDashboard(
+    BuildContext context,
+    String adminName,
+    dynamic metrics,
+    AdminDashboardLoaded state,
+  ) {
     return RefreshIndicator(
       onRefresh: () async {
         context.read<AdminDashboardBloc>().add(const RefreshAdminMetrics());
@@ -152,6 +166,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildHeader(String adminName) {
+    String dateRangeText = 'Hoy';
+    if (_selectedTimeFilter == 'week') {
+      dateRangeText = 'Últimos 7 días';
+    } else if (_selectedTimeFilter == 'month') {
+      dateRangeText = 'Últimos 30 días';
+    } else if (_selectedTimeFilter == 'custom' && _customFechaInicio != null && _customFechaFin != null) {
+      dateRangeText = 'Del $_customFechaInicio al $_customFechaFin';
+    }
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -164,21 +187,71 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           'Panel de Administración',
           style: TextStyle(fontSize: 14, color: Colors.grey[600]),
         ),
+        const SizedBox(height: 4),
+        Text(
+          'Período: $dateRangeText',
+          style: TextStyle(fontSize: 12, color: Colors.blue.shade600, fontWeight: FontWeight.w500),
+        ),
       ],
     );
   }
 
   Widget _buildTimeTabs() {
-    const tabs = ['Hoy', 'Semana', 'Mes'];
+    const tabs = [
+      ('today', 'Hoy'),
+      ('week', 'Semana'),
+      ('month', 'Mes'),
+      ('custom', 'Rango'),
+    ];
+    
     return Wrap(
       spacing: 12,
-      children: tabs.map((tab) {
-        final isSelected = tab == 'Hoy';
+      children: tabs.map((tabData) {
+        final (filterType, label) = tabData;
+        final isSelected = _selectedTimeFilter == filterType;
+        
         return ChipButton(
-          label: tab,
+          label: label,
           isSelected: isSelected,
-          onTap: () {
-            // TODO: Implementar filtro de tiempo
+          onTap: () async {
+            if (filterType == 'custom') {
+              // Mostrar date range picker
+              final DateTimeRange? picked = await showDateRangePicker(
+                context: context,
+                firstDate: DateTime(2020),
+                lastDate: DateTime.now(),
+                initialDateRange: DateTimeRange(
+                  start: DateTime.now().subtract(const Duration(days: 30)),
+                  end: DateTime.now(),
+                ),
+              );
+              
+              if (picked != null) {
+                setState(() {
+                  _selectedTimeFilter = 'custom';
+                  _customFechaInicio = picked.start.toIso8601String().split('T')[0];
+                  _customFechaFin = picked.end.toIso8601String().split('T')[0];
+                });
+                
+                if (mounted) {
+                  context.read<AdminDashboardBloc>().add(
+                    ChangeTimeFilter(
+                      filterType: 'custom',
+                      customFechaInicio: _customFechaInicio,
+                      customFechaFin: _customFechaFin,
+                    ),
+                  );
+                }
+              }
+            } else {
+              setState(() {
+                _selectedTimeFilter = filterType;
+              });
+              
+              context.read<AdminDashboardBloc>().add(
+                ChangeTimeFilter(filterType: filterType),
+              );
+            }
           },
         );
       }).toList(),

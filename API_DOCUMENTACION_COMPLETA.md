@@ -18,10 +18,11 @@
 6. [Endpoints - Residentes (6)](#residentes)
 7. [Endpoints - Propietarios (8)](#propietarios)
 8. [Endpoints - Miembros de Familia (6)](#miembros-de-familia)
-9. [Modelos de Datos (Schemas)](#modelos-de-datos)
-10. [Códigos de Error](#códigos-de-error)
-11. [Patrones de Implementación](#patrones-de-implementación)
-12. [Ejemplos de Uso en Flutter](#ejemplos-de-uso-en-flutter)
+9. [Endpoints - Accesos (2)](#accesos)
+10. [Modelos de Datos (Schemas)](#modelos-de-datos)
+11. [Códigos de Error](#códigos-de-error)
+12. [Patrones de Implementación](#patrones-de-implementación)
+13. [Ejemplos de Uso en Flutter](#ejemplos-de-uso-en-flutter)
 
 ---
 
@@ -2961,6 +2962,224 @@ Obtiene todos los miembros de familia activos de una vivienda especificada por s
   ]
 }
 ```
+
+---
+
+## ACCESOS
+
+### Descripción General
+
+Los accesos son registros de entrada/salida de personas en las viviendas. El sistema registra:
+
+- **Por Vivienda:** Residentes pueden consultar accesos a su vivienda (propios y visitas)
+- **Administrador:** Puede consultar estadísticas globales del sistema
+
+**Base URL:** `/api/v1/accesos`
+
+**Tipos de Acceso:**
+- `qr_residente`: Ingreso con QR de residente
+- `qr_visita`: Ingreso con QR de visita
+- `visita_sin_qr`: Visita registrada manualmente sin QR
+- `visita_peatonal`: Visita peatonal
+- `residente_automatico`: Acceso automático de residente
+- `manual_guardia`: Acceso registrado manualmente por guardia
+
+**Resultados de Acceso:**
+- `autorizado`: Acceso permitido
+- `rechazado`: Acceso denegado
+- `no_autorizado`: Persona no autorizada
+- `fallo_biometrico`: Fallo en validación biométrica
+- `fallo_placa`: Fallo en validación de placa vehicular
+- `codigo_expirado`: Código QR expirado
+- `codigo_invalido`: Código QR inválido
+- `cuenta_bloqueada`: Cuenta del usuario bloqueada
+- `error_sistema`: Error interno del sistema
+- `cancelado`: Acceso cancelado por el usuario
+
+---
+
+### Endpoint 1: Obtener Accesos de Vivienda
+
+**Descripción:**
+RF-ACC-01: Consulta accesos de una vivienda específica. Destinado para que el residente vea sus accesos y los de sus visitas.
+
+**Endpoint:** `GET /api/v1/accesos/vivienda/{vivienda_id}`  
+**Auth:** Bearer token (Residente o Admin)
+
+**Query Parameters:**
+```
+fecha_inicio: date (opcional) - Filtrar desde esta fecha (YYYY-MM-DD)
+fecha_fin: date (opcional) - Filtrar hasta esta fecha (YYYY-MM-DD)
+tipo: string (opcional) - Filtrar por tipo de acceso
+resultado: string (opcional) - Filtrar por resultado
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "vivienda_id": 1,
+  "manzana": "A",
+  "villa": "101",
+  "total_accesos": 15,
+  "accesos": [
+    {
+      "acceso_pk": 101,
+      "tipo": "qr_residente",
+      "vivienda_visita_fk": 1,
+      "resultado": "autorizado",
+      "motivo": null,
+      "placa_detectada": "ABC-1234",
+      "biometria_ok": true,
+      "placa_ok": true,
+      "intentos": 1,
+      "observacion": null,
+      "fecha_creado": "2024-12-25T14:30:00",
+      "guardia_nombre": null,
+      "residente_autoriza_nombre": "Juan Pérez",
+      "visita_nombres": null
+    },
+    {
+      "acceso_pk": 100,
+      "tipo": "qr_visita",
+      "vivienda_visita_fk": 1,
+      "resultado": "autorizado",
+      "motivo": null,
+      "placa_detectada": null,
+      "biometria_ok": false,
+      "placa_ok": false,
+      "intentos": 1,
+      "observacion": "Visita de familia",
+      "fecha_creado": "2024-12-25T10:15:00",
+      "guardia_nombre": null,
+      "residente_autoriza_nombre": null,
+      "visita_nombres": "María García López"
+    }
+  ]
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "detail": "Vivienda no encontrada"
+}
+```
+
+**Casos de Uso:**
+- El residente consulta el histórico de accesos a su vivienda
+- El residente verifica accesos de sus visitas
+- Auditoría de accesos en un período específico
+- Filtrado por tipo de acceso o resultado
+
+---
+
+### Endpoint 2: Obtener Estadísticas de Accesos (Admin)
+
+**Descripción:**
+RF-ACC-02: Consulta estadísticas completas de accesos del sistema. Destinado para administrador.
+
+**Endpoint:** `GET /api/v1/accesos/admin/estadisticas`  
+**Auth:** Bearer token (Admin only)
+
+**Query Parameters:**
+```
+fecha_inicio: date (opcional) - Filtrar desde esta fecha (YYYY-MM-DD)
+fecha_fin: date (opcional) - Filtrar hasta esta fecha (YYYY-MM-DD)
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "periodo": {
+    "fecha_inicio": "2024-12-01",
+    "fecha_fin": "2024-12-31"
+  },
+  "estadisticas_generales": {
+    "total": 458,
+    "exitosos": 442,
+    "rechazados": 12,
+    "pendientes": 4
+  },
+  "cantidad_visitantes_unicos": 87,
+  "accesos_por_tipo": [
+    {
+      "tipo": "qr_residente",
+      "cantidad": 285
+    },
+    {
+      "tipo": "qr_visita",
+      "cantidad": 142
+    },
+    {
+      "tipo": "visita_sin_qr",
+      "cantidad": 18
+    },
+    {
+      "tipo": "manual_guardia",
+      "cantidad": 13
+    }
+  ],
+  "accesos_por_resultado": [
+    {
+      "resultado": "autorizado",
+      "cantidad": 442
+    },
+    {
+      "resultado": "rechazado",
+      "cantidad": 8
+    },
+    {
+      "resultado": "codigo_expirado",
+      "cantidad": 4
+    },
+    {
+      "resultado": "cuenta_bloqueada",
+      "cantidad": 4
+    }
+  ],
+  "viviendas_con_mas_accesos": [
+    {
+      "vivienda_id": 1,
+      "manzana": "A",
+      "villa": "101",
+      "cantidad_accesos": 45
+    },
+    {
+      "vivienda_id": 2,
+      "manzana": "A",
+      "villa": "102",
+      "cantidad_accesos": 38
+    },
+    {
+      "vivienda_id": 5,
+      "manzana": "B",
+      "villa": "201",
+      "cantidad_accesos": 32
+    }
+  ]
+}
+```
+
+**Response Fields:**
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `periodo` | object | Rango de fechas consultado |
+| `estadisticas_generales.total` | int | Total de accesos en el período |
+| `estadisticas_generales.exitosos` | int | Accesos autorizados |
+| `estadisticas_generales.rechazados` | int | Accesos rechazados/denegados |
+| `estadisticas_generales.pendientes` | int | Accesos con estado pendiente/error |
+| `cantidad_visitantes_unicos` | int | Número total de visitantes únicos |
+| `accesos_por_tipo` | array | Desglose de accesos por tipo |
+| `accesos_por_resultado` | array | Desglose de accesos por resultado |
+| `viviendas_con_mas_accesos` | array | Top 10 viviendas con más accesos (DESC) |
+
+**Casos de Uso:**
+- Dashboard administrativo con KPIs
+- Reportes de seguridad
+- Análisis de ocupación y tráfico
+- Identificación de viviendas con movimiento anormal
+- Auditoría de intentos de acceso rechazados
 
 ---
 

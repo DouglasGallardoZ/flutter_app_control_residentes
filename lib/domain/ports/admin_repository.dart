@@ -3,7 +3,20 @@ import '../entities/account.dart';
 
 abstract class AdminRepository {
   /// Obtiene las métricas del dashboard del administrador
-  Future<AdminMetrics> getAdminMetrics();
+  Future<AdminMetrics> getAdminMetrics({
+    String? fechaInicio,
+    String? fechaFin,
+  });
+
+  /// Obtiene historial detallado de accesos
+  Future<Map<String, dynamic>> getAccessHistory({
+    int page = 1,
+    int pageSize = 50,
+    String? fechaInicio,
+    String? fechaFin,
+    String? tipo,
+    String? resultado,
+  });
 
   /// Obtiene lista de residentes con filtros opcionales
   Future<List<Account>> getResidents({

@@ -6,7 +6,13 @@ class GetAdminMetricsUseCase {
 
   GetAdminMetricsUseCase(this.adminRepository);
 
-  Future<AdminMetrics> call() async {
-    return await adminRepository.getAdminMetrics();
+  Future<AdminMetrics> call({
+    String? fechaInicio,
+    String? fechaFin,
+  }) async {
+    return await adminRepository.getAdminMetrics(
+      fechaInicio: fechaInicio,
+      fechaFin: fechaFin,
+    );
   }
 }

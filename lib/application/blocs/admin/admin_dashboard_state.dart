@@ -14,8 +14,16 @@ class AdminDashboardLoading extends AdminDashboardState {
 
 class AdminDashboardLoaded extends AdminDashboardState {
   final AdminMetrics metrics;
+  final String currentTimeFilter; // 'today', 'week', 'month', 'custom'
+  final String? customFechaInicio;
+  final String? customFechaFin;
 
-  const AdminDashboardLoaded(this.metrics);
+  const AdminDashboardLoaded(
+    this.metrics, {
+    this.currentTimeFilter = 'today',
+    this.customFechaInicio,
+    this.customFechaFin,
+  });
 }
 
 class AdminDashboardError extends AdminDashboardState {
@@ -23,3 +31,20 @@ class AdminDashboardError extends AdminDashboardState {
 
   const AdminDashboardError(this.message);
 }
+
+class AccessHistoryLoading extends AdminDashboardState {
+  const AccessHistoryLoading();
+}
+
+class AccessHistoryLoaded extends AdminDashboardState {
+  final Map<String, dynamic> accessHistory;
+
+  const AccessHistoryLoaded(this.accessHistory);
+}
+
+class AccessHistoryError extends AdminDashboardState {
+  final String message;
+
+  const AccessHistoryError(this.message);
+}
+

@@ -11,12 +11,41 @@ class AdminRepositoryImpl implements AdminRepository {
   AdminRepositoryImpl(this.adminApi);
 
   @override
-  Future<AdminMetrics> getAdminMetrics() async {
+  Future<AdminMetrics> getAdminMetrics({
+    String? fechaInicio,
+    String? fechaFin,
+  }) async {
     try {
-      // Obtener métricas ficticias (backend aún no implementa)
-      final response = await adminApi.getAdminMetrics();
+      final response = await adminApi.getAdminMetrics(
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
+      );
       final adminMetricsDTO = AdminMetricsDTO.fromJson(response);
       return _dtoToEntity(adminMetricsDTO);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getAccessHistory({
+    int page = 1,
+    int pageSize = 50,
+    String? fechaInicio,
+    String? fechaFin,
+    String? tipo,
+    String? resultado,
+  }) async {
+    try {
+      final response = await adminApi.getAccessHistory(
+        page: page,
+        pageSize: pageSize,
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
+        tipo: tipo,
+        resultado: resultado,
+      );
+      return response;
     } catch (e) {
       rethrow;
     }
