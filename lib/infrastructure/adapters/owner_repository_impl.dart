@@ -1,7 +1,9 @@
 import '../../domain/entities/owner_entity.dart';
+import '../../domain/entities/conyuge_entity.dart';
 import '../../domain/ports/owner_repository.dart';
 import '../../infrastructure/dtos/owner_dto.dart';
 import '../../infrastructure/providers/admin_api.dart';
+import '../../infrastructure/providers/admin_api_spouse_extension.dart';
 
 class OwnerRepositoryImpl implements OwnerRepository {
   final AdminApi adminApi;
@@ -135,6 +137,82 @@ class OwnerRepositoryImpl implements OwnerRepository {
       return response;
     } catch (e) {
       throw Exception('Error al crear propietario: $e');
+    }
+  }
+
+  // ========== Spouse Management Methods ==========
+
+  @override
+  Future<OwnerWithSpousesEntity> getOwnerWithSpouses(int ownerId) async {
+    try {
+      final response = await adminApi.getOwnerWithSpouses(ownerId);
+      return OwnerWithSpousesEntity.fromJson(response);
+    } catch (e) {
+      throw Exception('Error al cargar propietario con cónyuges: $e');
+    }
+  }
+
+  @override
+  Future<ConyugeEntity> createSpouse({
+    required int ownerId,
+    required String tipoIdentificacion,
+    required String identificacion,
+    required String nombre,
+    required String apellido,
+    required String fechaNacimiento,
+    required String nacionalidad,
+    required String correo,
+    required String celular,
+    String? direccionAlternativa,
+    required String usuarioCreado,
+  }) async {
+    try {
+      final response = await adminApi.createSpouse(
+        ownerId: ownerId,
+        tipoIdentificacion: tipoIdentificacion,
+        identificacion: identificacion,
+        nombre: nombre,
+        apellido: apellido,
+        fechaNacimiento: fechaNacimiento,
+        nacionalidad: nacionalidad,
+        correo: correo,
+        celular: celular,
+        direccionAlternativa: direccionAlternativa,
+        usuarioCreado: usuarioCreado,
+      );
+      return ConyugeEntity.fromJson(response);
+    } catch (e) {
+      throw Exception('Error al crear cónyuge: $e');
+    }
+  }
+
+  @override
+  Future<List<ConyugeEntity>> getSpousesByOwner(int ownerId) async {
+    try {
+      final response = await adminApi.getSpousesByOwner(ownerId);
+      return response
+          .map((json) => ConyugeEntity.fromJson(json))
+          .toList();
+    } catch (e) {
+      throw Exception('Error al cargar cónyuges: $e');
+    }
+  }
+
+  @override
+  Future<void> deleteSpouse(int spouseId) async {
+    try {
+      await adminApi.deleteSpouse(spouseId);
+    } catch (e) {
+      throw Exception('Error al eliminar cónyuge: $e');
+    }
+  }
+
+  @override
+  Future<void> blockSpouse(int spouseId, bool block) async {
+    try {
+      await adminApi.blockSpouse(spouseId, block);
+    } catch (e) {
+      throw Exception('Error al ${block ? 'bloquear' : 'desbloquear'} cónyuge: $e');
     }
   }
 }

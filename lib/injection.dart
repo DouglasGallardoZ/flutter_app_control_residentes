@@ -367,6 +367,7 @@ Future<void> inject() async {
       deleteOwnerUseCase: sl<DeleteOwnerUseCase>(),
       getOwnerPropertiesUseCase: sl<GetOwnerPropertiesUseCase>(),
       createOwnerUseCase: sl<CreateOwnerUseCase>(),
+      ownerRepository: sl<OwnerRepository>(),
     ),
   );
 

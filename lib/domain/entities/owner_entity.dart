@@ -8,6 +8,7 @@ class OwnerEntity {
   final String correo;
   final String celular;
   final String estado;
+  final String? tipoPropietario;
   final DateTime? fechaCreacion;
 
   OwnerEntity({
@@ -20,6 +21,7 @@ class OwnerEntity {
     required this.correo,
     required this.celular,
     required this.estado,
+    this.tipoPropietario,
     this.fechaCreacion,
   });
 
@@ -36,6 +38,7 @@ class OwnerEntity {
     String? correo,
     String? celular,
     String? estado,
+    String? tipoPropietario,
     DateTime? fechaCreacion,
   }) {
     return OwnerEntity(
@@ -48,6 +51,7 @@ class OwnerEntity {
       correo: correo ?? this.correo,
       celular: celular ?? this.celular,
       estado: estado ?? this.estado,
+      tipoPropietario: tipoPropietario ?? this.tipoPropietario,
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
     );
   }

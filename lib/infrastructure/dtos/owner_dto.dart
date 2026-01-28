@@ -10,6 +10,7 @@ class OwnerDTO {
   final String correo;
   final String celular;
   final String estado;
+  final String? tipoPropietario;
   final DateTime? fechaCreacion;
 
   OwnerDTO({
@@ -22,6 +23,7 @@ class OwnerDTO {
     required this.correo,
     required this.celular,
     required this.estado,
+    this.tipoPropietario,
     this.fechaCreacion,
   });
 
@@ -37,6 +39,7 @@ class OwnerDTO {
       correo: json['correo'] ?? '',
       celular: json['celular'] ?? '',
       estado: json['estado'] ?? 'activo',
+      tipoPropietario: json['tipo_propietario'],
       fechaCreacion: json['fecha_creacion'] != null
           ? DateTime.tryParse(json['fecha_creacion'])
           : null,
@@ -54,6 +57,7 @@ class OwnerDTO {
         'correo': correo,
         'celular': celular,
         'estado': estado,
+        'tipo_propietario': tipoPropietario,
         'fecha_creacion': fechaCreacion?.toIso8601String(),
       };
 
@@ -68,6 +72,7 @@ class OwnerDTO {
         correo: correo,
         celular: celular,
         estado: estado,
+        tipoPropietario: tipoPropietario,
         fechaCreacion: fechaCreacion,
       );
 

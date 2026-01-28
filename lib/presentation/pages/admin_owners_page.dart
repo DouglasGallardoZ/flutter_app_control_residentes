@@ -6,6 +6,18 @@ import '../../application/blocs/owner/owner_event.dart';
 import '../../application/blocs/owner/owner_state.dart';
 import '../../domain/entities/owner_entity.dart';
 import '../widgets/admin_scaffold.dart';
+import 'create_spouse_dialog.dart';
+
+/// Convierte el tipo de propietario a formato legible
+String capitalizeTipoPropietario(String tipo) {
+  const Map<String, String> tipoPropietarioLabels = {
+    'titular': 'Titular',
+    'conyuge': 'Cónyuge',
+    'copropietario': 'Copropietario',
+    'hijo': 'Hijo',
+  };
+  return tipoPropietarioLabels[tipo.toLowerCase()] ?? tipo;
+}
 
 class AdminOwnersPage extends StatefulWidget {
   final int personaId;
@@ -121,6 +133,11 @@ class _AdminOwnersPageState extends State<AdminOwnersPage> {
               _DetailItem(label: 'Email', value: owner.correo),
               _DetailItem(label: 'Celular', value: owner.celular),
               _DetailItem(label: 'Ubicación', value: '${owner.manzana} - ${owner.villa}'),
+              if (owner.tipoPropietario != null)
+                _DetailItem(
+                  label: 'Tipo de Propietario',
+                  value: capitalizeTipoPropietario(owner.tipoPropietario!),
+                ),
               _DetailItem(
                 label: 'Estado',
                 value: owner.isBlocked ? 'Bloqueado' : 'Activo',
@@ -274,6 +291,18 @@ class _AdminOwnersPageState extends State<AdminOwnersPage> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cerrar')),
         ],
+      ),
+    );
+  }
+
+  void _showCreateSpouseDialog(BuildContext context, OwnerEntity owner) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CreateSpousePage(
+          personaId: widget.personaId,
+          identificacion: widget.identificacion,
+          owner: owner,
+        ),
       ),
     );
   }
@@ -509,6 +538,7 @@ class _AdminOwnersPageState extends State<AdminOwnersPage> {
                       onTap: () => _showOwnerDetails(owner),
                       onBlock: () => _showBlockDialog(owner),
                       onDelete: () => _showDeleteDialog(owner),
+                      onAddSpouse: () => _showCreateSpouseDialog(context, owner),
                     );
                   },
                 );
@@ -527,12 +557,14 @@ class _OwnerCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onBlock;
   final VoidCallback onDelete;
+  final VoidCallback onAddSpouse;
 
   const _OwnerCard({
     required this.owner,
     required this.onTap,
     required this.onBlock,
     required this.onDelete,
+    required this.onAddSpouse,
   });
 
   @override
@@ -548,7 +580,23 @@ class _OwnerCard extends StatelessWidget {
           ),
         ),
         title: Text(owner.nombreCompleto),
-        subtitle: Text('${owner.manzana} - ${owner.villa}'),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${owner.manzana} - ${owner.villa}'),
+            if (owner.tipoPropietario != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Tipo: ${capitalizeTipoPropietario(owner.tipoPropietario!)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                ),
+              ),
+          ],
+        ),
         trailing: Wrap(
           spacing: 4,
           children: [
@@ -562,6 +610,10 @@ class _OwnerCard extends StatelessWidget {
             PopupMenuButton(
               itemBuilder: (context) => [
                 PopupMenuItem(onTap: onTap, child: const Text('Ver detalles')),
+                PopupMenuItem(
+                  onTap: onAddSpouse,
+                  child: const Text('+ Agregar Cónyuge'),
+                ),
                 PopupMenuItem(
                   onTap: onBlock,
                   child: Text(owner.isBlocked ? 'Desbloquear' : 'Bloquear'),

@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/owner_entity.dart';
+import '../../../domain/entities/conyuge_entity.dart';
 
 abstract class OwnerState extends Equatable {
   const OwnerState();
@@ -89,5 +90,55 @@ class OwnerError extends OwnerState {
   const OwnerError(this.message);
 
   @override
+  List<Object?> get props => [message];
+}
+
+// ===== ESTADOS PARA CÓNYUGES =====
+
+class OwnerWithSpousesLoaded extends OwnerState {
+  final OwnerWithSpousesEntity owner;
+
+  const OwnerWithSpousesLoaded(this.owner);
+
+  @override
+  List<Object?> get props => [owner];
+}
+
+class SpouseCreating extends OwnerState {
+  const SpouseCreating();
+}
+
+class SpouseCreated extends OwnerState {
+  final ConyugeEntity spouse;
+
+  const SpouseCreated(this.spouse);
+
+  @override
+  List<Object?> get props => [spouse];
+}
+
+class SpouseDeleted extends OwnerState {
+  final String message;
+
+  const SpouseDeleted(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class SpouseBlocked extends OwnerState {
+  final String message;
+  final bool blocked;
+
+  const SpouseBlocked(this.message, this.blocked);
+
+  @override
+  List<Object?> get props => [message, blocked];
+}
+
+class SpouseError extends OwnerState {
+  final String message;
+
+  const SpouseError(this.message);
   List<Object?> get props => [message];
 }

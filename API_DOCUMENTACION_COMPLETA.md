@@ -2219,9 +2219,13 @@ Obtiene todos los residentes activos de una vivienda especificada por su manzana
 **Auth:** Bearer token (admin)
 
 **Descripción:**
-Registra un nuevo propietario y lo asigna a una vivienda identificada por su manzana y villa. El propietario se registra automáticamente como residente.
+Registra un nuevo propietario como **titular** (tipo_propietario="titular") y lo asigna a una vivienda identificada por su manzana y villa. El propietario se registra automáticamente como residente.
 
-**Request Body:**
+Validaciones:
+- ✅ Vivienda debe existir (se busca por manzana y villa)
+- ✅ Identificación debe ser única
+- ✅ Manzana y villa son obligatorios
+- ✅ No puede existir otro propietario titular activo en la misma vivienda (error 409)
 ```json
 {
   "identificacion": "9876543210",
@@ -2321,7 +2325,13 @@ Future<void> registrarPropietario() async {
 **Auth:** Bearer token (admin/propietario)
 
 **Descripción:**
-Registra un cónyuge como copropietario de la vivienda.
+Registra un cónyuge como **copropietario** (tipo_propietario="conyuge") asociado a un propietario titular existente. El cónyuge se registra en la misma vivienda que el titular.
+
+**Validaciones:**
+- ✅ Propietario titular debe existir
+- ✅ Identificación debe ser única
+- ✅ No puede existir otro cónyuge activo en la misma vivienda (error 409)
+- ✅ Solo un cónyuge por vivienda
 
 **Path Parameters:**
 ```
@@ -2612,7 +2622,7 @@ Obtiene todos los propietarios activos de una vivienda especificada por su manza
   "vivienda_id": 1,
   "manzana": "A",
   "villa": "101",
-  "total_propietarios": 1,
+  "total_propietarios": 2,
   "propietarios": [
     {
       "propietario_id": 5,
@@ -2622,11 +2632,42 @@ Obtiene todos los propietarios activos de una vivienda especificada por su manza
       "apellidos": "García",
       "correo": "maria@example.com",
       "celular": "+593998765432",
-      "estado": "activo"
+      "estado": "activo",
+      "tipo_propietario": "titular"
+    },
+    {
+      "propietario_id": 6,
+      "persona_id": 3,
+      "identificacion": "1111111111",
+      "nombres": "Carlos",
+      "apellidos": "García",
+      "correo": "carlos@example.com",
+      "celular": "+593991234567",
+      "estado": "activo",
+      "tipo_propietario": "conyuge"
     }
   ]
 }
 ```
+
+**Response Fields:**
+| Campo | Tipo | Descripción |
+|-------|------|-----------|
+| propietario_id | integer | ID del registro de propietario |
+| persona_id | integer | ID de la persona |
+| identificacion | string | Cédula/Pasaporte |
+| nombres | string | Nombres del propietario |
+| apellidos | string | Apellidos del propietario |
+| correo | string | Email del propietario |
+| celular | string | Teléfono del propietario |
+| estado | string | "activo" o "inactivo" |
+| tipo_propietario | string | "titular", "conyuge", "copropietario", o "hijo" |
+
+**Valores de `tipo_propietario`:**
+- `titular`: Propietario principal de la vivienda
+- `conyuge`: Cónyuge del propietario titular
+- `copropietario`: Co-propietario (comparte propiedad)
+- `hijo`: Hijo del propietario (en algunos casos puede ser co-propietario)
 
 ---
 

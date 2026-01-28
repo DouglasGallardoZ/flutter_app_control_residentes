@@ -108,3 +108,75 @@ class CreateOwnerEvent extends OwnerEvent {
     usuarioCreado,
   ];
 }
+// ===== EVENTOS PARA CÓNYUGES =====
+
+class LoadOwnerWithSpousesEvent extends OwnerEvent {
+  final int ownerId;
+
+  const LoadOwnerWithSpousesEvent(this.ownerId);
+
+  @override
+  List<Object?> get props => [ownerId];
+}
+
+class CreateSpouseEvent extends OwnerEvent {
+  final int ownerId;
+  final String tipoIdentificacion;
+  final String identificacion;
+  final String nombre;
+  final String apellido;
+  final String fechaNacimiento;
+  final String nacionalidad;
+  final String correo;
+  final String celular;
+  final String? direccionAlternativa;
+  final String usuarioCreado;
+
+  const CreateSpouseEvent({
+    required this.ownerId,
+    required this.tipoIdentificacion,
+    required this.identificacion,
+    required this.nombre,
+    required this.apellido,
+    required this.fechaNacimiento,
+    required this.nacionalidad,
+    required this.correo,
+    required this.celular,
+    this.direccionAlternativa,
+    required this.usuarioCreado,
+  });
+
+  @override
+  List<Object?> get props => [
+    ownerId,
+    tipoIdentificacion,
+    identificacion,
+    nombre,
+    apellido,
+    fechaNacimiento,
+    nacionalidad,
+    correo,
+    celular,
+    direccionAlternativa,
+    usuarioCreado,
+  ];
+}
+
+class DeleteSpouseEvent extends OwnerEvent {
+  final int spouseId;
+
+  const DeleteSpouseEvent(this.spouseId);
+
+  @override
+  List<Object?> get props => [spouseId];
+}
+
+class BlockSpouseEvent extends OwnerEvent {
+  final int spouseId;
+  final bool block;
+
+  const BlockSpouseEvent(this.spouseId, this.block);
+
+  @override
+  List<Object?> get props => [spouseId, block];
+}

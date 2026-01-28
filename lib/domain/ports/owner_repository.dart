@@ -1,4 +1,5 @@
 import '../entities/owner_entity.dart';
+import '../entities/conyuge_entity.dart';
 
 abstract class OwnerRepository {
   /// Obtener todos los propietarios con paginación
@@ -43,4 +44,31 @@ abstract class OwnerRepository {
     String? direccionAlternativa,
     required String usuarioCreado,
   });
+
+  /// Obtener propietario con sus cónyuges
+  Future<OwnerWithSpousesEntity> getOwnerWithSpouses(int ownerId);
+
+  /// Crear cónyuge para un propietario
+  Future<ConyugeEntity> createSpouse({
+    required int ownerId,
+    required String tipoIdentificacion,
+    required String identificacion,
+    required String nombre,
+    required String apellido,
+    required String fechaNacimiento,
+    required String nacionalidad,
+    required String correo,
+    required String celular,
+    String? direccionAlternativa,
+    required String usuarioCreado,
+  });
+
+  /// Obtener cónyuges de un propietario
+  Future<List<ConyugeEntity>> getSpousesByOwner(int ownerId);
+
+  /// Eliminar cónyuge
+  Future<void> deleteSpouse(int spouseId);
+
+  /// Bloquear/desbloquear cónyuge
+  Future<void> blockSpouse(int spouseId, bool block);
 }
