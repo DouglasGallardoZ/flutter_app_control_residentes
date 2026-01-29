@@ -123,3 +123,23 @@ class DeleteResidentEvent extends ResidentEvent {
   @override
   List<Object?> get props => [personaId];
 }
+
+/// Obtener accesos de vivienda
+class LoadResidenceAccessesEvent extends ResidentEvent {
+  final int viviendaId;
+  final String? fechaInicio;
+  final String? fechaFin;
+  final String? tipo;
+  final String? resultado;
+
+  const LoadResidenceAccessesEvent({
+    required this.viviendaId,
+    this.fechaInicio,
+    this.fechaFin,
+    this.tipo,
+    this.resultado,
+  });
+
+  @override
+  List<Object?> get props => [viviendaId, fechaInicio, fechaFin, tipo, resultado];
+}

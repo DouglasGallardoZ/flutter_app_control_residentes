@@ -108,3 +108,17 @@ class ResidentError extends ResidentState {
   @override
   List<Object?> get props => [message];
 }
+
+/// Accesos de vivienda cargados
+class ResidenceAccessesLoaded extends ResidentState {
+  final Map<String, dynamic> accessesData;
+  final int viviendaId;
+
+  const ResidenceAccessesLoaded({
+    required this.accessesData,
+    required this.viviendaId,
+  });
+
+  @override
+  List<Object?> get props => [accessesData, viviendaId];
+}

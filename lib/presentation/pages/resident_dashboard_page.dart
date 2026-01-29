@@ -5,6 +5,9 @@ import '../../application/blocs/auth/auth_state.dart';
 import '../../application/blocs/account/account_bloc.dart';
 import '../../application/blocs/account/account_event.dart';
 import '../../application/blocs/account/account_state.dart';
+import '../../application/blocs/resident/resident_bloc.dart';
+import '../../application/blocs/resident/resident_event.dart';
+import '../../application/blocs/resident/resident_state.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/metric_card.dart';
 import '../widgets/activity_item.dart';
@@ -28,6 +31,7 @@ class ResidentDashboardPage extends StatefulWidget {
 class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
   int tabIndex = 0;
   bool _requestedMembers = false;
+  bool _requestedAccesses = false;
 
   @override
   void initState() {
@@ -115,11 +119,43 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
 
           // Métricas
           Wrap(spacing: 12, runSpacing: 12, children: [
-            SizedBox(width: 175, child: MetricCard(label: 'Accesos Hoy', value: '2', icon: Icons.today)),
+            Builder(builder: (ctx) {
+              // Load accesses on first build
+              if (!_requestedAccesses && viviendaId != null && viviendaId > 0) {
+                // Get today's date in format YYYY-MM-DD
+                final today = DateTime.now();
+                final fechaHoy = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+                
+                context.read<ResidentBloc>().add(LoadResidenceAccessesEvent(
+                  viviendaId: viviendaId,
+                  fechaInicio: fechaHoy,
+                  fechaFin: fechaHoy,
+                ));
+                _requestedAccesses = true;
+              }
+              
+              return SizedBox(
+                width: 175,
+                child: BlocBuilder<ResidentBloc, ResidentState>(
+                  builder: (c, s) {
+                    int accessesCount = 0;
+                    if (s is ResidenceAccessesLoaded) {
+                      final accesos = s.accessesData['accesos'] as List<dynamic>?;
+                      accessesCount = accesos?.length ?? 0;
+                    }
+                    return MetricCard(
+                      label: 'Accesos Hoy',
+                      value: '$accessesCount',
+                      icon: Icons.today,
+                    );
+                  },
+                ),
+              );
+            }),
             Builder(builder: (ctx) {
               if (!_requestedMembers) {
                 // Preferentemente usar vivienda_id si está disponible
-                if (viviendaId != null && viviendaId! > 0) {
+                if (viviendaId != null && viviendaId > 0) {
                   context.read<AccountBloc>().add(LoadFamilyMembersRequested(viviendaId));
                 } else if (residenceId.isNotEmpty) {
                   context.read<AccountBloc>().add(LoadFamilyMembersRequested(residenceId));
@@ -175,11 +211,54 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
           // Actividad reciente
           Text('Actividad Reciente', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
-          const ActivityItem(
-            title: 'Acceso propio',
-            subtitle: 'Entrada Principal · 14 dic, 17:17',
-            time: 'Exitoso',
-            success: true,
+          BlocBuilder<ResidentBloc, ResidentState>(
+            builder: (c, s) {
+              if (s is ResidenceAccessesLoaded) {
+                final accesos = s.accessesData['accesos'] as List<dynamic>?;
+                if (accesos == null || accesos.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Text('No hay accesos registrados hoy', style: theme.textTheme.bodyMedium),
+                    ),
+                  );
+                }
+                
+                // Show up to 3 most recent accesses
+                final recentAccesos = accesos.take(3).toList();
+                return Column(
+                  children: recentAccesos.map((acceso) {
+                    final a = acceso as Map<String, dynamic>;
+                    final tipo = a['tipo'] as String? ?? '';
+                    final resultado = a['resultado'] as String? ?? '';
+                    final fechaCreado = a['fecha_creado'] as String? ?? '';
+                    final isExitoso = resultado.toLowerCase() == 'autorizado';
+                    
+                    String tipoLabel = 'Acceso';
+                    if (tipo.contains('qr_residente')) {
+                      tipoLabel = 'QR Residente';
+                    } else if (tipo.contains('qr_visita')) {
+                      tipoLabel = 'QR Visita';
+                    } else if (tipo.contains('manual_guardia')) {
+                      tipoLabel = 'Autorizado por Guardia';
+                    }
+                    
+                    return ActivityItem(
+                      title: tipoLabel,
+                      subtitle: 'Entrada Principal · $fechaCreado',
+                      time: isExitoso ? 'Exitoso' : 'Rechazado',
+                      success: isExitoso,
+                    );
+                  }).toList(),
+                );
+              }
+              
+              // Loading or initial state
+              return const SizedBox(
+                height: 60,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            },
           ),
         ],
       ),

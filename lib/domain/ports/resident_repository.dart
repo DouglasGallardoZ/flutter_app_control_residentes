@@ -41,4 +41,13 @@ abstract class ResidentRepository {
 
   /// Eliminar residente
   Future<void> deleteResident(int personaId);
+
+  /// Obtener accesos de una vivienda
+  Future<Map<String, dynamic>> getResidenceAccesses({
+    required int viviendaId,
+    String? fechaInicio,
+    String? fechaFin,
+    String? tipo,
+    String? resultado,
+  });
 }

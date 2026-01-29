@@ -103,4 +103,26 @@ class ResidentRepositoryImpl implements ResidentRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<Map<String, dynamic>> getResidenceAccesses({
+    required int viviendaId,
+    String? fechaInicio,
+    String? fechaFin,
+    String? tipo,
+    String? resultado,
+  }) async {
+    try {
+      final response = await adminApi.getResidenceAccesses(
+        viviendaId: viviendaId,
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
+        tipo: tipo,
+        resultado: resultado,
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

@@ -4,6 +4,7 @@ import '../../../domain/usecases/load_residents_by_location_usecase.dart';
 import '../../../domain/usecases/deactivate_resident_usecase.dart';
 import '../../../domain/usecases/reactivate_resident_usecase.dart';
 import '../../../domain/usecases/delete_resident_usecase.dart';
+import '../../../domain/usecases/get_residence_accesses_usecase.dart';
 import '../../../domain/ports/resident_repository.dart';
 import 'resident_event.dart';
 import 'resident_state.dart';
@@ -14,6 +15,7 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
   final DeactivateResidentUseCase deactivateResidentUseCase;
   final ReactivateResidentUseCase reactivateResidentUseCase;
   final DeleteResidentUseCase deleteResidentUseCase;
+  final GetResidenceAccessesUseCase getResidenceAccessesUseCase;
   final ResidentRepository residentRepository;
 
   ResidentBloc({
@@ -22,6 +24,7 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
     required this.deactivateResidentUseCase,
     required this.reactivateResidentUseCase,
     required this.deleteResidentUseCase,
+    required this.getResidenceAccessesUseCase,
     required this.residentRepository,
   }) : super(const ResidentInitial()) {
     on<CreateResidentEvent>(_onCreateResident);
@@ -30,6 +33,7 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
     on<DeactivateResidentEvent>(_onDeactivateResident);
     on<ReactivateResidentEvent>(_onReactivateResident);
     on<DeleteResidentEvent>(_onDeleteResident);
+    on<LoadResidenceAccessesEvent>(_onLoadResidenceAccesses);
   }
 
   /// Crear nuevo residente
@@ -143,6 +147,31 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
     try {
       await deleteResidentUseCase(event.personaId);
       emit(const ResidentDeleted('Residente eliminado correctamente'));
+    } catch (e) {
+      emit(ResidentError(
+        e.toString().replaceAll('Exception: ', ''),
+      ));
+    }
+  }
+
+  /// Obtener accesos de vivienda
+  Future<void> _onLoadResidenceAccesses(
+    LoadResidenceAccessesEvent event,
+    Emitter<ResidentState> emit,
+  ) async {
+    emit(const ResidentLoading());
+    try {
+      final accesses = await getResidenceAccessesUseCase(
+        viviendaId: event.viviendaId,
+        fechaInicio: event.fechaInicio,
+        fechaFin: event.fechaFin,
+        tipo: event.tipo,
+        resultado: event.resultado,
+      );
+      emit(ResidenceAccessesLoaded(
+        accessesData: accesses,
+        viviendaId: event.viviendaId,
+      ));
     } catch (e) {
       emit(ResidentError(
         e.toString().replaceAll('Exception: ', ''),

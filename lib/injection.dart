@@ -44,6 +44,7 @@ import 'domain/usecases/load_access_history_usecase.dart';
 import 'domain/usecases/manage_visitor_usecase.dart';
 import 'domain/usecases/get_admin_metrics_usecase.dart';
 import 'domain/usecases/get_access_history_usecase.dart';
+import 'domain/usecases/get_residence_accesses_usecase.dart';
 import 'domain/usecases/get_residents_usecase.dart';
 import 'domain/usecases/create_resident_usecase.dart';
 import 'domain/usecases/load_residents_by_location_usecase.dart';
@@ -240,6 +241,10 @@ Future<void> inject() async {
     () => GetAccessHistoryUseCase(sl<AdminRepository>()),
   );
 
+  sl.registerLazySingleton<GetResidenceAccessesUseCase>(
+    () => GetResidenceAccessesUseCase(sl<ResidentRepository>()),
+  );
+
   sl.registerLazySingleton<GetResidentsUseCase>(
     () => GetResidentsUseCase(sl<AdminRepository>()),
   );
@@ -359,6 +364,7 @@ Future<void> inject() async {
       deactivateResidentUseCase: sl<DeactivateResidentUseCase>(),
       reactivateResidentUseCase: sl<ReactivateResidentUseCase>(),
       deleteResidentUseCase: sl<DeleteResidentUseCase>(),
+      getResidenceAccessesUseCase: sl<GetResidenceAccessesUseCase>(),
       residentRepository: sl<ResidentRepository>(),
     ),
   );

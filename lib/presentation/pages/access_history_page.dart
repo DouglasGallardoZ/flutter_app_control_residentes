@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../application/blocs/history/access_history_bloc.dart';
-import '../../application/blocs/history/access_history_event.dart';
-import '../../application/blocs/history/access_history_state.dart';
+import '../../application/blocs/resident/resident_bloc.dart';
+import '../../application/blocs/resident/resident_event.dart';
+import '../../application/blocs/resident/resident_state.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_state.dart';
 import '../widgets/app_scaffold.dart';
@@ -20,11 +20,11 @@ class AccessHistoryPage extends StatefulWidget {
 class _AccessHistoryPageState extends State<AccessHistoryPage> {
   String statusFilter = 'Todos';
   String typeFilter = 'Todos';
+  bool _loadedAccesses = false;
 
   @override
   void initState() {
     super.initState();
-    context.read<AccessHistoryBloc>().add(LoadAccessHistory());
   }
 
   @override
@@ -36,18 +36,23 @@ class _AccessHistoryPageState extends State<AccessHistoryPage> {
     final maybePersonaId = routeArgs?['personaId'] as int? ?? widget.personaId;
     final maybeIdentificacion = routeArgs?['identificacion'] as String? ?? widget.identificacion;
     
-    // Obtener rol desde AuthBloc (determina si es miembro familiar)
+    // Obtener datos del AuthBloc
     final authState = context.read<AuthBloc>().state;
     bool isFamilyMember = false;
-    String? authUserId;
-    String? authResidence;
-    String? authName;
+    int? authViviendaId;
+    
     if (authState is AuthSuccess) {
       final role = authState.user['rol'] as String?;
       isFamilyMember = role?.toLowerCase() == 'miembro_familia' || role?.toLowerCase() == 'family' || role?.toLowerCase() == 'miembro de familia';
-      authUserId = (authState.user['personaId']?.toString() ?? authState.user['uid'])?.toString();
-      authResidence = authState.user['residence'] as String?;
-      authName = authState.user['name'] as String?;
+      authViviendaId = authState.user['residence_id'] as int?;
+    }
+
+    // Load accesses on first build
+    if (!_loadedAccesses && authViviendaId != null && authViviendaId > 0) {
+      context.read<ResidentBloc>().add(LoadResidenceAccessesEvent(
+        viviendaId: authViviendaId,
+      ));
+      _loadedAccesses = true;
     }
 
     return AppScaffold(
@@ -61,10 +66,9 @@ class _AccessHistoryPageState extends State<AccessHistoryPage> {
               final pid = maybePersonaId;
               final rid = maybeResidenceId;
               final idn = maybeIdentificacion;
-              final uname = maybeUserName;
-              if (pid != null && rid != null && idn.isNotEmpty && uname != null) {
+              if (rid != null && idn.isNotEmpty) {
                 final route = isFamilyMember ? '/familyDashboard' : '/residentDashboard';
-                Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false, arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': uname});
+                Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false, arguments: {'personaId': pid, 'identificacion': idn, 'residenceId': rid, 'userName': maybeUserName});
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Inicio')));
               }
@@ -72,9 +76,8 @@ class _AccessHistoryPageState extends State<AccessHistoryPage> {
             case 1:
               final pid2 = maybePersonaId;
               final idn2 = maybeIdentificacion;
-              final uname2 = maybeUserName;
-              if (pid2 != null && idn2.isNotEmpty && uname2 != null) {
-                Navigator.of(context).pushNamedAndRemoveUntil('/qrSelf', (route) => false, arguments: {'personaId': pid2, 'identificacion': idn2, 'userName': uname2});
+              if (idn2.isNotEmpty) {
+                Navigator.of(context).pushNamedAndRemoveUntil('/qrSelf', (route) => false, arguments: {'personaId': pid2, 'identificacion': idn2, 'userName': maybeUserName});
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Mi QR')));
               }
@@ -84,7 +87,7 @@ class _AccessHistoryPageState extends State<AccessHistoryPage> {
                 final pid3 = maybePersonaId;
                 final rid3 = maybeResidenceId;
                 final idn3 = maybeIdentificacion;
-                if (pid3 != null && rid3 != null && idn3.isNotEmpty) {
+                if (rid3 != null && idn3.isNotEmpty) {
                   Navigator.of(context).pushNamedAndRemoveUntil('/members', (route) => false, arguments: {'personaId': pid3, 'identificacion': idn3, 'residenceId': rid3});
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Familia')));
@@ -93,7 +96,7 @@ class _AccessHistoryPageState extends State<AccessHistoryPage> {
                 // Para miembros familiares, case 3 es Profile
                 final pid3 = maybePersonaId;
                 final idn3 = maybeIdentificacion;
-                if (pid3 != null && idn3.isNotEmpty) {
+                if (idn3.isNotEmpty) {
                   Navigator.of(context).pushNamedAndRemoveUntil('/profile', (route) => false, arguments: {'personaId': pid3, 'identificacion': idn3});
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Perfil')));
@@ -104,7 +107,7 @@ class _AccessHistoryPageState extends State<AccessHistoryPage> {
               if (!isFamilyMember) {
                 final pid4 = maybePersonaId;
                 final idn4 = maybeIdentificacion;
-                if (pid4 != null && idn4.isNotEmpty) {
+                if (idn4.isNotEmpty) {
                   Navigator.of(context).pushNamedAndRemoveUntil('/profile', (route) => false, arguments: {'personaId': pid4, 'identificacion': idn4});
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faltan datos para ir a Perfil')));
@@ -136,46 +139,85 @@ class _AccessHistoryPageState extends State<AccessHistoryPage> {
               ),
               const SizedBox(width: 12),
               FilterChip(
-                label: const Text('Propios'),
-                selected: typeFilter == 'Propios',
-                onSelected: (_) => setState(() => typeFilter = 'Propios'),
+                label: const Text('QR Residente'),
+                selected: typeFilter == 'QR Residente',
+                onSelected: (_) => setState(() => typeFilter = 'QR Residente'),
               ),
               FilterChip(
-                label: const Text('Visitantes'),
-                selected: typeFilter == 'Visitantes',
-                onSelected: (_) => setState(() => typeFilter = 'Visitantes'),
+                label: const Text('QR Visita'),
+                selected: typeFilter == 'QR Visita',
+                onSelected: (_) => setState(() => typeFilter = 'QR Visita'),
               ),
             ]),
           ),
           Expanded(
-            child: BlocBuilder<AccessHistoryBloc, AccessHistoryState>(
+            child: BlocBuilder<ResidentBloc, ResidentState>(
               builder: (ctx, state) {
-                if (state is AccessHistoryLoading) {
+                if (state is ResidentLoading) {
                   return const Center(child: CircularProgressIndicator());
-                } else if (state is AccessHistoryLoaded) {
-                  final logs = state.logs.where((l) {
-                    final statusOk = statusFilter == 'Todos' || (l.success && statusFilter == 'Exitosos') || (!l.success && statusFilter == 'Rechazados');
-                    final typeOk = typeFilter == 'Todos' || (typeFilter == 'Propios' && l.referencedBy == null) || (typeFilter == 'Visitantes' && l.referencedBy != null);
+                } else if (state is ResidenceAccessesLoaded) {
+                  final accesos = state.accessesData['accesos'] as List<dynamic>? ?? [];
+                  
+                  // Filter accesos based on filters
+                  final filteredAccesos = accesos.where((acceso) {
+                    final a = acceso as Map<String, dynamic>;
+                    final resultado = a['resultado'] as String? ?? '';
+                    final tipo = a['tipo'] as String? ?? '';
+                    
+                    final statusOk = statusFilter == 'Todos' || 
+                                   (resultado.toLowerCase() == 'autorizado' && statusFilter == 'Exitosos') ||
+                                   (resultado.toLowerCase() != 'autorizado' && statusFilter == 'Rechazados');
+                    
+                    final typeOk = typeFilter == 'Todos' ||
+                                  (tipo.contains('qr_residente') && typeFilter == 'QR Residente') ||
+                                  (tipo.contains('qr_visita') && typeFilter == 'QR Visita');
+                    
                     return statusOk && typeOk;
                   }).toList();
 
+                  if (accesos.isEmpty) {
+                    return Center(
+                      child: Text('No hay registros de acceso', style: Theme.of(context).textTheme.bodyMedium),
+                    );
+                  }
+
                   return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: logs.length,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    itemCount: filteredAccesos.length,
                     itemBuilder: (ctx, i) {
-                      final l = logs[i];
+                      final a = filteredAccesos[i] as Map<String, dynamic>;
+                      final tipo = a['tipo'] as String? ?? '';
+                      final resultado = a['resultado'] as String? ?? '';
+                      final fechaCreado = a['fecha_creado'] as String? ?? '';
+                      final visitaNombres = a['visita_nombres'] as String?;
+                      final isExitoso = resultado.toLowerCase() == 'autorizado';
+                      
+                      String tipoLabel = 'Acceso';
+                      if (tipo.contains('qr_residente')) {
+                        tipoLabel = 'QR Residente';
+                      } else if (tipo.contains('qr_visita')) {
+                        tipoLabel = 'QR Visita';
+                      } else if (tipo.contains('manual_guardia')) {
+                        tipoLabel = 'Autorizado por Guardia';
+                      }
+                      
+                      final title = visitaNombres != null ? 'Visitante: $visitaNombres' : tipoLabel;
+                      
                       return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
-                          title: Text(l.referencedBy == null ? 'Acceso propio' : 'Visitante: ${l.personName}'),
-                          subtitle: Text('${l.personName} · ${l.timestamp}'),
-                          trailing: Icon(l.success ? Icons.check_circle : Icons.cancel,
-                              color: l.success ? const Color(0xFF10B981) : Theme.of(context).colorScheme.error),
+                          title: Text(title),
+                          subtitle: Text(fechaCreado),
+                          trailing: Icon(
+                            isExitoso ? Icons.check_circle : Icons.cancel,
+                            color: isExitoso ? const Color(0xFF10B981) : Theme.of(context).colorScheme.error,
+                          ),
                         ),
                       );
                     },
                   );
-                } else if (state is AccessHistoryError) {
-                  return Center(child: Text(state.message));
+                } else if (state is ResidentError) {
+                  return Center(child: Text('Error: ${state.message}'));
                 }
                 return const SizedBox.shrink();
               },
@@ -186,3 +228,4 @@ class _AccessHistoryPageState extends State<AccessHistoryPage> {
     );
   }
 }
+

@@ -122,6 +122,34 @@ class AdminApi {
     }
   }
 
+  /// Obtener accesos de una vivienda específica (Residente)
+  /// Endpoint: GET /api/v1/accesos/vivienda/{vivienda_id}
+  /// Auth: Bearer token (Residente o Admin)
+  Future<Map<String, dynamic>> getResidenceAccesses({
+    required int viviendaId,
+    String? fechaInicio,
+    String? fechaFin,
+    String? tipo,
+    String? resultado,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (fechaInicio != null) queryParams['fecha_inicio'] = fechaInicio;
+      if (fechaFin != null) queryParams['fecha_fin'] = fechaFin;
+      if (tipo != null) queryParams['tipo'] = tipo;
+      if (resultado != null) queryParams['resultado'] = resultado;
+
+      final response = await dio.get(
+        '/accesos/vivienda/$viviendaId',
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
+      );
+      
+      return response.data ?? {};
+    } catch (e) {
+      throw Exception(_extractErrorMessage(e));
+    }
+  }
+
   /// Obtener lista de residentes (usando endpoint documentado)
   Future<List<dynamic>> getResidents({
     int page = 1,
