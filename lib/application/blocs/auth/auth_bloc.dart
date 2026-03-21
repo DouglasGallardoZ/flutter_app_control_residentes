@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/usecases/login_usecase.dart';
 import '../../../domain/ports/auth_repository.dart';
 import '../../../domain/ports/account_repository.dart';
+import '../../../domain/entities/auth_session.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -18,11 +19,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LoginSubmitted>((event, emit) async {
       emit(AuthLoading());
       try {
-        final user = await login(
+        final session = await login(
           email: event.email,
           password: event.password,
         );
-        emit(AuthSuccess(user));
+        emit(AuthSuccess(session));
       } catch (ex) {
         // Extraer mensaje de error legible para el usuario
         String errorMessage = _extractErrorMessage(ex);
@@ -43,29 +44,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       try {
         final currentUserBasic = authRepo.currentUser;
         if (currentUserBasic != null && currentUserBasic['uid'] != null) {
+          final uid = currentUserBasic['uid'] as String;
+          final email = currentUserBasic['email'] as String?;
+
           // Obtener datos completos del perfil usando el uid (Firebase UID)
-          final account = await accountRepo.getById(currentUserBasic['uid'] as String);
+          final account = await accountRepo.getById(uid);
           if (account != null) {
-            // Convertir Account a formato compatible con AuthSuccess
-            emit(AuthSuccess({
-              'uid': account.firebaseUid,
-              'email': account.correo,
-              'personaId': account.personaId,
-              'identificacion': account.identificacion,
-              'nombres': account.nombres,
-              'apellidos': account.apellidos,
-              'rol': account.rol,
-              'estado': account.estado,
-              'celular': account.celular,
-              'residence': '${account.vivienda.manzana}-${account.vivienda.villa}',
-              'residence_id': account.vivienda.viviendaId,
-              'vivienda': {
-                'manzana': account.vivienda.manzana,
-                'villa': account.vivienda.villa,
-                'viviendaId': account.vivienda.viviendaId,
-              },
-              'parentesco': account.parentesco,
-            }));
+            // Obtener token de Firebase
+            final idToken = await authRepo.getIdToken(forceRefresh: false);
+
+            // Crear sesión de autenticación
+            final session = AuthSession(
+              uid: uid,
+              email: email ?? account.correo ?? '',
+              idToken: idToken,
+              account: account,
+              createdAt: DateTime.now(),
+              expiresAt: null,
+            );
+
+            emit(AuthSuccess(session));
             return;
           }
         }
@@ -79,14 +77,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   /// Extrae un mensaje de error legible del objeto excepción
   String _extractErrorMessage(Object ex) {
     final message = ex.toString();
-    
+
     // Remover prefijo "Exception: " si existe
     if (message.startsWith('Exception: ')) {
       final cleanMessage = message.substring('Exception: '.length);
       // El mensaje ya está traducido por Firebase o API, solo retornarlo
       return cleanMessage;
     }
-    
+
     // Si aún contiene patrones sin traducir, intentar mapearlos
     if (message.contains('user-not-found')) {
       return 'Usuario no encontrado';
@@ -106,7 +104,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (message.contains('network-request-failed')) {
       return 'Error de conexión. Verifique su internet';
     }
-    
+
     // Retornar mensaje como está si no coincide con ningún patrón
     return message.isEmpty ? 'Error en autenticación' : message;
   }

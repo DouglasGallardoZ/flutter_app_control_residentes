@@ -1,10 +1,12 @@
 import '../../domain/ports/auth_repository.dart';
-import '../providers/firebase_auth_provider.dart';
+import '../../domain/ports/firebase_auth_provider_port.dart';
+import '../../domain/ports/api_auth_provider_port.dart';
 import '../dtos/perfil_usuario_dto.dart';
+import '../../domain/entities/auth_session.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final FirebaseAuthProvider firebaseProvider;
-  final ApiAuthProvider apiProvider;
+  final FirebaseAuthProviderPort firebaseProvider;
+  final ApiAuthProviderPort apiProvider;
 
   AuthRepositoryImpl({
     required this.firebaseProvider,
@@ -12,13 +14,14 @@ class AuthRepositoryImpl implements AuthRepository {
   });
 
   @override
-  Future<Map<String, dynamic>> login({
+  Future<AuthSession> login({
     required String email,
     required String password,
   }) async {
     try {
       // 1. Autenticar en Firebase
-      final userCredential = await firebaseProvider.signInWithEmail(email, password);
+      final userCredential =
+          await firebaseProvider.signInWithEmail(email, password);
       final user = userCredential.user;
 
       if (user == null) {
@@ -32,53 +35,20 @@ class AuthRepositoryImpl implements AuthRepository {
       final perfilData = await apiProvider.obtenerPerfil(user.uid);
       final perfil = PerfilUsuarioDTO.fromJson(perfilData);
 
-      // Construir respuesta de login
-      final Map<String, dynamic> loginResponse = {
-        'uid': user.uid,
-        'email': user.email,
-        'idToken': idToken,
-        'nombres': perfil.nombres,
-        'apellidos': perfil.apellidos,
-        'rol': perfil.rol,
-        'estado': perfil.estado,
-      };
+      // 4. Convertir perfil a entidad Account
+      final account = perfil.toEntity(user.uid);
 
-      // Agregar nombre completo para fácil acceso
-      final nombres = perfil.nombres ?? '';
-      final apellidos = perfil.apellidos ?? '';
-      final fullName = '$nombres $apellidos'.trim();
-      if (fullName.isNotEmpty) {
-        loginResponse['name'] = fullName;
-      }
+      // 5. Crear sesión de autenticación
+      final session = AuthSession(
+        uid: user.uid,
+        email: user.email ?? email,
+        idToken: idToken,
+        account: account,
+        createdAt: DateTime.now(),
+        expiresAt: null, // La expiración depende del token de Firebase
+      );
 
-      // Agregar campos opcionales solo si no es null
-      if (perfil.personaId != null) {
-        loginResponse['personaId'] = perfil.personaId;
-      }
-      
-      if (perfil.identificacion != null) {
-        loginResponse['identificacion'] = perfil.identificacion;
-      }
-      
-      if (perfil.vivienda != null) {
-        loginResponse['vivienda'] = perfil.vivienda!.toJson();
-        // Agregar residence_id y residence para fácil acceso
-        if (perfil.vivienda!.viviendaId != null) {
-          loginResponse['residence_id'] = perfil.vivienda!.viviendaId;
-        }
-        // Construir residence string "Manzana X, Villa Y"
-        final manzana = perfil.vivienda!.manzana ?? '';
-        final villa = perfil.vivienda!.villa ?? '';
-        if (manzana.isNotEmpty && villa.isNotEmpty) {
-          loginResponse['residence'] = 'Manzana $manzana, Villa $villa';
-        }
-      }
-      
-      if (perfil.parentesco != null) {
-        loginResponse['parentesco'] = perfil.parentesco;
-      }
-
-      return loginResponse;
+      return session;
     } on Exception catch (e) {
       // Pasar el mensaje detallado del error
       throw Exception(e.toString().replaceAll('Exception: ', ''));

@@ -1,5 +1,7 @@
+import '../entities/auth_session.dart';
+
 abstract class AuthRepository {
-  Future<Map<String, dynamic>> login({
+  Future<AuthSession> login({
     required String email,
     required String password,
   });

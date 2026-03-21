@@ -35,6 +35,8 @@ import 'domain/ports/resident_repository.dart';
 import 'domain/ports/owner_repository.dart';
 import 'domain/ports/member_repository.dart';
 import 'domain/ports/admin_account_repository.dart';
+import 'domain/ports/firebase_auth_provider_port.dart';
+import 'domain/ports/api_auth_provider_port.dart';
 
 // Domain - Use Cases
 import 'domain/usecases/login_usecase.dart';
@@ -87,8 +89,8 @@ final sl = GetIt.instance;
 
 Future<void> inject() async {
   // Configuration
-  const String apiBaseUrl = 'http://192.168.1.3:8080/api/v1'; // API general
-  const String biometryBaseUrl = 'http://192.168.1.3:8000/api/v1'; // Servicio de biometría (puerto diferente)
+  const String apiBaseUrl = 'http://10.0.2.2:8080/api/v1'; // API general
+  const String biometryBaseUrl = 'http://10.0.2.2:8000/api/v1'; // Servicio de biometría (puerto diferente)
 
   // Firebase
   final firebaseAuth = FirebaseAuth.instance;
@@ -112,12 +114,12 @@ Future<void> inject() async {
   );
 
   // Providers
-  sl.registerLazySingleton<FirebaseAuthProvider>(
-    () => FirebaseAuthProvider(firebaseAuth),
+  sl.registerLazySingleton<FirebaseAuthProviderPort>(
+    () => FirebaseAuthProviderImpl(firebaseAuth),
   );
 
-  sl.registerLazySingleton<ApiAuthProvider>(
-    () => ApiAuthProvider(apiHttpClient.dio),
+  sl.registerLazySingleton<ApiAuthProviderPort>(
+    () => ApiAuthProviderImpl(apiHttpClient.dio),
   );
 
   sl.registerLazySingleton<QrApi>(
@@ -159,14 +161,14 @@ Future<void> inject() async {
   // Adapters (Repositories)
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
-      firebaseProvider: sl<FirebaseAuthProvider>(),
-      apiProvider: sl<ApiAuthProvider>(),
+      firebaseProvider: sl<FirebaseAuthProviderPort>(),
+      apiProvider: sl<ApiAuthProviderPort>(),
     ),
   );
 
   sl.registerLazySingleton<AccountRepository>(
     () => AccountRepositoryImpl(
-      sl<ApiAuthProvider>(),
+      sl<ApiAuthProviderPort>(),
       sl<FamilyMembersApi>(),
       sl<AccountApiProvider>(),
     ),
@@ -370,7 +372,8 @@ Future<void> inject() async {
   );
 
   sl.registerLazySingleton<FacialEnrollmentBloc>(
-    () => FacialEnrollmentBloc(adminApi: sl<AdminApi>(instanceName: 'biometryAdminApi')),
+    () => FacialEnrollmentBloc(
+        adminApi: sl<AdminApi>(instanceName: 'biometryAdminApi')),
   );
 
   sl.registerLazySingleton<OwnerBloc>(

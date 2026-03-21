@@ -1,10 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dio/dio.dart';
+import '../../domain/ports/firebase_auth_provider_port.dart';
+import '../../domain/ports/api_auth_provider_port.dart';
 
-class FirebaseAuthProvider {
+class FirebaseAuthProviderImpl implements FirebaseAuthProviderPort {
   final FirebaseAuth auth;
-  FirebaseAuthProvider(this.auth);
+  FirebaseAuthProviderImpl(this.auth);
 
+  @override
   Future<UserCredential> signUpWithEmail(String email, String password) async {
     return await auth.createUserWithEmailAndPassword(
       email: email,
@@ -12,6 +15,7 @@ class FirebaseAuthProvider {
     );
   }
 
+  @override
   Future<UserCredential> signInWithEmail(String email, String password) async {
     try {
       return await auth.signInWithEmailAndPassword(
@@ -19,10 +23,11 @@ class FirebaseAuthProvider {
         password: password,
       );
     } on FirebaseAuthException catch (e) {
-      throw Exception(_mapFirebaseErrorToMessage(e.code));
+      throw Exception(mapFirebaseErrorToMessage(e.code));
     }
   }
 
+  @override
   Future<String?> getIdToken({bool forceRefresh = false}) async {
     final user = auth.currentUser;
     if (user != null) {
@@ -31,16 +36,20 @@ class FirebaseAuthProvider {
     return null;
   }
 
+  @override
   Future<void> logout() async {
     await auth.signOut();
   }
 
+  @override
   User? get currentUser => auth.currentUser;
 
+  @override
   Stream<User?> get authStateChanges => auth.authStateChanges();
 
   /// Mapea códigos de error de Firebase a mensajes en español
-  String _mapFirebaseErrorToMessage(String code) {
+  @override
+  String mapFirebaseErrorToMessage(String code) {
     switch (code) {
       case 'invalid-email':
         return 'Correo electrónico inválido';
@@ -75,16 +84,16 @@ class FirebaseAuthProvider {
     }
   }
 
-  static FirebaseAuthProvider create() => FirebaseAuthProvider(FirebaseAuth.instance);
+  static FirebaseAuthProviderImpl create() =>
+      FirebaseAuthProviderImpl(FirebaseAuth.instance);
 }
 
-class ApiAuthProvider {
+class ApiAuthProviderImpl implements ApiAuthProviderPort {
   final Dio dio;
 
-  ApiAuthProvider(this.dio);
+  ApiAuthProviderImpl(this.dio);
 
-  /// Login con email y password
-  /// Retorna: {access_token, usuario_id, username}
+  @override
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
@@ -100,7 +109,7 @@ class ApiAuthProvider {
     }
   }
 
-  /// Obtener perfil del usuario por Firebase UID
+  @override
   Future<Map<String, dynamic>> obtenerPerfil(String firebaseUid) async {
     try {
       final response = await dio.get('/cuentas/perfil/$firebaseUid');
@@ -129,7 +138,7 @@ class ApiAuthProvider {
     return e.message ?? 'Error desconocido';
   }
 
-  /// Crear cuenta de residente con Firebase
+  @override
   Future<Map<String, dynamic>> crearCuentaResidente({
     required int personaId,
     required String firebaseUid,
@@ -148,7 +157,7 @@ class ApiAuthProvider {
     }
   }
 
-  /// Crear cuenta de miembro de familia con Firebase
+  @override
   Future<Map<String, dynamic>> crearCuentaMiembro({
     required int personaId,
     required String firebaseUid,

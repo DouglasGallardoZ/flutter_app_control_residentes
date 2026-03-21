@@ -1,4 +1,5 @@
 import '../ports/auth_repository.dart';
+import '../entities/auth_session.dart';
 
 class LoginUseCase {
   final AuthRepository auth;
@@ -7,7 +8,7 @@ class LoginUseCase {
 
   /// Login con email y password
   /// Retorna información completa del usuario autenticado
-  Future<Map<String, dynamic>> call({
+  Future<AuthSession> call({
     required String email,
     required String password,
   }) async {

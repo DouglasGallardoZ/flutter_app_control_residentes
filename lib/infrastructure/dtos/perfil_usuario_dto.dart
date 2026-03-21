@@ -1,4 +1,5 @@
 // lib/infrastructure/dtos/perfil_usuario_dto.dart
+import '../../domain/entities/account.dart';
 
 class PerfilUsuarioDTO {
   final int? personaId;
@@ -29,7 +30,9 @@ class PerfilUsuarioDTO {
 
   factory PerfilUsuarioDTO.fromJson(Map<String, dynamic> json) {
     return PerfilUsuarioDTO(
-      personaId: json['persona_id'] != null ? int.tryParse(json['persona_id'].toString()) : null,
+      personaId: json['persona_id'] != null
+          ? int.tryParse(json['persona_id'].toString())
+          : null,
       identificacion: json['identificacion'],
       nombres: json['nombres'] ?? '',
       apellidos: json['apellidos'] ?? '',
@@ -37,7 +40,9 @@ class PerfilUsuarioDTO {
       celular: json['celular'],
       estado: json['estado'] ?? 'activo',
       rol: json['rol'] ?? 'residente',
-      vivienda: json['vivienda'] != null ? ViviendaDTO.fromJson(json['vivienda']) : null,
+      vivienda: json['vivienda'] != null
+          ? ViviendaDTO.fromJson(json['vivienda'])
+          : null,
       parentesco: json['parentesco'],
       fechaCreado: json['fecha_creado'] is String
           ? DateTime.parse(json['fecha_creado'])
@@ -60,6 +65,35 @@ class PerfilUsuarioDTO {
       'fecha_creado': fechaCreado.toIso8601String(),
     };
   }
+
+  /// Convierte el DTO a entidad Account
+  Account toEntity(String firebaseUid) {
+    final viviendaDto = vivienda ??
+        ViviendaDTO(
+          viviendaId: null,
+          manzana: '',
+          villa: '',
+        );
+
+    return Account(
+      firebaseUid: firebaseUid,
+      personaId: personaId ?? 0,
+      identificacion: identificacion ?? '',
+      nombres: nombres,
+      apellidos: apellidos,
+      rol: rol,
+      estado: estado,
+      correo: correo,
+      celular: celular,
+      vivienda: Vivienda(
+        manzana: viviendaDto.manzana,
+        villa: viviendaDto.villa,
+        viviendaId: viviendaDto.viviendaId ?? 0,
+      ),
+      parentesco: parentesco,
+      fechaCreado: fechaCreado,
+    );
+  }
 }
 
 class ViviendaDTO {
@@ -75,7 +109,9 @@ class ViviendaDTO {
 
   factory ViviendaDTO.fromJson(Map<String, dynamic> json) {
     return ViviendaDTO(
-      viviendaId: json['vivienda_id'] != null ? int.tryParse(json['vivienda_id'].toString()) : null,
+      viviendaId: json['vivienda_id'] != null
+          ? int.tryParse(json['vivienda_id'].toString())
+          : null,
       manzana: json['manzana'] ?? '',
       villa: json['villa'] ?? '',
     );
