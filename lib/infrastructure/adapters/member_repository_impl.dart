@@ -1,17 +1,22 @@
 import '../../domain/ports/member_repository.dart';
-import '../providers/admin_api.dart';
+import '../../domain/ports/person_management/family_member_api_port.dart';
+import '../../domain/ports/account_management/account_management_api_port.dart';
 
 class MemberRepositoryImpl implements MemberRepository {
-  final AdminApi adminApi;
+  final FamilyMemberApiPort familyMemberApi;
+  final AccountManagementApiPort? accountManagementApi;
 
-  MemberRepositoryImpl({required this.adminApi});
+  MemberRepositoryImpl({
+    required this.familyMemberApi,
+    this.accountManagementApi,
+  });
 
   @override
   Future<List<Map<String, dynamic>>> getMembersByLocation({
     required String manzana,
     required String villa,
   }) async {
-    final response = await adminApi.getFamilyMembersByLocation(
+    final response = await familyMemberApi.getFamilyMembersByLocation(
       manzana: manzana,
       villa: villa,
       page: 1,
@@ -21,18 +26,24 @@ class MemberRepositoryImpl implements MemberRepository {
   }
 
   @override
-  Future<void> deactivateMember({required int memberId, required String reason}) async {
-    await adminApi.deactivateMember(memberId, reason);
+  Future<void> deactivateMember(
+      {required int memberId, required String reason}) async {
+    await familyMemberApi.deactivateMember(memberId, reason);
   }
 
   @override
-  Future<void> reactivateMember({required int memberId, required String reason}) async {
-    await adminApi.reactivateMember(memberId, reason);
+  Future<void> reactivateMember(
+      {required int memberId, required String reason}) async {
+    await familyMemberApi.reactivateMember(memberId, reason);
   }
 
   @override
   Future<void> deleteMember(int memberId) async {
-    await adminApi.deleteAccount(memberId);
+    if (accountManagementApi == null) {
+      throw Exception(
+          'AccountManagementApi no está disponible para eliminar miembros');
+    }
+    await accountManagementApi!.deleteAccount(memberId);
   }
 
   @override
@@ -53,7 +64,7 @@ class MemberRepositoryImpl implements MemberRepository {
     String? parentescoOtroDesc,
     required String usuarioCreado,
   }) async {
-    final response = await adminApi.addFamilyMember(
+    final response = await familyMemberApi.addFamilyMember(
       residenteId: residenteId,
       identificacion: identificacion,
       tipoIdentificacion: tipoIdentificacion,

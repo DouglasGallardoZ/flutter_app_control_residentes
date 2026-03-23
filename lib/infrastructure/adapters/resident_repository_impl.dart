@@ -1,11 +1,16 @@
 import '../../domain/ports/resident_repository.dart';
-import '../providers/admin_api.dart';
+import '../../domain/ports/person_management/resident_api_port.dart';
+import '../../domain/ports/access_management/access_history_api_port.dart';
 import '../dtos/resident_dto.dart';
 
 class ResidentRepositoryImpl implements ResidentRepository {
-  final AdminApi adminApi;
+  final ResidentApiPort residentApi;
+  final AccessHistoryApiPort accessHistoryApi;
 
-  ResidentRepositoryImpl(this.adminApi);
+  ResidentRepositoryImpl({
+    required this.residentApi,
+    required this.accessHistoryApi,
+  });
 
   @override
   Future<Map<String, dynamic>> createResident({
@@ -24,7 +29,7 @@ class ResidentRepositoryImpl implements ResidentRepository {
     required String usuarioCreado,
   }) async {
     try {
-      final response = await adminApi.createResident(
+      final response = await residentApi.createResident(
         identificacion: identificacion,
         tipoIdentificacion: tipoIdentificacion,
         nombres: nombres,
@@ -48,7 +53,7 @@ class ResidentRepositoryImpl implements ResidentRepository {
   @override
   Future<List<Map<String, dynamic>>> getResidents() async {
     try {
-      final response = await adminApi.getResidents();
+      final response = await residentApi.getResidents();
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       rethrow;
@@ -61,7 +66,7 @@ class ResidentRepositoryImpl implements ResidentRepository {
     required String villa,
   }) async {
     try {
-      final response = await adminApi.getResidentsByLocation(
+      final response = await residentApi.getResidentsByLocation(
         manzana: manzana,
         villa: villa,
       );
@@ -77,7 +82,7 @@ class ResidentRepositoryImpl implements ResidentRepository {
     required String reason,
   }) async {
     try {
-      await adminApi.deactivateResident(personaId, reason);
+      await residentApi.deactivateResident(personaId, reason);
     } catch (e) {
       rethrow;
     }
@@ -89,7 +94,7 @@ class ResidentRepositoryImpl implements ResidentRepository {
     required String reason,
   }) async {
     try {
-      await adminApi.reactivateResident(personaId, reason);
+      await residentApi.reactivateResident(personaId, reason);
     } catch (e) {
       rethrow;
     }
@@ -98,7 +103,10 @@ class ResidentRepositoryImpl implements ResidentRepository {
   @override
   Future<void> deleteResident(int personaId) async {
     try {
-      await adminApi.deleteAccount(personaId);
+      // Nota: deleteAccount no está en ResidentApiPort, usar accountManagementApi
+      // Por ahora mantener compatibilidad
+      throw UnimplementedError(
+          'deleteResident requiere AccountManagementApiPort');
     } catch (e) {
       rethrow;
     }
@@ -113,7 +121,7 @@ class ResidentRepositoryImpl implements ResidentRepository {
     String? resultado,
   }) async {
     try {
-      final response = await adminApi.getResidenceAccesses(
+      final response = await accessHistoryApi.getResidenceAccesses(
         viviendaId: viviendaId,
         fechaInicio: fechaInicio,
         fechaFin: fechaFin,

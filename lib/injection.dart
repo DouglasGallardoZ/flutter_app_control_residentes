@@ -11,6 +11,18 @@ import 'infrastructure/providers/visitor_api.dart';
 import 'infrastructure/providers/family_members_api.dart';
 import 'infrastructure/providers/admin_api.dart';
 import 'infrastructure/providers/account_api_provider.dart';
+// New Providers
+import 'infrastructure/providers/biometrics/facial_enrollment_api_impl.dart';
+import 'infrastructure/providers/biometrics/facial_verification_api_impl.dart';
+import 'infrastructure/providers/metrics/admin_metrics_api_impl.dart';
+import 'infrastructure/providers/person_management/resident_api_impl.dart';
+import 'infrastructure/providers/person_management/owner_api_impl.dart';
+import 'infrastructure/providers/person_management/spouse_api_impl.dart';
+import 'infrastructure/providers/person_management/family_member_api_impl.dart';
+import 'infrastructure/providers/account_management/account_management_api_impl.dart';
+import 'infrastructure/providers/access_management/access_history_api_impl.dart';
+import 'infrastructure/providers/qr_management/qr_generation_api_impl.dart';
+import 'infrastructure/providers/qr_management/qr_query_api_impl.dart';
 
 // Infrastructure - Adapters
 import 'infrastructure/adapters/auth_repository_impl.dart';
@@ -37,6 +49,18 @@ import 'domain/ports/member_repository.dart';
 import 'domain/ports/admin_account_repository.dart';
 import 'domain/ports/firebase_auth_provider_port.dart';
 import 'domain/ports/api_auth_provider_port.dart';
+// New Ports
+import 'domain/ports/biometrics/facial_enrollment_api_port.dart';
+import 'domain/ports/biometrics/facial_verification_api_port.dart';
+import 'domain/ports/metrics/admin_metrics_api_port.dart';
+import 'domain/ports/person_management/resident_api_port.dart';
+import 'domain/ports/person_management/owner_api_port.dart';
+import 'domain/ports/person_management/spouse_api_port.dart';
+import 'domain/ports/person_management/family_member_api_port.dart';
+import 'domain/ports/account_management/account_management_api_port.dart';
+import 'domain/ports/access_management/access_history_api_port.dart';
+import 'domain/ports/qr_management/qr_generation_api_port.dart';
+import 'domain/ports/qr_management/qr_query_api_port.dart';
 
 // Domain - Use Cases
 import 'domain/usecases/login_usecase.dart';
@@ -90,7 +114,8 @@ final sl = GetIt.instance;
 Future<void> inject() async {
   // Configuration
   const String apiBaseUrl = 'http://10.0.2.2:8080/api/v1'; // API general
-  const String biometryBaseUrl = 'http://10.0.2.2:8000/api/v1'; // Servicio de biometría (puerto diferente)
+  const String biometryBaseUrl =
+      'http://10.0.2.2:8000/api/v1'; // Servicio de biometría (puerto diferente)
 
   // Firebase
   final firebaseAuth = FirebaseAuth.instance;
@@ -158,6 +183,56 @@ Future<void> inject() async {
     () => AccountApiProvider(dio: apiHttpClient.dio),
   );
 
+  // New Providers - Biometrics
+  sl.registerLazySingleton<FacialEnrollmentApiPort>(
+    () => FacialEnrollmentApiImpl(apiHttpClient.dio),
+  );
+
+  sl.registerLazySingleton<FacialVerificationApiPort>(
+    () => FacialVerificationApiImpl(apiHttpClient.dio),
+  );
+
+  // New Providers - Metrics
+  sl.registerLazySingleton<AdminMetricsApiPort>(
+    () => AdminMetricsApiImpl(apiHttpClient.dio),
+  );
+
+  // New Providers - Person Management
+  sl.registerLazySingleton<ResidentApiPort>(
+    () => ResidentApiImpl(apiHttpClient.dio),
+  );
+
+  sl.registerLazySingleton<OwnerApiPort>(
+    () => OwnerApiImpl(apiHttpClient.dio),
+  );
+
+  sl.registerLazySingleton<SpouseApiPort>(
+    () => SpouseApiImpl(apiHttpClient.dio),
+  );
+
+  sl.registerLazySingleton<FamilyMemberApiPort>(
+    () => FamilyMemberApiImpl(apiHttpClient.dio),
+  );
+
+  // New Providers - Account Management
+  sl.registerLazySingleton<AccountManagementApiPort>(
+    () => AccountManagementApiImpl(apiHttpClient.dio),
+  );
+
+  // New Providers - Access Management
+  sl.registerLazySingleton<AccessHistoryApiPort>(
+    () => AccessHistoryApiImpl(apiHttpClient.dio),
+  );
+
+  // New Providers - QR Management
+  sl.registerLazySingleton<QrGenerationApiPort>(
+    () => QrGenerationApiImpl(apiHttpClient.dio),
+  );
+
+  sl.registerLazySingleton<QrQueryApiPort>(
+    () => QrQueryApiImpl(apiHttpClient.dio),
+  );
+
   // Adapters (Repositories)
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
@@ -195,23 +270,40 @@ Future<void> inject() async {
   );
 
   sl.registerLazySingleton<AdminRepository>(
-    () => AdminRepositoryImpl(sl<AdminApi>()),
+    () => AdminRepositoryImpl(
+      metricsApi: sl<AdminMetricsApiPort>(),
+      residentApi: sl<ResidentApiPort>(),
+      ownerApi: sl<OwnerApiPort>(),
+      familyMemberApi: sl<FamilyMemberApiPort>(),
+      accountManagementApi: sl<AccountManagementApiPort>(),
+    ),
   );
 
   sl.registerLazySingleton<ResidentRepository>(
-    () => ResidentRepositoryImpl(sl<AdminApi>()),
+    () => ResidentRepositoryImpl(
+      residentApi: sl<ResidentApiPort>(),
+      accessHistoryApi: sl<AccessHistoryApiPort>(),
+    ),
   );
 
   sl.registerLazySingleton<OwnerRepository>(
-    () => OwnerRepositoryImpl(adminApi: sl<AdminApi>()),
+    () => OwnerRepositoryImpl(
+      ownerApi: sl<OwnerApiPort>(),
+      spouseApi: sl<SpouseApiPort>(),
+    ),
   );
 
   sl.registerLazySingleton<MemberRepository>(
-    () => MemberRepositoryImpl(adminApi: sl<AdminApi>()),
+    () => MemberRepositoryImpl(
+      familyMemberApi: sl<FamilyMemberApiPort>(),
+      accountManagementApi: sl<AccountManagementApiPort>(),
+    ),
   );
 
   sl.registerLazySingleton<AdminAccountRepository>(
-    () => AdminAccountRepositoryImpl(adminApi: sl<AdminApi>()),
+    () => AdminAccountRepositoryImpl(
+      accountManagementApi: sl<AccountManagementApiPort>(),
+    ),
   );
 
   // Use Cases

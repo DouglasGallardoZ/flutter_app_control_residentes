@@ -1,14 +1,28 @@
 import '../../domain/entities/admin_metrics.dart';
 import '../../domain/entities/account.dart';
 import '../../domain/ports/admin_repository.dart';
-import '../providers/admin_api.dart';
+import '../../domain/ports/metrics/admin_metrics_api_port.dart';
+import '../../domain/ports/person_management/resident_api_port.dart';
+import '../../domain/ports/person_management/owner_api_port.dart';
+import '../../domain/ports/person_management/family_member_api_port.dart';
+import '../../domain/ports/account_management/account_management_api_port.dart';
 import '../dtos/admin_metrics_dto.dart';
 import '../dtos/perfil_usuario_dto.dart';
 
 class AdminRepositoryImpl implements AdminRepository {
-  final AdminApi adminApi;
+  final AdminMetricsApiPort metricsApi;
+  final ResidentApiPort residentApi;
+  final OwnerApiPort ownerApi;
+  final FamilyMemberApiPort familyMemberApi;
+  final AccountManagementApiPort accountManagementApi;
 
-  AdminRepositoryImpl(this.adminApi);
+  AdminRepositoryImpl({
+    required this.metricsApi,
+    required this.residentApi,
+    required this.ownerApi,
+    required this.familyMemberApi,
+    required this.accountManagementApi,
+  });
 
   @override
   Future<AdminMetrics> getAdminMetrics({
@@ -16,7 +30,7 @@ class AdminRepositoryImpl implements AdminRepository {
     String? fechaFin,
   }) async {
     try {
-      final response = await adminApi.getAdminMetrics(
+      final response = await metricsApi.getAdminMetrics(
         fechaInicio: fechaInicio,
         fechaFin: fechaFin,
       );
@@ -37,7 +51,7 @@ class AdminRepositoryImpl implements AdminRepository {
     String? resultado,
   }) async {
     try {
-      final response = await adminApi.getAccessHistory(
+      final response = await metricsApi.getAccessHistory(
         page: page,
         pageSize: pageSize,
         fechaInicio: fechaInicio,
@@ -60,7 +74,7 @@ class AdminRepositoryImpl implements AdminRepository {
   }) async {
     try {
       // Usar endpoint documentado: GET /api/v1/residentes
-      final response = await adminApi.getResidents(
+      final response = await residentApi.getResidents(
         page: page,
         pageSize: pageSize,
         searchQuery: searchQuery,
@@ -68,7 +82,8 @@ class AdminRepositoryImpl implements AdminRepository {
       );
 
       final residents = (response)
-          .map((item) => PerfilUsuarioDTO.fromJson(item as Map<String, dynamic>))
+          .map(
+              (item) => PerfilUsuarioDTO.fromJson(item as Map<String, dynamic>))
           .map((dto) => _residentDtoToAccount(dto))
           .toList();
 
@@ -86,14 +101,15 @@ class AdminRepositoryImpl implements AdminRepository {
   }) async {
     try {
       // Usar endpoint documentado: GET /api/v1/miembros-familia
-      final response = await adminApi.getFamilyMembers(
+      final response = await familyMemberApi.getFamilyMembers(
         page: page,
         pageSize: pageSize,
         searchQuery: searchQuery,
       );
 
       final members = (response)
-          .map((item) => PerfilUsuarioDTO.fromJson(item as Map<String, dynamic>))
+          .map(
+              (item) => PerfilUsuarioDTO.fromJson(item as Map<String, dynamic>))
           .map((dto) => _residentDtoToAccount(dto))
           .toList();
 
@@ -111,14 +127,15 @@ class AdminRepositoryImpl implements AdminRepository {
   }) async {
     try {
       // Usar endpoint documentado: GET /api/v1/propietarios
-      final response = await adminApi.getOwners(
+      final response = await ownerApi.getOwners(
         page: page,
         pageSize: pageSize,
         searchQuery: searchQuery,
       );
 
       final owners = (response)
-          .map((item) => PerfilUsuarioDTO.fromJson(item as Map<String, dynamic>))
+          .map(
+              (item) => PerfilUsuarioDTO.fromJson(item as Map<String, dynamic>))
           .map((dto) => _residentDtoToAccount(dto))
           .toList();
 
@@ -132,7 +149,7 @@ class AdminRepositoryImpl implements AdminRepository {
   Future<void> updateAccountStatus(int personaId, String newStatus) async {
     try {
       // Endpoint no documentado aún - usar mock
-      await adminApi.updateAccountStatus(personaId, newStatus);
+      await accountManagementApi.updateAccountStatus(personaId, newStatus);
     } catch (e) {
       rethrow;
     }
@@ -142,7 +159,7 @@ class AdminRepositoryImpl implements AdminRepository {
   Future<void> blockAccount(int personaId, String reason) async {
     try {
       // Endpoint no documentado aún - usar mock
-      await adminApi.blockAccount(personaId, reason);
+      await accountManagementApi.blockAccount(personaId, reason);
     } catch (e) {
       rethrow;
     }
@@ -152,7 +169,7 @@ class AdminRepositoryImpl implements AdminRepository {
   Future<void> unblockAccount(int personaId, String reason) async {
     try {
       // Endpoint no documentado aún - usar mock
-      await adminApi.unblockAccount(personaId, reason);
+      await accountManagementApi.unblockAccount(personaId, reason);
     } catch (e) {
       rethrow;
     }
@@ -162,7 +179,7 @@ class AdminRepositoryImpl implements AdminRepository {
   Future<void> deleteAccount(int personaId) async {
     try {
       // Endpoint no documentado aún - usar mock
-      await adminApi.deleteAccount(personaId);
+      await accountManagementApi.deleteAccount(personaId);
     } catch (e) {
       rethrow;
     }
@@ -172,7 +189,7 @@ class AdminRepositoryImpl implements AdminRepository {
   Future<Account> getAccountDetails(int personaId) async {
     try {
       // Endpoint no documentado aún - usar mock
-      final response = await adminApi.getAccountDetails(personaId);
+      final response = await accountManagementApi.getAccountDetails(personaId);
       final dto = PerfilUsuarioDTO.fromJson(response);
       return _residentDtoToAccount(dto);
     } catch (e) {
@@ -203,25 +220,7 @@ class AdminRepositoryImpl implements AdminRepository {
 
   /// Convierte PerfilUsuarioDTO a Account entity
   Account _residentDtoToAccount(PerfilUsuarioDTO dto) {
-    final vivienda = dto.vivienda ?? ViviendaDTO(viviendaId: null, manzana: '', villa: '');
-
-    return Account(
-      firebaseUid: '',
-      personaId: dto.personaId ?? 0,
-      identificacion: dto.identificacion ?? '',
-      nombres: dto.nombres,
-      apellidos: dto.apellidos,
-      rol: dto.rol,
-      estado: dto.estado,
-      correo: dto.correo,
-      celular: dto.celular,
-      parentesco: dto.parentesco,
-      vivienda: Vivienda(
-        viviendaId: vivienda.viviendaId ?? 0,
-        manzana: vivienda.manzana,
-        villa: vivienda.villa,
-      ),
-      fechaCreado: DateTime.now(),
-    );
+    // Usar el método toEntity del DTO con un firebaseUid vacío para compatibilidad
+    return dto.toEntity('');
   }
 }
