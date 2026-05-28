@@ -1,3 +1,5 @@
+import '../../domain/entities/account.dart';
+
 class ResidentDTO {
   final int personaId;
   final String identificacion;
@@ -73,6 +75,26 @@ class ResidentDTO {
       'estado': estado,
       'fecha_registro': fechaRegistro.toIso8601String(),
     };
+  }
+
+  Account toEntity(String firebaseUid) {
+    return Account(
+      firebaseUid: firebaseUid,
+      personaId: personaId,
+      identificacion: identificacion,
+      nombres: nombres,
+      apellidos: apellidos,
+      rol: 'residente',
+      estado: estado,
+      correo: correo,
+      celular: celular,
+      vivienda: Vivienda(
+        manzana: manzana,
+        villa: villa,
+        viviendaId: 0,
+      ),
+      fechaCreado: fechaRegistro,
+    );
   }
 }
 

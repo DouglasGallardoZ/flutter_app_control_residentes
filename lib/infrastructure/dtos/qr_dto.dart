@@ -1,4 +1,5 @@
 // lib/infrastructure/dtos/qr_dto.dart
+import '../../domain/entities/qr_generado.dart';
 
 class QRResponseDTO {
   final int id;
@@ -63,6 +64,20 @@ class QRResponseDTO {
       if (motivo != null) 'motivo': motivo,
       if (visitaId != null) 'visita_id': visitaId,
     };
+  }
+
+  QrGenerado toEntity() {
+    return QrGenerado(
+      qrPk: id,
+      token: token,
+      estado: estado,
+      tipoIngreso: tipoIngreso,
+      autorizadoPorNombre: '',
+      autorizadoParaNombre: visitante ?? '',
+      horaInicio: horaInicio,
+      horaFin: horaFin,
+      fechaCreado: fechaCreado,
+    );
   }
 }
 

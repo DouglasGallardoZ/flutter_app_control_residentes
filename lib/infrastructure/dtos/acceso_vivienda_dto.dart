@@ -1,3 +1,5 @@
+import '../../domain/entities/access_log.dart';
+
 class AccesosViviendaDTO {
   final int viviendaId;
   final String manzana;
@@ -33,6 +35,9 @@ class AccesosViviendaDTO {
         'total_accesos': totalAccesos,
         'accesos': accesos.map((a) => a.toJson()).toList(),
       };
+
+  List<AccessLog> toEntity() =>
+      accesos.map((acceso) => acceso.toEntity()).toList();
 }
 
 class AccesoDTO {
@@ -105,4 +110,16 @@ class AccesoDTO {
         'residente_autoriza_nombre': residenteAutorizaNombre,
         'visita_nombres': visitaNombres,
       };
+
+  AccessLog toEntity() {
+    return AccessLog(
+      personId: accesoPk.toString(),
+      personName: visitaNombres ?? 'Desconocido',
+      roleLabel: tipo,
+      timestamp: fechaCreado,
+      success: resultado == 'autorizado',
+      reason: motivo,
+      referencedBy: residenteAutorizaNombre,
+    );
+  }
 }

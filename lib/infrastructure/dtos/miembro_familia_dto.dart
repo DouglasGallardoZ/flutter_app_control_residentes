@@ -1,4 +1,5 @@
 // lib/infrastructure/dtos/miembro_familia_dto.dart
+import '../../domain/entities/account.dart';
 
 class MiembroFamiliaDTO {
   final int personaId;
@@ -54,4 +55,24 @@ class MiembroFamiliaDTO {
   }
 
   String get nombreCompleto => '$nombres $apellidos';
+
+  Account toEntity({
+    required String firebaseUid,
+    required Vivienda vivienda,
+  }) {
+    return Account(
+      firebaseUid: firebaseUid,
+      personaId: personaId,
+      identificacion: identificacion,
+      nombres: nombres,
+      apellidos: apellidos,
+      rol: 'miembro_familia',
+      estado: estado,
+      correo: correo,
+      celular: celular,
+      vivienda: vivienda,
+      parentesco: parentesco,
+      fechaCreado: fechaCreado,
+    );
+  }
 }
