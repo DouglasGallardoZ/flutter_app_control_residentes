@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'infrastructure/providers/http_client.dart';
 import 'infrastructure/providers/firebase_auth_provider.dart';
 import 'infrastructure/providers/qr_api.dart';
-import 'infrastructure/providers/qr_list_api.dart';
 import 'infrastructure/providers/access_history_api.dart';
 import 'infrastructure/providers/visitor_api.dart';
 import 'infrastructure/providers/family_members_api.dart';
@@ -99,6 +98,7 @@ import 'domain/usecases/get_qr_list_usecase.dart';
 // BLoCs
 import 'application/blocs/admin/admin_dashboard_bloc.dart';
 import 'application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
+import 'application/blocs/facial_verification/facial_verification_bloc.dart';
 import 'application/blocs/resident/resident_bloc.dart';
 import 'application/blocs/owner/owner_bloc.dart';
 import 'application/blocs/member/member_bloc.dart';
@@ -176,10 +176,6 @@ Future<void> inject() async {
     instanceName: 'biometryAdminApi',
   );
 
-  sl.registerLazySingleton<QrListApi>(
-    () => QrListApi(apiHttpClient.dio),
-  );
-
   sl.registerLazySingleton<AccountApiProvider>(
     () => AccountApiProvider(dio: apiHttpClient.dio),
   );
@@ -191,7 +187,8 @@ Future<void> inject() async {
   );
 
   sl.registerLazySingleton<FacialVerificationApiPort>(
-    () => FacialVerificationApiImpl(apiHttpClient.dio),
+    () => FacialVerificationApiImpl(
+        sl<ApiHttpClient>(instanceName: 'biometryClient').dio),
   );
 
   // New Providers - Metrics
@@ -426,7 +423,7 @@ Future<void> inject() async {
   );
 
   sl.registerLazySingleton<GetQrListUseCase>(
-    () => GetQrListUseCaseImpl(qrListApi: sl<QrListApi>()),
+    () => GetQrListUseCaseImpl(qrQueryApi: sl<QrQueryApiPort>()),
   );
 
   // BLoCs
@@ -462,6 +459,11 @@ Future<void> inject() async {
       enrollmentApi: sl<FacialEnrollmentApiPort>(),
       authProvider: sl<FirebaseAuthProviderPort>(),
     ),
+  );
+
+  sl.registerLazySingleton<FacialVerificationBloc>(
+    () => FacialVerificationBloc(
+        verificationApi: sl<FacialVerificationApiPort>()),
   );
 
   sl.registerLazySingleton<OwnerBloc>(

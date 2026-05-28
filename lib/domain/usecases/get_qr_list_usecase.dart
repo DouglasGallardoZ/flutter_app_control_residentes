@@ -1,5 +1,5 @@
 import '../../domain/entities/qr_list_response.dart';
-import '../../infrastructure/providers/qr_list_api.dart';
+import '../../domain/ports/qr_management/qr_query_api_port.dart';
 
 abstract class GetQrListUseCase {
   Future<QrListResponse> call({
@@ -11,9 +11,9 @@ abstract class GetQrListUseCase {
 }
 
 class GetQrListUseCaseImpl implements GetQrListUseCase {
-  final QrListApi qrListApi;
+  final QrQueryApiPort qrQueryApi;
 
-  GetQrListUseCaseImpl({required this.qrListApi});
+  GetQrListUseCaseImpl({required this.qrQueryApi});
 
   @override
   Future<QrListResponse> call({
@@ -22,11 +22,12 @@ class GetQrListUseCaseImpl implements GetQrListUseCase {
     required String tipoIngreso,
     required String usuarioId,
   }) async {
-    return await qrListApi.listarQRsGenerados(
+    final data = await qrQueryApi.listarQRs(
       page: page,
       pageSize: pageSize,
       tipoIngreso: tipoIngreso,
       usuarioId: usuarioId,
     );
+    return QrListResponse.fromJson(data);
   }
 }

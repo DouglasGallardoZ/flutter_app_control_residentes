@@ -21,9 +21,11 @@ class QrQueryApiImpl implements QrQueryApiPort {
     int page = 1,
     int pageSize = 10,
     String tipoIngreso = 'all',
+    required String usuarioId,
   }) async {
     try {
       final response = await dio.get('/qr/cuenta/generados', queryParameters: {
+        'persona_id': usuarioId,
         'page': page,
         'page_size': pageSize,
         'tipo_ingreso': tipoIngreso,

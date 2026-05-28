@@ -11,10 +11,12 @@ abstract class QrQueryApiPort {
   /// @param page Número de página para paginación
   /// @param pageSize Tamaño de página
   /// @param tipoIngreso Tipo de ingreso (propio, visita, all)
+  /// @param usuarioId ID del usuario para filtro
   /// @return Map con lista de QRs
   Future<Map<String, dynamic>> listarQRs({
     int page = 1,
     int pageSize = 10,
     String tipoIngreso = 'all',
+    required String usuarioId,
   });
 }

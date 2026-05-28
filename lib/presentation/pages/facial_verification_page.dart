@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:camera/camera.dart';
 import '../../domain/entities/prospecto_residente.dart';
-import '../../infrastructure/providers/admin_api.dart';
 import '../../application/blocs/registro_residente/registro_residente_bloc.dart';
 import '../../application/blocs/registro_residente/registro_residente_event.dart';
+import '../../application/blocs/facial_verification/facial_verification_bloc.dart';
+import '../../application/blocs/facial_verification/facial_verification_event.dart';
+import '../../application/blocs/facial_verification/facial_verification_state.dart';
 import '../../injection.dart';
 
 class FacialVerificationPage extends StatefulWidget {
@@ -17,7 +19,8 @@ class FacialVerificationPage extends StatefulWidget {
   });
 
   @override
-  State<FacialVerificationPage> createState() => _FacialVerificationPageState();
+  State<FacialVerificationPage> createState() =>
+      _FacialVerificationPageState();
 }
 
 class _FacialVerificationPageState extends State<FacialVerificationPage> {
@@ -25,6 +28,7 @@ class _FacialVerificationPageState extends State<FacialVerificationPage> {
   bool _isCameraInitialized = false;
   DateTime? _lastCaptureTime;
   bool _isVerifying = false;
+  String? _ultimaFotoPath;
 
   String get _tipoRegistro {
     if (widget.prospecto is ProspectoMiembro) {
@@ -36,14 +40,14 @@ class _FacialVerificationPageState extends State<FacialVerificationPage> {
     return 'residente';
   }
 
-  int? get _personaId {
+  int get _personaId {
     if (widget.prospecto is ProspectoMiembro) {
-      return (widget.prospecto as ProspectoMiembro).personaId;
+      return (widget.prospecto as ProspectoMiembro).personaId ?? 0;
     }
     if (widget.prospecto is ProspectoResidente) {
-      return (widget.prospecto as ProspectoResidente).personaId;
+      return (widget.prospecto as ProspectoResidente).personaId ?? 0;
     }
-    return null;
+    return 0;
   }
 
   @override
@@ -84,7 +88,6 @@ class _FacialVerificationPageState extends State<FacialVerificationPage> {
         return;
       }
 
-      // Preferir cámara frontal
       final camera = cameras.firstWhere(
         (c) => c.lensDirection == CameraLensDirection.front,
         orElse: () => cameras.first,
@@ -119,7 +122,6 @@ class _FacialVerificationPageState extends State<FacialVerificationPage> {
     }
 
     try {
-      // Evitar múltiples capturas rápidas
       if (_lastCaptureTime != null &&
           DateTime.now().difference(_lastCaptureTime!).inSeconds < 2) {
         return;
@@ -129,15 +131,17 @@ class _FacialVerificationPageState extends State<FacialVerificationPage> {
 
       setState(() => _isVerifying = true);
 
-      // Capturar foto
       final XFile photo = await _cameraController!.takePicture();
       final File imageFile = File(photo.path);
-
-      // Realizar verificación facial contra el API de biometría
-      await _verificarFacialmente(imageFile);
+      _ultimaFotoPath = imageFile.path;
 
       if (mounted) {
-        setState(() => _isVerifying = false);
+        context.read<FacialVerificationBloc>().add(
+              VerifyFaceSubmitted(
+                personaId: _personaId,
+                fotoPath: imageFile.path,
+              ),
+            );
       }
     } catch (e) {
       if (mounted) {
@@ -152,48 +156,6 @@ class _FacialVerificationPageState extends State<FacialVerificationPage> {
     }
   }
 
-  Future<void> _verificarFacialmente(File imageFile) async {
-    try {
-      final adminApi = sl<AdminApi>(instanceName: 'biometryAdminApi');
-
-      // Llamar al API de biometría con /verify
-      final response = await adminApi.verificarFacial(
-        personaId: _personaId ?? 0,
-        fotoPath: imageFile.path,
-      );
-
-      // Parsear respuesta como Map<String, dynamic>
-      final match = response['match'] as bool? ?? false;
-      final distance = (response['distance'] as num?)?.toDouble() ?? 1.0;
-
-      if (mounted) {
-        // Notificar al BLoC el resultado de la verificación
-        context.read<RegistroResidenteBloc>().add(
-          VerificacionFacialCompleta(
-            esValida: match,
-            distancia: distance,
-          ),
-        );
-
-        // Mostrar resultado en diálogo visual
-        _mostrarResultadoVerificacion(
-          exitosa: match,
-          distance: distance,
-          imagePath: imageFile.path,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error en verificación: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
   void _mostrarResultadoVerificacion({
     required bool exitosa,
     required double distance,
@@ -204,7 +166,8 @@ class _FacialVerificationPageState extends State<FacialVerificationPage> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
               Icon(
@@ -214,7 +177,8 @@ class _FacialVerificationPageState extends State<FacialVerificationPage> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(exitosa ? 'Verificación Exitosa' : 'Verificación Fallida'),
+                child: Text(
+                    exitosa ? 'Verificación Exitosa' : 'Verificación Fallida'),
               ),
             ],
           ),
@@ -235,7 +199,6 @@ class _FacialVerificationPageState extends State<FacialVerificationPage> {
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  // Permitir reintentar
                   setState(() => _isVerifying = false);
                 },
                 child: const Text('Reintentar'),
@@ -245,11 +208,11 @@ class _FacialVerificationPageState extends State<FacialVerificationPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF04345C),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 onPressed: () {
                   Navigator.of(context).pop();
-                  // Navegar a credenciales - puede ser residente o miembro
                   final routeName = _tipoRegistro == 'miembro'
                       ? '/credentialsMiembro'
                       : '/credentialsResidente';
@@ -271,87 +234,120 @@ class _FacialVerificationPageState extends State<FacialVerificationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Verificación Facial'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: _isVerifying ? null : () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: _isCameraInitialized
-          ? Stack(
-              children: [
-                // Vista de cámara
-                SizedBox.expand(
-                  child: CameraPreview(_cameraController!),
+    return BlocProvider<FacialVerificationBloc>(
+      create: (_) => sl<FacialVerificationBloc>(),
+      child: BlocListener<FacialVerificationBloc, FacialVerificationState>(
+        listener: (context, state) {
+          if (state is FacialVerificationSuccess) {
+            setState(() => _isVerifying = false);
+
+            context.read<RegistroResidenteBloc>().add(
+                  VerificacionFacialCompleta(
+                    esValida: state.match,
+                    distancia: state.distance,
+                  ),
+                );
+
+            _mostrarResultadoVerificacion(
+              exitosa: state.match,
+              distance: state.distance,
+              imagePath: _ultimaFotoPath ?? '',
+            );
+          } else if (state is FacialVerificationFailure) {
+            setState(() => _isVerifying = false);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error en verificación: ${state.mensaje}'),
+                  backgroundColor: Colors.red,
                 ),
-                // Overlay con instrucciones y botón de captura
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              );
+            }
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Verificación Facial'),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed:
+                  _isVerifying ? null : () => Navigator.of(context).pop(),
+            ),
+          ),
+          body: _isCameraInitialized
+              ? Stack(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      color: Colors.black54,
-                      child: Column(
-                        children: [
-                          const Text(
-                            'Captura tu rostro',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Asegúrate de que tu rostro esté bien iluminado y visible',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
+                    SizedBox.expand(
+                      child: CameraPreview(_cameraController!),
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      color: Colors.black54,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          FloatingActionButton(
-                            heroTag: 'capture',
-                            backgroundColor: const Color(0xFF04345C),
-                            onPressed: _isVerifying ? null : _captureFoto,
-                            child: _isVerifying
-                                ? const SizedBox(
-                                    height: 24,
-                                    width: 24,
-                                    child: CircularProgressIndicator(
-                                      valueColor:
-                                          AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(
-                                    Icons.camera_alt,
-                                    color: Colors.white,
-                                  ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          color: Colors.black54,
+                          child: const Column(
+                            children: [
+                              Text(
+                                'Captura tu rostro',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Asegúrate de que tu rostro esté bien iluminado y visible',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          color: Colors.black54,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              FloatingActionButton(
+                                heroTag: 'capture',
+                                backgroundColor: const Color(0xFF04345C),
+                                onPressed:
+                                    _isVerifying ? null : _captureFoto,
+                                child: _isVerifying
+                                    ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            Colors.white,
+                                          ),
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white,
+                                      ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
+                )
+              : const Center(
+                  child: CircularProgressIndicator(),
                 ),
-              ],
-            )
-          : const Center(
-              child: CircularProgressIndicator(),
-            ),
+        ),
+      ),
     );
   }
 }
