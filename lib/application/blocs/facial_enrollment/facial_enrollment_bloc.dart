@@ -1,19 +1,22 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../../infrastructure/providers/admin_api.dart';
+import '../../../domain/ports/firebase_auth_provider_port.dart';
+import '../../../domain/ports/biometrics/facial_enrollment_api_port.dart';
 import 'facial_enrollment_event.dart';
 import 'facial_enrollment_state.dart';
 
 class FacialEnrollmentBloc
     extends Bloc<FacialEnrollmentEvent, FacialEnrollmentState> {
-  final AdminApi adminApi;
+  final FacialEnrollmentApiPort enrollmentApi;
+  final FirebaseAuthProviderPort authProvider;
 
   List<String> _imagenesCapturadas = [];
   String _personaId = '';
   bool _estaCapturando = false;
 
-  FacialEnrollmentBloc({required this.adminApi})
-      : super(const FacialEnrollmentInitial()) {
+  FacialEnrollmentBloc({
+    required this.enrollmentApi,
+    required this.authProvider,
+  }) : super(const FacialEnrollmentInitial()) {
     on<InitiateFacialEnrollment>(_onInitiate);
     on<FaceDetected>(_onFaceDetected);
     on<SubmitFacialEnrollment>(_onSubmit);
@@ -82,7 +85,7 @@ class FacialEnrollmentBloc
 
       // Guardar imagen capturada
       _imagenesCapturadas.add(event.imagePath);
-      
+
       print('✓ Foto ${_imagenesCapturadas.length} capturada - Ángulo: ${angulo.toStringAsFixed(2)}°');
 
       emit(FacialPhotoCaptured(
@@ -118,13 +121,11 @@ class FacialEnrollmentBloc
     emit(const FacialEnrollmentSubmitting());
 
     try {
-      // Obtener usuario autenticado de Firebase
-      final currentUser = FirebaseAuth.instance.currentUser;
-      final usuarioCreado = event.usuarioCreado ?? 
-          currentUser?.email ?? 
+      final usuarioCreado = event.usuarioCreado ??
+          authProvider.currentUser?.email ??
           'flutter_app';
-      
-      final response = await adminApi.enrollFacialData(
+
+      final response = await enrollmentApi.enrollFacialData(
         personaId: _personaId,
         imagenesRutas: event.imagenesRutas,
         usuarioCreado: usuarioCreado,

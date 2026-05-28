@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/prospecto_residente.dart';
 import '../../application/blocs/registro_residente/registro_residente_bloc.dart';
@@ -7,6 +6,7 @@ import '../../application/blocs/registro_residente/registro_residente_event.dart
 import '../../application/blocs/registro_residente/registro_residente_state.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_event.dart';
+import '../../application/blocs/auth/auth_state.dart';
 
 class CredentialsMiembroPage extends StatefulWidget {
   final ProspectoResidente? prospecto;
@@ -45,107 +45,88 @@ class _CredentialsMiembroPageState extends State<CredentialsMiembroPage> {
     super.dispose();
   }
 
-  // Getters para soportar tanto prospecto como parámetros individuales
   int get _personaId => widget.prospecto?.personaId ?? widget.personaId ?? 0;
   String get _nombres => widget.prospecto?.nombres ?? widget.nombres ?? '';
-  String get _apellidos => widget.prospecto?.apellidos ?? widget.apellidos ?? '';
+  String get _apellidos =>
+      widget.prospecto?.apellidos ?? widget.apellidos ?? '';
   String get _identificacion => widget.prospecto?.identificacion ?? '';
 
-  Future<void> _crearCuenta() async {
+  void _crearCuenta() {
     if (!formKey.currentState!.validate()) {
       return;
     }
 
     setState(() => isCreating = true);
-
-    try {
-      // Crear usuario en Firebase Auth
-      final userCredential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
+    context.read<AuthBloc>().add(
+      CreateFirebaseAccountSubmitted(
         email: emailCtrl.text.trim(),
         password: passwordCtrl.text,
-      );
-
-      if (mounted && userCredential.user != null) {
-        // Delegar la creación de cuenta al BLoC (arquitectura hexagonal)
-        if (mounted) {
-          context.read<RegistroResidenteBloc>().add(
-            CrearCuentaMiembro(
-              personaId: _personaId,
-              firebaseUid: userCredential.user!.uid,
-              email: emailCtrl.text.trim(),
-            ),
-          );
-        }
-      }
-    } on FirebaseAuthException catch (e) {
-      String message = 'Error al crear cuenta';
-      if (e.code == 'email-already-in-use') {
-        message = 'Este correo ya está registrado';
-      } else if (e.code == 'weak-password') {
-        message = 'La contraseña es muy débil';
-      } else if (e.code == 'invalid-email') {
-        message = 'Correo inválido';
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => isCreating = false);
-      }
-    }
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<RegistroResidenteBloc, RegistroResidenteState>(
-      listener: (context, state) {
-        if (state is CuentaCreada) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('¡Cuenta de miembro creada exitosamente!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          
-          // Actualizar AuthBloc con el usuario autenticado
-          context.read<AuthBloc>().add(CheckAuthStatus());
-          
-          // Navegar al dashboard
-          Navigator.of(context).pushReplacementNamed(
-            '/residentDashboard',
-            arguments: {
-              'personaId': _personaId,
-              'identificacion': _identificacion,
-              'residenceId': '',
-              'userName': '$_nombres $_apellidos',
-            },
-          );
-        } else if (state is RegistroResidenteError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${state.message}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<RegistroResidenteBloc, RegistroResidenteState>(
+          listener: (context, state) {
+            if (state is CuentaCreada) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('¡Cuenta de miembro creada exitosamente!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+
+              context.read<AuthBloc>().add(CheckAuthStatus());
+
+              Navigator.of(context).pushReplacementNamed(
+                '/residentDashboard',
+                arguments: {
+                  'personaId': _personaId,
+                  'identificacion': _identificacion,
+                  'residenceId': '',
+                  'userName': '$_nombres $_apellidos',
+                },
+              );
+            } else if (state is RegistroResidenteError) {
+              setState(() => isCreating = false);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error: ${state.message}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        ),
+        BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            if (state is FirebaseAccountCreated) {
+              if (mounted) {
+                context.read<RegistroResidenteBloc>().add(
+                  CrearCuentaMiembro(
+                    personaId: _personaId,
+                    firebaseUid: state.uid,
+                    email: state.email,
+                  ),
+                );
+              }
+            } else if (state is AuthFailure) {
+              setState(() => isCreating = false);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          },
+        ),
+      ],
       child: Scaffold(
         body: Container(
           decoration: BoxDecoration(
@@ -189,7 +170,6 @@ class _CredentialsMiembroPageState extends State<CredentialsMiembroPage> {
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 32),
-                          // Email
                           TextFormField(
                             controller: emailCtrl,
                             keyboardType: TextInputType.emailAddress,
@@ -202,7 +182,8 @@ class _CredentialsMiembroPageState extends State<CredentialsMiembroPage> {
                               if (v == null || v.isEmpty) {
                                 return 'Ingrese un correo';
                               }
-                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                              if (!RegExp(
+                                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                                   .hasMatch(v)) {
                                 return 'Correo inválido';
                               }
@@ -210,7 +191,6 @@ class _CredentialsMiembroPageState extends State<CredentialsMiembroPage> {
                             },
                           ),
                           const SizedBox(height: 16),
-                          // Contraseña
                           TextFormField(
                             controller: passwordCtrl,
                             obscureText: !showPassword,
@@ -240,7 +220,6 @@ class _CredentialsMiembroPageState extends State<CredentialsMiembroPage> {
                             },
                           ),
                           const SizedBox(height: 16),
-                          // Confirmar Contraseña
                           TextFormField(
                             controller: confirmPasswordCtrl,
                             obscureText: !showPassword,
@@ -270,7 +249,6 @@ class _CredentialsMiembroPageState extends State<CredentialsMiembroPage> {
                             },
                           ),
                           const SizedBox(height: 32),
-                          // Botón: Crear Cuenta
                           SizedBox(
                             width: double.infinity,
                             height: 50,
@@ -288,7 +266,6 @@ class _CredentialsMiembroPageState extends State<CredentialsMiembroPage> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          // Botón: Volver
                           TextButton.icon(
                             onPressed: isCreating
                                 ? null

@@ -2,26 +2,41 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dio/dio.dart';
 import '../../domain/ports/firebase_auth_provider_port.dart';
 import '../../domain/ports/api_auth_provider_port.dart';
+import '../../domain/entities/auth_result.dart';
 
 class FirebaseAuthProviderImpl implements FirebaseAuthProviderPort {
   final FirebaseAuth auth;
   FirebaseAuthProviderImpl(this.auth);
 
   @override
-  Future<UserCredential> signUpWithEmail(String email, String password) async {
-    return await auth.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-  }
-
-  @override
-  Future<UserCredential> signInWithEmail(String email, String password) async {
+  Future<AuthResult> signUpWithEmail(String email, String password) async {
     try {
-      return await auth.signInWithEmailAndPassword(
+      final userCredential = await auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+      final user = userCredential.user;
+      if (user == null) {
+        throw Exception('Error al crear cuenta en Firebase');
+      }
+      return AuthResult(uid: user.uid, email: user.email);
+    } on FirebaseAuthException catch (e) {
+      throw Exception(mapFirebaseErrorToMessage(e.code));
+    }
+  }
+
+  @override
+  Future<AuthResult> signInWithEmail(String email, String password) async {
+    try {
+      final userCredential = await auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final user = userCredential.user;
+      if (user == null) {
+        throw Exception('Error en autenticación Firebase');
+      }
+      return AuthResult(uid: user.uid, email: user.email);
     } on FirebaseAuthException catch (e) {
       throw Exception(mapFirebaseErrorToMessage(e.code));
     }
@@ -42,10 +57,19 @@ class FirebaseAuthProviderImpl implements FirebaseAuthProviderPort {
   }
 
   @override
-  User? get currentUser => auth.currentUser;
+  AuthResult? get currentUser {
+    final user = auth.currentUser;
+    if (user == null) return null;
+    return AuthResult(uid: user.uid, email: user.email);
+  }
 
   @override
-  Stream<User?> get authStateChanges => auth.authStateChanges();
+  Stream<AuthResult?> get authStateChanges {
+    return auth.authStateChanges().map((user) {
+      if (user == null) return null;
+      return AuthResult(uid: user.uid, email: user.email);
+    });
+  }
 
   /// Mapea códigos de error de Firebase a mensajes en español
   @override

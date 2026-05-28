@@ -185,7 +185,8 @@ Future<void> inject() async {
 
   // New Providers - Biometrics
   sl.registerLazySingleton<FacialEnrollmentApiPort>(
-    () => FacialEnrollmentApiImpl(apiHttpClient.dio),
+    () => FacialEnrollmentApiImpl(
+        sl<ApiHttpClient>(instanceName: 'biometryClient').dio),
   );
 
   sl.registerLazySingleton<FacialVerificationApiPort>(
@@ -465,7 +466,9 @@ Future<void> inject() async {
 
   sl.registerLazySingleton<FacialEnrollmentBloc>(
     () => FacialEnrollmentBloc(
-        adminApi: sl<AdminApi>(instanceName: 'biometryAdminApi')),
+      enrollmentApi: sl<FacialEnrollmentApiPort>(),
+      authProvider: sl<FirebaseAuthProviderPort>(),
+    ),
   );
 
   sl.registerLazySingleton<OwnerBloc>(

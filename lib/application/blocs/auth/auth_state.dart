@@ -45,3 +45,10 @@ class AuthFailure extends AuthState {
   final String message;
   AuthFailure(this.message);
 }
+
+class FirebaseAccountCreated extends AuthState {
+  final String uid;
+  final String email;
+
+  FirebaseAccountCreated({required this.uid, required this.email});
+}

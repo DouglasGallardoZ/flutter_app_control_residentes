@@ -1,0 +1,11 @@
+# Ignorar para ahorrar contexto y dinero en tokens
+build/
+.dart_tool/
+android/
+ios/
+web/
+linux/
+windows/
+macos/
+*.g.dart
+*.freezed.dart

@@ -72,6 +72,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthInitial());
       }
     });
+
+    on<CreateFirebaseAccountSubmitted>((event, emit) async {
+      emit(AuthLoading());
+      try {
+        final credential = await authRepo.signUpWithEmail(
+          event.email,
+          event.password,
+        );
+        emit(FirebaseAccountCreated(
+          uid: credential.uid,
+          email: credential.email ?? event.email,
+        ));
+      } catch (ex) {
+        emit(AuthFailure(_extractErrorMessage(ex)));
+      }
+    });
   }
 
   /// Extrae un mensaje de error legible del objeto excepción

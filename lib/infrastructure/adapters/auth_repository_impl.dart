@@ -3,6 +3,7 @@ import '../../domain/ports/firebase_auth_provider_port.dart';
 import '../../domain/ports/api_auth_provider_port.dart';
 import '../dtos/perfil_usuario_dto.dart';
 import '../../domain/entities/auth_session.dart';
+import '../../domain/entities/auth_result.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final FirebaseAuthProviderPort firebaseProvider;
@@ -19,41 +20,40 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     try {
-      // 1. Autenticar en Firebase
-      final userCredential =
+      final credential =
           await firebaseProvider.signInWithEmail(email, password);
-      final user = userCredential.user;
+      final uid = credential.uid;
 
-      if (user == null) {
-        throw Exception('Error en autenticación Firebase');
-      }
+      final idToken = await firebaseProvider.getIdToken(forceRefresh: true);
 
-      // 2. Obtener ID token de Firebase
-      final idToken = await user.getIdToken(true);
-
-      // 3. Obtener perfil desde API
-      final perfilData = await apiProvider.obtenerPerfil(user.uid);
+      final perfilData = await apiProvider.obtenerPerfil(uid);
       final perfil = PerfilUsuarioDTO.fromJson(perfilData);
+      final account = perfil.toEntity(uid);
 
-      // 4. Convertir perfil a entidad Account
-      final account = perfil.toEntity(user.uid);
-
-      // 5. Crear sesión de autenticación
       final session = AuthSession(
-        uid: user.uid,
-        email: user.email ?? email,
+        uid: uid,
+        email: credential.email ?? email,
         idToken: idToken,
         account: account,
         createdAt: DateTime.now(),
-        expiresAt: null, // La expiración depende del token de Firebase
+        expiresAt: null,
       );
 
       return session;
     } on Exception catch (e) {
-      // Pasar el mensaje detallado del error
       throw Exception(e.toString().replaceAll('Exception: ', ''));
     } catch (e) {
       rethrow;
+    }
+  }
+
+  @override
+  Future<AuthResult> signUpWithEmail(
+      String email, String password) async {
+    try {
+      return await firebaseProvider.signUpWithEmail(email, password);
+    } on Exception catch (e) {
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
 
@@ -68,11 +68,11 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Map<String, dynamic>? get currentUser {
-    final user = firebaseProvider.currentUser;
-    if (user != null) {
+    final credential = firebaseProvider.currentUser;
+    if (credential != null) {
       return {
-        'uid': user.uid,
-        'email': user.email,
+        'uid': credential.uid,
+        'email': credential.email,
       };
     }
     return null;
@@ -80,11 +80,11 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Stream<Map<String, dynamic>?> get authStateChanges {
-    return firebaseProvider.authStateChanges.map((user) {
-      if (user != null) {
+    return firebaseProvider.authStateChanges.map((credential) {
+      if (credential != null) {
         return {
-          'uid': user.uid,
-          'email': user.email,
+          'uid': credential.uid,
+          'email': credential.email,
         };
       }
       return null;
