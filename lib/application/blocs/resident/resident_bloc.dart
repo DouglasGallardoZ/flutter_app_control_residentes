@@ -5,7 +5,7 @@ import '../../../domain/usecases/deactivate_resident_usecase.dart';
 import '../../../domain/usecases/reactivate_resident_usecase.dart';
 import '../../../domain/usecases/delete_resident_usecase.dart';
 import '../../../domain/usecases/get_residence_accesses_usecase.dart';
-import '../../../domain/ports/resident_repository.dart';
+import '../../../domain/usecases/load_residents_usecase.dart';
 import 'resident_event.dart';
 import 'resident_state.dart';
 
@@ -16,7 +16,7 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
   final ReactivateResidentUseCase reactivateResidentUseCase;
   final DeleteResidentUseCase deleteResidentUseCase;
   final GetResidenceAccessesUseCase getResidenceAccessesUseCase;
-  final ResidentRepository residentRepository;
+  final LoadResidentsUseCase loadResidentsUseCase;
 
   ResidentBloc({
     required this.createResidentUseCase,
@@ -25,7 +25,7 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
     required this.reactivateResidentUseCase,
     required this.deleteResidentUseCase,
     required this.getResidenceAccessesUseCase,
-    required this.residentRepository,
+    required this.loadResidentsUseCase,
   }) : super(const ResidentInitial()) {
     on<CreateResidentEvent>(_onCreateResident);
     on<LoadResidentsEvent>(_onLoadResidents);
@@ -36,7 +36,6 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
     on<LoadResidenceAccessesEvent>(_onLoadResidenceAccesses);
   }
 
-  /// Crear nuevo residente
   Future<void> _onCreateResident(
     CreateResidentEvent event,
     Emitter<ResidentState> emit,
@@ -58,7 +57,7 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
         docAutorizacionPdf: event.docAutorizacionPdf,
         usuarioCreado: event.usuarioCreado,
       );
-      
+
       emit(ResidentCreated(
         resident: response,
         message: 'Residente registrado correctamente',
@@ -70,14 +69,13 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
     }
   }
 
-  /// Cargar lista de residentes
   Future<void> _onLoadResidents(
     LoadResidentsEvent event,
     Emitter<ResidentState> emit,
   ) async {
     emit(const ResidentLoading());
     try {
-      final residents = await residentRepository.getResidents();
+      final residents = await loadResidentsUseCase.execute();
       emit(ResidentsLoaded(residents));
     } catch (e) {
       emit(ResidentError(
@@ -86,7 +84,6 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
     }
   }
 
-  /// Cargar residentes por ubicación
   Future<void> _onLoadResidentsByLocation(
     LoadResidentsByLocationEvent event,
     Emitter<ResidentState> emit,
@@ -109,14 +106,14 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
     }
   }
 
-  /// Desactivar residente
   Future<void> _onDeactivateResident(
     DeactivateResidentEvent event,
     Emitter<ResidentState> emit,
   ) async {
     try {
       await deactivateResidentUseCase(event.personaId, event.reason);
-      emit(ResidentDeactivated('Residente desactivado correctamente', event.reason));
+      emit(ResidentDeactivated(
+          'Residente desactivado correctamente', event.reason));
     } catch (e) {
       emit(ResidentError(
         e.toString().replaceAll('Exception: ', ''),
@@ -124,14 +121,14 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
     }
   }
 
-  /// Reactivar residente
   Future<void> _onReactivateResident(
     ReactivateResidentEvent event,
     Emitter<ResidentState> emit,
   ) async {
     try {
       await reactivateResidentUseCase(event.personaId, event.reason);
-      emit(ResidentReactivated('Residente reactivado correctamente', event.reason));
+      emit(ResidentReactivated(
+          'Residente reactivado correctamente', event.reason));
     } catch (e) {
       emit(ResidentError(
         e.toString().replaceAll('Exception: ', ''),
@@ -139,7 +136,6 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
     }
   }
 
-  /// Eliminar residente
   Future<void> _onDeleteResident(
     DeleteResidentEvent event,
     Emitter<ResidentState> emit,
@@ -154,7 +150,6 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
     }
   }
 
-  /// Obtener accesos de vivienda
   Future<void> _onLoadResidenceAccesses(
     LoadResidenceAccessesEvent event,
     Emitter<ResidentState> emit,

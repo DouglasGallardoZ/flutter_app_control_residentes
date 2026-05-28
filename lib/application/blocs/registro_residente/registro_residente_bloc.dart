@@ -1,14 +1,18 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../domain/ports/account_repository.dart';
-import '../../../domain/entities/prospecto_residente.dart';
+import '../../../domain/usecases/crear_cuenta_residente_usecase.dart';
+import '../../../domain/usecases/crear_cuenta_miembro_usecase.dart';
 import 'registro_residente_event.dart';
 import 'registro_residente_state.dart';
 
 class RegistroResidenteBloc
     extends Bloc<RegistroResidenteEvent, RegistroResidenteState> {
-  final AccountRepository repo;
+  final CrearCuentaResidenteUseCase crearCuentaResidente;
+  final CrearCuentaMiembroUseCase crearCuentaMiembro;
 
-  RegistroResidenteBloc(this.repo) : super(RegistroResidenteInitial()) {
+  RegistroResidenteBloc({
+    required this.crearCuentaResidente,
+    required this.crearCuentaMiembro,
+  }) : super(RegistroResidenteInitial()) {
     on<RegistroResidenteIniciado>(_onRegistroIniciado);
     on<VerificacionFacialCapturada>(_onVerificacionFacialCapturada);
     on<VerificacionFacialCompleta>(_onVerificacionFacialCompleta);
@@ -68,7 +72,7 @@ class RegistroResidenteBloc
     Emitter<RegistroResidenteState> emit,
   ) async {
     try {
-      final response = await repo.crearCuentaResidente(
+      final response = await crearCuentaResidente.execute(
         personaId: event.personaId,
         firebaseUid: event.firebaseUid,
         username: event.email,
@@ -85,7 +89,7 @@ class RegistroResidenteBloc
     Emitter<RegistroResidenteState> emit,
   ) async {
     try {
-      final response = await repo.crearCuentaMiembro(
+      final response = await crearCuentaMiembro.execute(
         personaId: event.personaId,
         firebaseUid: event.firebaseUid,
         username: event.email,

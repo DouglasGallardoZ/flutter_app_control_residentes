@@ -34,6 +34,7 @@ import 'infrastructure/adapters/resident_repository_impl.dart';
 import 'infrastructure/adapters/owner_repository_impl.dart';
 import 'infrastructure/adapters/member_repository_impl.dart';
 import 'infrastructure/adapters/admin_account_repository_impl.dart';
+import 'infrastructure/adapters/session_port_impl.dart';
 
 // Domain - Ports
 import 'domain/ports/auth_repository.dart';
@@ -60,6 +61,7 @@ import 'domain/ports/account_management/account_management_api_port.dart';
 import 'domain/ports/access_management/access_history_api_port.dart';
 import 'domain/ports/qr_management/qr_generation_api_port.dart';
 import 'domain/ports/qr_management/qr_query_api_port.dart';
+import 'domain/ports/session_port.dart';
 
 // Domain - Use Cases
 import 'domain/usecases/login_usecase.dart';
@@ -94,6 +96,22 @@ import 'domain/usecases/unblock_account_usecase.dart';
 import 'domain/usecases/delete_account_usecase.dart';
 import 'domain/usecases/reset_password_usecase.dart';
 import 'domain/usecases/get_qr_list_usecase.dart';
+import 'domain/usecases/register_account_usecase.dart';
+import 'domain/usecases/update_email_usecase.dart';
+import 'domain/usecases/load_family_members_usecase.dart';
+import 'domain/usecases/crear_cuenta_residente_usecase.dart';
+import 'domain/usecases/crear_cuenta_miembro_usecase.dart';
+import 'domain/usecases/validar_prospecto_residente_usecase.dart';
+import 'domain/usecases/validar_prospecto_miembro_usecase.dart';
+import 'domain/usecases/logout_usecase.dart';
+import 'domain/usecases/get_current_user_usecase.dart';
+import 'domain/usecases/get_id_token_usecase.dart';
+import 'domain/usecases/sign_up_usecase.dart';
+import 'domain/usecases/load_residents_usecase.dart';
+import 'domain/usecases/get_owner_with_spouses_usecase.dart';
+import 'domain/usecases/create_spouse_usecase.dart';
+import 'domain/usecases/delete_spouse_usecase.dart';
+import 'domain/usecases/block_spouse_usecase.dart';
 
 // BLoCs
 import 'application/blocs/admin/admin_dashboard_bloc.dart';
@@ -106,6 +124,7 @@ import 'application/blocs/admin_account/admin_account_bloc.dart';
 import 'application/blocs/qr_display/qr_display_bloc.dart';
 import 'application/blocs/qr_list/qr_list_bloc.dart';
 import 'application/blocs/auth/auth_bloc.dart';
+import 'application/blocs/account/account_bloc.dart';
 import 'application/blocs/prospecto_validation/prospecto_validation_bloc.dart';
 import 'application/blocs/registro_residente/registro_residente_bloc.dart';
 import 'application/blocs/visitor/visitor_bloc.dart';
@@ -426,11 +445,83 @@ Future<void> inject() async {
     () => GetQrListUseCaseImpl(qrQueryApi: sl<QrQueryApiPort>()),
   );
 
+  sl.registerLazySingleton<RegisterAccountUseCase>(
+    () => RegisterAccountUseCase(sl<AccountRepository>()),
+  );
+
+  sl.registerLazySingleton<UpdateEmailUseCase>(
+    () => UpdateEmailUseCase(sl<AccountRepository>()),
+  );
+
+  sl.registerLazySingleton<LoadFamilyMembersUseCase>(
+    () => LoadFamilyMembersUseCase(sl<AccountRepository>()),
+  );
+
+  sl.registerLazySingleton<CrearCuentaResidenteUseCase>(
+    () => CrearCuentaResidenteUseCase(sl<AccountRepository>()),
+  );
+
+  sl.registerLazySingleton<CrearCuentaMiembroUseCase>(
+    () => CrearCuentaMiembroUseCase(sl<AccountRepository>()),
+  );
+
+  sl.registerLazySingleton<ValidarProspectoResidenteUseCase>(
+    () => ValidarProspectoResidenteUseCase(sl<AccountRepository>()),
+  );
+
+  sl.registerLazySingleton<ValidarProspectoMiembroUseCase>(
+    () => ValidarProspectoMiembroUseCase(sl<AccountRepository>()),
+  );
+
+  sl.registerLazySingleton<LogoutUseCase>(
+    () => LogoutUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerLazySingleton<GetCurrentUserUseCase>(
+    () => GetCurrentUserUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerLazySingleton<GetIdTokenUseCase>(
+    () => GetIdTokenUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerLazySingleton<SignUpUseCase>(
+    () => SignUpUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerLazySingleton<LoadResidentsUseCase>(
+    () => LoadResidentsUseCase(sl<ResidentRepository>()),
+  );
+
+  sl.registerLazySingleton<GetOwnerWithSpousesUseCase>(
+    () => GetOwnerWithSpousesUseCase(sl<OwnerRepository>()),
+  );
+
+  sl.registerLazySingleton<CreateSpouseUseCase>(
+    () => CreateSpouseUseCase(sl<OwnerRepository>()),
+  );
+
+  sl.registerLazySingleton<DeleteSpouseUseCase>(
+    () => DeleteSpouseUseCase(sl<OwnerRepository>()),
+  );
+
+  sl.registerLazySingleton<BlockSpouseUseCase>(
+    () => BlockSpouseUseCase(sl<OwnerRepository>()),
+  );
+
+  sl.registerLazySingleton<SessionPort>(
+    () => SessionPortImpl(
+        authRepo: sl<AuthRepository>(), accountRepo: sl<AccountRepository>()),
+  );
+
   // BLoCs
   sl.registerLazySingleton<AuthBloc>(
     () => AuthBloc(
       login: sl<LoginUseCase>(),
-      authRepo: sl<AuthRepository>(),
+      logout: sl<LogoutUseCase>(),
+      getCurrentUser: sl<GetCurrentUserUseCase>(),
+      getIdToken: sl<GetIdTokenUseCase>(),
+      signUp: sl<SignUpUseCase>(),
       accountRepo: sl<AccountRepository>(),
     ),
   );
@@ -450,7 +541,7 @@ Future<void> inject() async {
       reactivateResidentUseCase: sl<ReactivateResidentUseCase>(),
       deleteResidentUseCase: sl<DeleteResidentUseCase>(),
       getResidenceAccessesUseCase: sl<GetResidenceAccessesUseCase>(),
-      residentRepository: sl<ResidentRepository>(),
+      loadResidentsUseCase: sl<LoadResidentsUseCase>(),
     ),
   );
 
@@ -474,7 +565,10 @@ Future<void> inject() async {
       deleteOwnerUseCase: sl<DeleteOwnerUseCase>(),
       getOwnerPropertiesUseCase: sl<GetOwnerPropertiesUseCase>(),
       createOwnerUseCase: sl<CreateOwnerUseCase>(),
-      ownerRepository: sl<OwnerRepository>(),
+      getOwnerWithSpousesUseCase: sl<GetOwnerWithSpousesUseCase>(),
+      createSpouseUseCase: sl<CreateSpouseUseCase>(),
+      deleteSpouseUseCase: sl<DeleteSpouseUseCase>(),
+      blockSpouseUseCase: sl<BlockSpouseUseCase>(),
     ),
   );
 
@@ -502,7 +596,7 @@ Future<void> inject() async {
   );
 
   sl.registerLazySingleton<QrDisplayBloc>(
-    () => QrDisplayBloc(authBloc: sl<AuthBloc>()),
+    () => QrDisplayBloc(sessionPort: sl<SessionPort>()),
   );
 
   sl.registerFactory<QrListBloc>(
@@ -510,14 +604,28 @@ Future<void> inject() async {
   );
 
   sl.registerLazySingleton<ProspectoValidationBloc>(
-    () => ProspectoValidationBloc(sl<AccountRepository>()),
+    () => ProspectoValidationBloc(
+      validarResidente: sl<ValidarProspectoResidenteUseCase>(),
+      validarMiembro: sl<ValidarProspectoMiembroUseCase>(),
+    ),
   );
 
   sl.registerLazySingleton<RegistroResidenteBloc>(
-    () => RegistroResidenteBloc(sl<AccountRepository>()),
+    () => RegistroResidenteBloc(
+      crearCuentaResidente: sl<CrearCuentaResidenteUseCase>(),
+      crearCuentaMiembro: sl<CrearCuentaMiembroUseCase>(),
+    ),
   );
 
   sl.registerLazySingleton<VisitorBloc>(
     () => VisitorBloc(usecase: sl<ManageVisitorUseCase>()),
+  );
+
+  sl.registerLazySingleton<AccountBloc>(
+    () => AccountBloc(
+      registerAccount: sl<RegisterAccountUseCase>(),
+      updateEmail: sl<UpdateEmailUseCase>(),
+      loadFamilyMembers: sl<LoadFamilyMembersUseCase>(),
+    ),
   );
 }

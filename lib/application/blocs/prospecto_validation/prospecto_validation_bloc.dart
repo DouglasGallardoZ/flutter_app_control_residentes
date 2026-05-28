@@ -1,13 +1,18 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../domain/ports/account_repository.dart';
+import '../../../domain/usecases/validar_prospecto_residente_usecase.dart';
+import '../../../domain/usecases/validar_prospecto_miembro_usecase.dart';
 import 'prospecto_validation_event.dart';
 import 'prospecto_validation_state.dart';
 
 class ProspectoValidationBloc
     extends Bloc<ProspectoValidationEvent, ProspectoValidationState> {
-  final AccountRepository repo;
+  final ValidarProspectoResidenteUseCase validarResidente;
+  final ValidarProspectoMiembroUseCase validarMiembro;
 
-  ProspectoValidationBloc(this.repo) : super(ProspectoValidationInitial()) {
+  ProspectoValidationBloc({
+    required this.validarResidente,
+    required this.validarMiembro,
+  }) : super(ProspectoValidationInitial()) {
     on<ValidarProspectoResidente>(_onValidarProspectoResidente);
     on<ValidarProspectoMiembro>(_onValidarProspectoMiembro);
     on<LimpiarValidacion>(_onLimpiarValidacion);
@@ -19,7 +24,8 @@ class ProspectoValidationBloc
   ) async {
     emit(ProspectoValidationLoading());
     try {
-      final prospecto = await repo.validarProspectoResidente(event.identificacion);
+      final prospecto =
+          await validarResidente.execute(event.identificacion);
       emit(ProspectoResidenteValidado(prospecto));
     } catch (e) {
       final message = e.toString().replaceAll('Exception: ', '');
@@ -33,14 +39,13 @@ class ProspectoValidationBloc
   ) async {
     emit(ProspectoValidationLoading());
     try {
-      final prospecto = await repo.validarProspectoMiembro(event.identificacion);
-      
-      // Verificar si el miembro existe
+      final prospecto = await validarMiembro.execute(event.identificacion);
+
       if (prospecto.existe && prospecto.personaEncontrada == true) {
         emit(ProspectoMiembroValidado(prospecto));
       } else {
-        // Si no existe, emitir error para que se muestre el formulario de registro
-        emit(ProspectoValidationError('Miembro no encontrado en el sistema'));
+        emit(ProspectoValidationError(
+            'Miembro no encontrado en el sistema'));
       }
     } catch (e) {
       final message = e.toString().replaceAll('Exception: ', '');

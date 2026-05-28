@@ -2,7 +2,10 @@ import '../ports/account_repository.dart';
 import '../entities/account.dart';
 
 class RegisterAccountUseCase {
-  final AccountRepository repo;
-  RegisterAccountUseCase(this.repo);
-  Future<Account> call(Account account) => repo.register(account);
+  final AccountRepository repository;
+  RegisterAccountUseCase(this.repository);
+
+  Future<Account> execute(Account account) async {
+    return await repository.register(account);
+  }
 }

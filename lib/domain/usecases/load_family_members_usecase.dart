@@ -1,11 +1,11 @@
-import '../../domain/ports/account_repository.dart';
-import '../../domain/entities/account.dart';
+import '../ports/account_repository.dart';
+import '../entities/account.dart';
 
 class LoadFamilyMembersUseCase {
-  final AccountRepository repo;
-  LoadFamilyMembersUseCase(this.repo);
+  final AccountRepository repository;
+  LoadFamilyMembersUseCase(this.repository);
 
-  Future<List<Account>> call(String residenceId) async {
-    return await repo.listByResidenceAndRole(residenceId, 'family');
+  Future<List<Account>> execute(dynamic residenceId, String role) async {
+    return await repository.listByResidenceAndRole(residenceId, role);
   }
 }

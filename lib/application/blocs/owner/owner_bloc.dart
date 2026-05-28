@@ -5,7 +5,10 @@ import '../../../domain/usecases/unblock_owner_usecase.dart';
 import '../../../domain/usecases/delete_owner_usecase.dart';
 import '../../../domain/usecases/get_owner_properties_usecase.dart';
 import '../../../domain/usecases/create_owner_usecase.dart';
-import '../../../domain/ports/owner_repository.dart';
+import '../../../domain/usecases/get_owner_with_spouses_usecase.dart';
+import '../../../domain/usecases/create_spouse_usecase.dart';
+import '../../../domain/usecases/delete_spouse_usecase.dart';
+import '../../../domain/usecases/block_spouse_usecase.dart';
 import 'owner_event.dart';
 import 'owner_state.dart';
 
@@ -16,7 +19,10 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
   final DeleteOwnerUseCase deleteOwnerUseCase;
   final GetOwnerPropertiesUseCase getOwnerPropertiesUseCase;
   final CreateOwnerUseCase createOwnerUseCase;
-  final OwnerRepository ownerRepository;
+  final GetOwnerWithSpousesUseCase getOwnerWithSpousesUseCase;
+  final CreateSpouseUseCase createSpouseUseCase;
+  final DeleteSpouseUseCase deleteSpouseUseCase;
+  final BlockSpouseUseCase blockSpouseUseCase;
 
   OwnerBloc({
     required this.loadOwnersByLocationUseCase,
@@ -25,7 +31,10 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
     required this.deleteOwnerUseCase,
     required this.getOwnerPropertiesUseCase,
     required this.createOwnerUseCase,
-    required this.ownerRepository,
+    required this.getOwnerWithSpousesUseCase,
+    required this.createSpouseUseCase,
+    required this.deleteSpouseUseCase,
+    required this.blockSpouseUseCase,
   }) : super(const OwnerInitial()) {
     on<LoadOwnersByLocationEvent>(_onLoadOwnersByLocation);
     on<BlockOwnerEvent>(_onBlockOwner);
@@ -39,7 +48,6 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
     on<BlockSpouseEvent>(_onBlockSpouse);
   }
 
-  /// Cargar propietarios por ubicación
   Future<void> _onLoadOwnersByLocation(
     LoadOwnersByLocationEvent event,
     Emitter<OwnerState> emit,
@@ -64,7 +72,6 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
     }
   }
 
-  /// Bloquear propietario
   Future<void> _onBlockOwner(
     BlockOwnerEvent event,
     Emitter<OwnerState> emit,
@@ -72,7 +79,6 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
     try {
       await blockOwnerUseCase(event.ownerId, event.reason);
       emit(OwnerBlocked('Propietario bloqueado exitosamente', event.reason));
-      // Re-cargar la lista actual si está en modo ubicación
       if (state is OwnersByLocationLoaded) {
         final current = state as OwnersByLocationLoaded;
         add(LoadOwnersByLocationEvent(
@@ -86,15 +92,14 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
     }
   }
 
-  /// Desbloquear propietario
   Future<void> _onUnblockOwner(
     UnblockOwnerEvent event,
     Emitter<OwnerState> emit,
   ) async {
     try {
       await unblockOwnerUseCase(event.ownerId, event.reason);
-      emit(OwnerUnblocked('Propietario desbloqueado exitosamente', event.reason));
-      // Re-cargar la lista actual si está en modo ubicación
+      emit(OwnerUnblocked(
+          'Propietario desbloqueado exitosamente', event.reason));
       if (state is OwnersByLocationLoaded) {
         final current = state as OwnersByLocationLoaded;
         add(LoadOwnersByLocationEvent(
@@ -108,7 +113,6 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
     }
   }
 
-  /// Eliminar propietario
   Future<void> _onDeleteOwner(
     DeleteOwnerEvent event,
     Emitter<OwnerState> emit,
@@ -116,7 +120,6 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
     try {
       await deleteOwnerUseCase(event.ownerId);
       emit(const OwnerDeleted('Propietario eliminado exitosamente'));
-      // Re-cargar la lista actual si está en modo ubicación
       if (state is OwnersByLocationLoaded) {
         final current = state as OwnersByLocationLoaded;
         add(LoadOwnersByLocationEvent(
@@ -130,7 +133,6 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
     }
   }
 
-  /// Obtener propiedades de un propietario
   Future<void> _onGetOwnerProperties(
     GetOwnerPropertiesEvent event,
     Emitter<OwnerState> emit,
@@ -143,7 +145,6 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
     }
   }
 
-  /// Crear un nuevo propietario
   Future<void> _onCreateOwner(
     CreateOwnerEvent event,
     Emitter<OwnerState> emit,
@@ -165,7 +166,8 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
         usuarioCreado: event.usuarioCreado,
       );
       emit(OwnerCreated(
-        message: response['mensaje'] ?? 'Propietario registrado exitosamente',
+        message:
+            response['mensaje'] ?? 'Propietario registrado exitosamente',
         owner: response,
       ));
     } catch (e) {
@@ -173,30 +175,27 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
     }
   }
 
-  // ========== Spouse Management Handlers ==========
-
-  /// Cargar propietario con sus cónyuges
   Future<void> _onLoadOwnerWithSpouses(
     LoadOwnerWithSpousesEvent event,
     Emitter<OwnerState> emit,
   ) async {
     emit(const OwnerLoading());
     try {
-      final ownerWithSpouses = await ownerRepository.getOwnerWithSpouses(event.ownerId);
+      final ownerWithSpouses =
+          await getOwnerWithSpousesUseCase.execute(event.ownerId);
       emit(OwnerWithSpousesLoaded(ownerWithSpouses));
     } catch (e) {
       emit(OwnerError('Error al cargar propietario con cónyuges: $e'));
     }
   }
 
-  /// Crear un nuevo cónyuge
   Future<void> _onCreateSpouse(
     CreateSpouseEvent event,
     Emitter<OwnerState> emit,
   ) async {
     emit(const SpouseCreating());
     try {
-      final spouse = await ownerRepository.createSpouse(
+      final spouse = await createSpouseUseCase.execute(
         ownerId: event.ownerId,
         tipoIdentificacion: event.tipoIdentificacion,
         identificacion: event.identificacion,
@@ -210,39 +209,39 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
         usuarioCreado: event.usuarioCreado,
       );
       emit(SpouseCreated(spouse));
-      // Recargar el propietario con cónyuges
       add(LoadOwnerWithSpousesEvent(event.ownerId));
     } catch (e) {
       emit(SpouseError('Error al crear cónyuge: $e'));
     }
   }
 
-  /// Eliminar un cónyuge
   Future<void> _onDeleteSpouse(
     DeleteSpouseEvent event,
     Emitter<OwnerState> emit,
   ) async {
     try {
-      await ownerRepository.deleteSpouse(event.spouseId);
+      await deleteSpouseUseCase.execute(event.spouseId);
       emit(const SpouseDeleted('Cónyuge eliminado exitosamente'));
     } catch (e) {
       emit(SpouseError('Error al eliminar cónyuge: $e'));
     }
   }
 
-  /// Bloquear o desbloquear un cónyuge
   Future<void> _onBlockSpouse(
     BlockSpouseEvent event,
     Emitter<OwnerState> emit,
   ) async {
     try {
-      await ownerRepository.blockSpouse(event.spouseId, event.block);
+      await blockSpouseUseCase.execute(event.spouseId, event.block);
       emit(SpouseBlocked(
-        event.block ? 'Cónyuge bloqueado exitosamente' : 'Cónyuge desbloqueado exitosamente',
+        event.block
+            ? 'Cónyuge bloqueado exitosamente'
+            : 'Cónyuge desbloqueado exitosamente',
         event.block,
       ));
     } catch (e) {
-      emit(SpouseError('Error al ${event.block ? 'bloquear' : 'desbloquear'} cónyuge: $e'));
+      emit(SpouseError(
+          'Error al ${event.block ? 'bloquear' : 'desbloquear'} cónyuge: $e'));
     }
   }
 }

@@ -1,29 +1,28 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../auth/auth_bloc.dart';
-import '../auth/auth_state.dart';
+import '../../../domain/ports/session_port.dart';
+import '../../../domain/entities/auth_session.dart';
 import 'qr_display_event.dart';
 import 'qr_display_state.dart';
 
 class QrDisplayBloc extends Bloc<QrDisplayEvent, QrDisplayState> {
-  final AuthBloc authBloc;
+  final SessionPort sessionPort;
 
-  QrDisplayBloc({required this.authBloc}) : super(QrDisplayInitial()) {
+  QrDisplayBloc({required this.sessionPort}) : super(QrDisplayInitial()) {
     on<InitializeQrDisplay>(_onInitialize);
     on<NavigateToScreen>(_onNavigateToScreen);
     on<NavigateBack>(_onNavigateBack);
   }
 
-  /// Extrae datos del usuario desde AuthBloc
   Future<void> _onInitialize(
       InitializeQrDisplay event, Emitter<QrDisplayState> emit) async {
     try {
-      final authState = authBloc.state;
-      if (authState is! AuthSuccess) {
+      final session = await sessionPort.getCurrentSession();
+      if (session == null) {
         emit(QrDisplayError('No hay sesión activa'));
         return;
       }
 
-      final userData = _extractUserData(authState);
+      final userData = _extractUserData(session);
       if (userData == null) {
         emit(QrDisplayError('Datos de usuario incompletos'));
         return;
@@ -35,7 +34,6 @@ class QrDisplayBloc extends Bloc<QrDisplayEvent, QrDisplayState> {
     }
   }
 
-  /// Navega a una pantalla específica
   Future<void> _onNavigateToScreen(
       NavigateToScreen event, Emitter<QrDisplayState> emit) async {
     try {
@@ -95,7 +93,6 @@ class QrDisplayBloc extends Bloc<QrDisplayEvent, QrDisplayState> {
     }
   }
 
-  /// Navega de vuelta al home
   Future<void> _onNavigateBack(
       NavigateBack event, Emitter<QrDisplayState> emit) async {
     try {
@@ -120,10 +117,9 @@ class QrDisplayBloc extends Bloc<QrDisplayEvent, QrDisplayState> {
     }
   }
 
-  /// Extrae y procesa datos del usuario desde AuthSuccess
-  UserDataForDisplay? _extractUserData(AuthSuccess authState) {
+  UserDataForDisplay? _extractUserData(AuthSession session) {
     try {
-      final account = authState.session.account;
+      final account = session.account;
       final userId = account.personaId > 0
           ? account.personaId.toString()
           : account.firebaseUid;
@@ -134,16 +130,13 @@ class QrDisplayBloc extends Bloc<QrDisplayEvent, QrDisplayState> {
         return null;
       }
 
-      // Determinar si es miembro de familia
       final isFamilyMember = role.toLowerCase() == 'miembro_familia' ||
           role.toLowerCase() == 'family' ||
           role.toLowerCase() == 'miembro de familia';
 
-      // Extraer nombre completo (nombres + apellidos)
       final fullName = account.nombreCompleto;
       final userName = fullName.isNotEmpty ? fullName : 'Usuario';
 
-      // Extraer residencia desde vivienda
       String residenceId = '';
       final vivienda = account.vivienda;
       final manzana = vivienda.manzana;
