@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class QrGenerado {
   final int qrPk;
   final String token;
@@ -37,27 +35,13 @@ class QrGenerado {
     );
   }
 
-  String get displayNombre => tipoIngreso == 'propio' ? autorizadoPorNombre : autorizadoParaNombre;
+  String get displayNombre =>
+      tipoIngreso == 'propio' ? autorizadoPorNombre : autorizadoParaNombre;
 
   bool get isVigente => estado == 'vigente';
   bool get isExpirado => estado == 'expirado';
   bool get isUsado => estado == 'usado';
   bool get isAnulado => estado == 'anulado';
-
-  Color get statusColor {
-    switch (estado) {
-      case 'vigente':
-        return const Color(0xFF4CAF50); // Green
-      case 'expirado':
-        return const Color(0xFFFF9800); // Orange
-      case 'usado':
-        return const Color(0xFF2196F3); // Blue
-      case 'anulado':
-        return const Color(0xFFF44336); // Red
-      default:
-        return const Color(0xFF757575); // Grey
-    }
-  }
 
   String get statusLabel {
     switch (estado) {

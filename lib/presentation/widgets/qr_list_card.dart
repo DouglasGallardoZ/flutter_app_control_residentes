@@ -39,6 +39,21 @@ class QrListCard extends StatelessWidget {
     }
   }
 
+  Color _statusColor(String estado) {
+    switch (estado) {
+      case 'vigente':
+        return const Color(0xFF4CAF50);
+      case 'expirado':
+        return const Color(0xFFFF9800);
+      case 'usado':
+        return const Color(0xFF2196F3);
+      case 'anulado':
+        return const Color(0xFFF44336);
+      default:
+        return const Color(0xFF757575);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -91,13 +106,13 @@ class QrListCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: qr.statusColor.withOpacity(0.2),
+                    color: _statusColor(qr.estado).withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     qr.statusLabel,
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: qr.statusColor,
+                      color: _statusColor(qr.estado),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
