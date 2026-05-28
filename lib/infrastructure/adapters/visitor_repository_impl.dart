@@ -1,22 +1,20 @@
-// lib/infrastructure/adapters/visitor_repository_impl.dart
 import '../../domain/entities/visitor.dart';
 import '../../domain/ports/visitor_repository.dart';
 import '../providers/visitor_api.dart';
 
 class VisitorRepositoryImpl implements VisitorRepository {
   final VisitorApi api;
-  final int personaId;
 
-  VisitorRepositoryImpl({
-    required this.api,
-    required this.personaId,
-  });
+  VisitorRepositoryImpl({required this.api});
 
   @override
-  Future<List<Visitor>> listByResidence(String residenceId, {int? personaId}) async {
+  Future<List<Visitor>> listByResidence(
+    String residenceId, {
+    required int personaId,
+  }) async {
     try {
-      final effectivePersonaId = personaId ?? this.personaId;
-      final response = await api.listByResidence(personaId: effectivePersonaId);
+      final response =
+          await api.listByResidence(personaId: personaId);
       final data = response['data'] as List<dynamic>? ?? [];
       return data.map((item) {
         final map = item as Map<String, dynamic>;
@@ -36,7 +34,11 @@ class VisitorRepositoryImpl implements VisitorRepository {
   }
 
   @override
-  Future<Visitor?> findById(String id, String residenceId) async {
+  Future<Visitor?> findById(
+    String id,
+    String residenceId, {
+    required int personaId,
+  }) async {
     try {
       final response = await api.findById(
         personaId: personaId,
@@ -59,7 +61,11 @@ class VisitorRepositoryImpl implements VisitorRepository {
   }
 
   @override
-  Future<Visitor> upsert(String residenceId, Visitor visitor) async {
+  Future<Visitor> upsert(
+    String residenceId,
+    Visitor visitor, {
+    required int personaId,
+  }) async {
     try {
       final response = await api.upsert(
         personaId: personaId,
@@ -84,9 +90,10 @@ class VisitorRepositoryImpl implements VisitorRepository {
   }
 
   @override
-  Future<List<Visitor>> getVisitantesVivienda() async {
+  Future<List<Visitor>> getVisitantesVivienda({required int personaId}) async {
     try {
-      final response = await api.getVisitantesVivienda(personaId: personaId);
+      final response =
+          await api.getVisitantesVivienda(personaId: personaId);
       final visitantes = response['visitantes'] as List<dynamic>? ?? [];
       return visitantes.map((item) {
         final map = item as Map<String, dynamic>;

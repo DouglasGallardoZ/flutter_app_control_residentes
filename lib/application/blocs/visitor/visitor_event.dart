@@ -4,11 +4,14 @@ abstract class VisitorEvent {}
 
 class LoadVisitors extends VisitorEvent {
   final String residenceId;
-  final int? personaId;
-  LoadVisitors(this.residenceId, [this.personaId]);
+  final int personaId;
+  LoadVisitors(this.residenceId, this.personaId);
 }
 
-class LoadVisitantesVivienda extends VisitorEvent {}
+class LoadVisitantesVivienda extends VisitorEvent {
+  final int personaId;
+  LoadVisitantesVivienda({required this.personaId});
+}
 
 class SearchVisitors extends VisitorEvent {
   final String query;
@@ -26,5 +29,13 @@ class UpsertVisitorRequested extends VisitorEvent {
   final String name;
   final String? phone;
   final DateTime visitTime;
-  UpsertVisitorRequested(this.residenceId, this.id, this.name, this.phone, this.visitTime);
+  final int personaId;
+  UpsertVisitorRequested(
+    this.residenceId,
+    this.id,
+    this.name,
+    this.phone,
+    this.visitTime,
+    this.personaId,
+  );
 }

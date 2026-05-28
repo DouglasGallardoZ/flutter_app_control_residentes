@@ -1,22 +1,22 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/usecases/manage_visitor_usecase.dart';
-// import '../../../domain/entities/visitor.dart';
 import 'visitor_event.dart';
 import 'visitor_state.dart';
 
 class VisitorBloc extends Bloc<VisitorEvent, VisitorState> {
   final ManageVisitorUseCase usecase;
-  
-  VisitorBloc(this.usecase) : super(VisitorInitial()) {
+
+  VisitorBloc({required this.usecase}) : super(VisitorInitial()) {
     on<LoadVisitors>((e, emit) async {
       emit(VisitorLoading());
       try {
-        
-        final list = await usecase.list(e.residenceId, personaId: e.personaId);
+        final list =
+            await usecase.list(e.residenceId, personaId: e.personaId);
         final helper = list.isEmpty
-          ? 'No hay visitantes guardados. Cree el primero en "Nuevo Visitante".'
-          : 'Seleccione un visitante o busque por nombre/identificación.';
-        emit(VisitorLoaded(all: list, filtered: list, selected: null, helper: helper));
+            ? 'No hay visitantes guardados. Cree el primero en "Nuevo Visitante".'
+            : 'Seleccione un visitante o busque por nombre/identificación.';
+        emit(VisitorLoaded(
+            all: list, filtered: list, selected: null, helper: helper));
       } catch (_) {
         emit(VisitorError('Error al cargar visitantes'));
       }
@@ -25,11 +25,13 @@ class VisitorBloc extends Bloc<VisitorEvent, VisitorState> {
     on<LoadVisitantesVivienda>((e, emit) async {
       emit(VisitorLoading());
       try {
-        final list = await usecase.getVisitantesVivienda();
+        final list =
+            await usecase.getVisitantesVivienda(personaId: e.personaId);
         final helper = list.isEmpty
-          ? 'No hay visitantes registrados para esta vivienda.'
-          : 'Seleccione un visitante de la lista.';
-        emit(VisitorLoaded(all: list, filtered: list, selected: null, helper: helper));
+            ? 'No hay visitantes registrados para esta vivienda.'
+            : 'Seleccione un visitante de la lista.';
+        emit(VisitorLoaded(
+            all: list, filtered: list, selected: null, helper: helper));
       } catch (_) {
         emit(VisitorError('Error al cargar visitantes'));
       }
@@ -39,7 +41,9 @@ class VisitorBloc extends Bloc<VisitorEvent, VisitorState> {
       final st = state;
       if (st is VisitorLoaded) {
         final q = e.query.toLowerCase().trim();
-        final filtered = st.all.where((v) => v.name.toLowerCase().contains(q) || v.id.contains(q)).toList();
+        final filtered = st.all
+            .where((v) => v.name.toLowerCase().contains(q) || v.id.contains(q))
+            .toList();
         emit(st.copyWith(filtered: filtered));
       }
     });
@@ -52,13 +56,18 @@ class VisitorBloc extends Bloc<VisitorEvent, VisitorState> {
     on<UpsertVisitorRequested>((e, emit) async {
       try {
         final v = await usecase.registerOrUpdate(
-          residenceId: e.residenceId, id: e.id, name: e.name, phone: e.phone, visitTime: e.visitTime,
+          residenceId: e.residenceId,
+          id: e.id,
+          name: e.name,
+          phone: e.phone,
+          visitTime: e.visitTime,
+          personaId: e.personaId,
         );
         emit(VisitorSuccess(v));
       } catch (_) {
-        emit(VisitorError('No se pudo registrar/actualizar el visitante'));
+        emit(
+            VisitorError('No se pudo registrar/actualizar el visitante'));
       }
     });
   }
 }
-

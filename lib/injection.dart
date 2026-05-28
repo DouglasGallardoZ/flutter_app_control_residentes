@@ -108,6 +108,7 @@ import 'application/blocs/qr_list/qr_list_bloc.dart';
 import 'application/blocs/auth/auth_bloc.dart';
 import 'application/blocs/prospecto_validation/prospecto_validation_bloc.dart';
 import 'application/blocs/registro_residente/registro_residente_bloc.dart';
+import 'application/blocs/visitor/visitor_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -258,16 +259,8 @@ Future<void> inject() async {
     () => AccessHistoryRepositoryImpl(sl<AccessHistoryApi>()),
   );
 
-  sl.registerFactory<VisitorRepository>(
-    () {
-      // Get personaId from authenticated user
-      final user = firebaseAuth.currentUser;
-      final personaId = user != null ? int.tryParse(user.uid) ?? 0 : 0;
-      return VisitorRepositoryImpl(
-        api: sl<VisitorApi>(),
-        personaId: personaId,
-      );
-    },
+  sl.registerLazySingleton<VisitorRepository>(
+    () => VisitorRepositoryImpl(api: sl<VisitorApi>()),
   );
 
   sl.registerLazySingleton<AdminRepository>(
@@ -520,5 +513,9 @@ Future<void> inject() async {
 
   sl.registerLazySingleton<RegistroResidenteBloc>(
     () => RegistroResidenteBloc(sl<AccountRepository>()),
+  );
+
+  sl.registerLazySingleton<VisitorBloc>(
+    () => VisitorBloc(usecase: sl<ManageVisitorUseCase>()),
   );
 }

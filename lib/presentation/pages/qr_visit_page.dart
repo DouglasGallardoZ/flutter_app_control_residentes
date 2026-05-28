@@ -17,9 +17,6 @@ import '../../application/blocs/auth/auth_state.dart';
 import 'qr_display_page.dart';
 import '../widgets/navigation_helpers.dart';
 import '../../injection.dart';
-import '../../domain/usecases/manage_visitor_usecase.dart';
-import '../../infrastructure/providers/visitor_api.dart';
-import '../../infrastructure/adapters/visitor_repository_impl.dart';
 
 class QrVisitPage extends StatefulWidget {
   final int personaId;
@@ -206,13 +203,7 @@ class _QrVisitPageState extends State<QrVisitPage> {
     final separatorColor = theme.brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade300;
 
     return BlocProvider<VisitorBloc>(
-      create: (_) {
-        // Crear VisitorRepository manualmente con el personaId correcto
-        final visitorApi = sl<VisitorApi>();
-        final visitorRepo = VisitorRepositoryImpl(api: visitorApi, personaId: widget.personaId);
-        final usecase = ManageVisitorUseCase(visitorRepo);
-        return VisitorBloc(usecase);
-      },
+      create: (_) => sl<VisitorBloc>(),
       child: PopScope(
         canPop: true,
         onPopInvokedWithResult: (didPop, result) {
@@ -274,7 +265,8 @@ class _QrVisitPageState extends State<QrVisitPage> {
           if (qrState is QrVisitReady && qrGenerated) {
             // Recargar lista de visitantes después de generar QR
             // Use widget.personaId que ya fue pasado por los parámetros de navegación
-            listenerCtx.read<VisitorBloc>().add(LoadVisitors(widget.residenceId, widget.personaId > 0 ? widget.personaId : null));
+            listenerCtx.read<VisitorBloc>().add(
+                LoadVisitors(widget.residenceId, widget.personaId));
             
             // Obtener datos del usuario del AuthBloc
             final authData = getUserDataFromAuth(listenerCtx);
@@ -327,7 +319,8 @@ class _QrVisitPageState extends State<QrVisitPage> {
           builder: (ctx, vstState) {
             // Load visitors on first build using the new endpoint
             if (vstState is VisitorInitial) {
-              ctx.read<VisitorBloc>().add(LoadVisitantesVivienda());
+              ctx.read<VisitorBloc>().add(
+                  LoadVisitantesVivienda(personaId: widget.personaId));
             }
             
             return BlocBuilder<QrVisitBloc, QrVisitState>(
