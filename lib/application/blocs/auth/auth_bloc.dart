@@ -73,14 +73,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     });
 
-    on<CreateFirebaseAccountSubmitted>((event, emit) async {
+    on<CreateUserSubmitted>((event, emit) async {
       emit(AuthLoading());
       try {
         final credential = await authRepo.signUpWithEmail(
           event.email,
           event.password,
         );
-        emit(FirebaseAccountCreated(
+        emit(UserCreated(
           uid: credential.uid,
           email: credential.email ?? event.email,
         ));

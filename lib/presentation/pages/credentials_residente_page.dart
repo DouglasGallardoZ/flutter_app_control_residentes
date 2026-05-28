@@ -46,7 +46,7 @@ class _CredentialsResidentePageState extends State<CredentialsResidentePage> {
 
     setState(() => isCreating = true);
     context.read<AuthBloc>().add(
-      CreateFirebaseAccountSubmitted(
+      CreateUserSubmitted(
         email: emailCtrl.text.trim(),
         password: passwordCtrl.text,
       ),
@@ -93,7 +93,7 @@ class _CredentialsResidentePageState extends State<CredentialsResidentePage> {
         ),
         BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
-            if (state is FirebaseAccountCreated) {
+            if (state is UserCreated) {
               if (mounted) {
                 context.read<RegistroResidenteBloc>().add(
                   CrearCuentaResidente(

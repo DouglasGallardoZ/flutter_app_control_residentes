@@ -11,11 +11,11 @@ class LogoutRequested extends AuthEvent {}
 
 class CheckAuthStatus extends AuthEvent {}
 
-class CreateFirebaseAccountSubmitted extends AuthEvent {
+class CreateUserSubmitted extends AuthEvent {
   final String email;
   final String password;
 
-  CreateFirebaseAccountSubmitted({
+  CreateUserSubmitted({
     required this.email,
     required this.password,
   });
