@@ -2,15 +2,17 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:camera/camera.dart';
-import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:get_it/get_it.dart';
+import '../../domain/entities/detected_face.dart';
+import '../../domain/ports/face_detection_port.dart';
 import '../../application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
 import '../../application/blocs/facial_enrollment/facial_enrollment_event.dart';
 import '../../application/blocs/facial_enrollment/facial_enrollment_state.dart';
 import '../../domain/entities/prospecto_residente.dart';
 import '../widgets/camera_facial_view.dart';
 import 'facial_verification_page.dart';
+import '../../injection.dart';
 
 class MemberFacialEnrollmentPage extends StatefulWidget {
   final int personaId;
@@ -118,7 +120,7 @@ class _MemberFacialEnrollmentPageState
     }
   }
 
-  void _onFacesDetected(List<Face> faces) async {
+  void _onFacesDetected(List<DetectedFace> faces) async {
     if (faces.isEmpty) return;
 
     // No procesar si el registro fue exitoso o está en error
@@ -320,6 +322,7 @@ class _MemberFacialEnrollmentPageState
               // Vista de cámara
               CameraFacialView(
                 controller: _cameraController!,
+                faceDetection: sl<FaceDetectionPort>(),
                 onFacesDetected: _onFacesDetected,
               ),
 

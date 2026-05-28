@@ -1,15 +1,19 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:flutter/foundation.dart';
+import '../../domain/ports/face_detection_port.dart';
+import '../../domain/entities/detected_face.dart';
 
 class CameraFacialView extends StatefulWidget {
   final CameraController controller;
-  final Function(List<Face>)? onFacesDetected;
+  final FaceDetectionPort faceDetection;
+  final Function(List<DetectedFace>)? onFacesDetected;
 
   const CameraFacialView({
     super.key,
     required this.controller,
+    required this.faceDetection,
     this.onFacesDetected,
   });
 
@@ -18,28 +22,16 @@ class CameraFacialView extends StatefulWidget {
 }
 
 class _CameraFacialViewState extends State<CameraFacialView> {
-  late FaceDetector _faceDetector;
-  List<Face> _detectedFaces = [];
+  List<DetectedFace> _detectedFaces = [];
   bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeFaceDetector();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startImageStream();
     });
-  }
-
-  void _initializeFaceDetector() {
-    final options = FaceDetectorOptions(
-      enableLandmarks: true,
-      enableClassification: false,
-      enableTracking: true,
-      performanceMode: FaceDetectorMode.fast,
-    );
-    _faceDetector = FaceDetector(options: options);
   }
 
   void _startImageStream() {
@@ -58,13 +50,21 @@ class _CameraFacialViewState extends State<CameraFacialView> {
     }
 
     try {
-      final inputImage = _convertCameraImage(image);
-      if (inputImage == null) {
+      final bytes = _convertPlanesToBytes(image);
+      if (bytes == null) {
         _isProcessing = false;
         return;
       }
 
-      final faces = await _faceDetector.processImage(inputImage);
+      final rotation = widget.controller.description.sensorOrientation;
+
+      final faces = await widget.faceDetection.processImage(
+        bytes: bytes,
+        width: image.width,
+        height: image.height,
+        rotation: rotation,
+        bytesPerRow: image.planes[0].bytesPerRow,
+      );
 
       if (mounted) {
         setState(() => _detectedFaces = faces);
@@ -82,44 +82,16 @@ class _CameraFacialViewState extends State<CameraFacialView> {
     }
   }
 
-  InputImage? _convertCameraImage(CameraImage image) {
+  List<int>? _convertPlanesToBytes(CameraImage image) {
     try {
       final WriteBuffer allBytes = WriteBuffer();
       for (final Plane plane in image.planes) {
         allBytes.putUint8List(plane.bytes);
       }
-      final bytes = allBytes.done().buffer.asUint8List();
-
-      final sensorOrientation =
-          widget.controller.description.sensorOrientation;
-      final imageRotation = _rotationIntToImageRotation(sensorOrientation);
-
-      final inputImageData = InputImageMetadata(
-        size: Size(image.width.toDouble(), image.height.toDouble()),
-        rotation: imageRotation,
-        format: InputImageFormat.nv21,
-        bytesPerRow: image.planes[0].bytesPerRow,
-      );
-
-      return InputImage.fromBytes(bytes: bytes, metadata: inputImageData);
+      return allBytes.done().buffer.asUint8List();
     } catch (e) {
-      debugPrint('Error al convertir imagen: $e');
+      debugPrint('Error al convertir planos de imagen: $e');
       return null;
-    }
-  }
-
-  InputImageRotation _rotationIntToImageRotation(int rotation) {
-    switch (rotation) {
-      case 0:
-        return InputImageRotation.rotation0deg;
-      case 90:
-        return InputImageRotation.rotation90deg;
-      case 180:
-        return InputImageRotation.rotation180deg;
-      case 270:
-        return InputImageRotation.rotation270deg;
-      default:
-        return InputImageRotation.rotation0deg;
     }
   }
 
@@ -128,7 +100,7 @@ class _CameraFacialViewState extends State<CameraFacialView> {
     if (widget.controller.value.isStreamingImages) {
       widget.controller.stopImageStream();
     }
-    _faceDetector.close();
+    widget.faceDetection.close();
     super.dispose();
   }
 

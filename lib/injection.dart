@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 // Infrastructure - Providers
 import 'infrastructure/providers/http_client.dart';
@@ -13,6 +14,8 @@ import 'infrastructure/providers/account_api_provider.dart';
 // New Providers
 import 'infrastructure/providers/biometrics/facial_enrollment_api_impl.dart';
 import 'infrastructure/providers/biometrics/facial_verification_api_impl.dart';
+import 'infrastructure/providers/biometrics/face_detection_mobile_impl.dart';
+import 'infrastructure/providers/biometrics/face_detection_web_impl.dart';
 import 'infrastructure/providers/metrics/admin_metrics_api_impl.dart';
 import 'infrastructure/providers/person_management/resident_api_impl.dart';
 import 'infrastructure/providers/person_management/owner_api_impl.dart';
@@ -52,6 +55,7 @@ import 'domain/ports/api_auth_provider_port.dart';
 // New Ports
 import 'domain/ports/biometrics/facial_enrollment_api_port.dart';
 import 'domain/ports/biometrics/facial_verification_api_port.dart';
+import 'domain/ports/face_detection_port.dart';
 import 'domain/ports/metrics/admin_metrics_api_port.dart';
 import 'domain/ports/person_management/resident_api_port.dart';
 import 'domain/ports/person_management/owner_api_port.dart';
@@ -208,6 +212,16 @@ Future<void> inject() async {
   sl.registerLazySingleton<FacialVerificationApiPort>(
     () => FacialVerificationApiImpl(
         sl<ApiHttpClient>(instanceName: 'biometryClient').dio),
+  );
+
+  sl.registerLazySingleton<FaceDetectionPort>(
+    () {
+      if (kIsWeb) {
+        return FaceDetectionWebImpl(
+            dio: sl<ApiHttpClient>(instanceName: 'biometryClient').dio);
+      }
+      return FaceDetectionMobileImpl();
+    },
   );
 
   // New Providers - Metrics
