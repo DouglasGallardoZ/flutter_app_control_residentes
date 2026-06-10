@@ -5,6 +5,7 @@ import '../../application/blocs/resident/resident_bloc.dart';
 import '../../application/blocs/resident/resident_event.dart';
 import '../../application/blocs/resident/resident_state.dart';
 import '../widgets/admin_scaffold.dart';
+import '../widgets/responsive_layout.dart';
 
 class AdminResidentsPage extends StatefulWidget {
   final int personaId;
@@ -372,63 +373,113 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
           children: [
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _manzanaController,
-                          decoration: InputDecoration(
-                            hintText: 'Manzana',
-                            prefixIcon: const Icon(Icons.home),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+              child: ResponsiveLayout(
+                mobile: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _manzanaController,
+                            decoration: InputDecoration(
+                              hintText: 'Manzana',
+                              prefixIcon: const Icon(Icons.home),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
                           ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: _villaController,
-                          decoration: InputDecoration(
-                            hintText: 'Villa',
-                            prefixIcon: const Icon(Icons.apartment),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: _villaController,
+                            decoration: InputDecoration(
+                              hintText: 'Villa',
+                              prefixIcon: const Icon(Icons.apartment),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
                           ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.tonal(
-                          onPressed: _handleFilterByLocation,
-                          child: const Text('Buscar Residentes'),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.tonal(
+                            onPressed: _handleFilterByLocation,
+                            child: const Text('Buscar Residentes'),
+                          ),
                         ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: _clearFilters,
+                          icon: const Icon(Icons.clear),
+                          tooltip: 'Limpiar filtros',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                tablet: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _manzanaController,
+                        decoration: InputDecoration(
+                          hintText: 'Manzana',
+                          prefixIcon: const Icon(Icons.home),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        onPressed: _clearFilters,
-                        icon: const Icon(Icons.clear),
-                        tooltip: 'Limpiar filtros',
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _villaController,
+                        decoration: InputDecoration(
+                          hintText: 'Villa',
+                          prefixIcon: const Icon(Icons.apartment),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const SizedBox(width: 12),
+                    FilledButton.tonal(
+                      onPressed: _handleFilterByLocation,
+                      child: const Text('Buscar'),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: _clearFilters,
+                      icon: const Icon(Icons.clear),
+                      tooltip: 'Limpiar filtros',
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -501,6 +552,27 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
                   }
 
                   final residents = (state is ResidentsByLocationLoaded ? state.residents : <Map<String, dynamic>>[]);
+
+                  if (ResponsiveLayout.isWide(context)) {
+                    return _ResidentsDataTable(
+                      residents: residents,
+                      onDetails: (r) => _showResidentDetails(r),
+                      onBlock: (r) {
+                        final nombres = r['nombres'] ?? '';
+                        final apellidos = r['apellidos'] ?? '';
+                        final nombreCompleto = '$nombres $apellidos'.trim();
+                        final estado = r['estado'] ?? 'activo';
+                        final isBlocked = estado.toLowerCase() == 'inactivo';
+                        _showBlockDialog(r, nombreCompleto, isBlocked);
+                      },
+                      onDelete: (r) {
+                        final nombres = r['nombres'] ?? '';
+                        final apellidos = r['apellidos'] ?? '';
+                        final nombreCompleto = '$nombres $apellidos'.trim();
+                        _showDeleteDialog(r, nombreCompleto);
+                      },
+                    );
+                  }
 
                   return ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -633,4 +705,128 @@ class _DetailItem extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ResidentsDataTable extends StatelessWidget {
+  final List<Map<String, dynamic>> residents;
+  final void Function(Map<String, dynamic>) onDetails;
+  final void Function(Map<String, dynamic>) onBlock;
+  final void Function(Map<String, dynamic>) onDelete;
+
+  const _ResidentsDataTable({
+    required this.residents,
+    required this.onDetails,
+    required this.onBlock,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return PaginatedDataTable(
+      header: const Text('Residentes'),
+      columns: const [
+        DataColumn(label: Text('Nombres')),
+        DataColumn(label: Text('Apellidos')),
+        DataColumn(label: Text('Identificación')),
+        DataColumn(label: Text('Manzana')),
+        DataColumn(label: Text('Villa')),
+        DataColumn(label: Text('Correo')),
+        DataColumn(label: Text('Estado')),
+        DataColumn(label: Text('Acciones')),
+      ],
+      source: _ResidentsDataTableSource(
+        residents: residents,
+        onDetails: onDetails,
+        onBlock: onBlock,
+        onDelete: onDelete,
+      ),
+      rowsPerPage: 10,
+      showFirstLastButtons: true,
+      showCheckboxColumn: false,
+    );
+  }
+}
+
+class _ResidentsDataTableSource extends DataTableSource {
+  final List<Map<String, dynamic>> residents;
+  final void Function(Map<String, dynamic>) onDetails;
+  final void Function(Map<String, dynamic>) onBlock;
+  final void Function(Map<String, dynamic>) onDelete;
+
+  _ResidentsDataTableSource({
+    required this.residents,
+    required this.onDetails,
+    required this.onBlock,
+    required this.onDelete,
+  });
+
+  @override
+  DataRow? getRow(int index) {
+    if (index >= residents.length) return null;
+    final r = residents[index];
+    final estado = r['estado'] ?? 'activo';
+    final isBlocked = estado.toLowerCase() == 'inactivo';
+
+    return DataRow(
+      cells: [
+        DataCell(Text(r['nombres'] ?? '')),
+        DataCell(Text(r['apellidos'] ?? '')),
+        DataCell(Text(r['identificacion'] ?? '')),
+        DataCell(Text(r['manzana'] ?? '')),
+        DataCell(Text(r['villa'] ?? '')),
+        DataCell(Text(r['correo'] ?? '')),
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isBlocked ? Icons.block : Icons.check_circle,
+                size: 16,
+                color: isBlocked ? Colors.red : Colors.green,
+              ),
+              const SizedBox(width: 4),
+              Text(isBlocked ? 'Inactivo' : 'Activo'),
+            ],
+          ),
+        ),
+        DataCell(
+          PopupMenuButton<String>(
+            onSelected: (action) {
+              switch (action) {
+                case 'details':
+                  onDetails(r);
+                  break;
+                case 'block':
+                  onBlock(r);
+                  break;
+                case 'delete':
+                  onDelete(r);
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'details', child: Text('Ver detalles')),
+              PopupMenuItem(
+                value: 'block',
+                child: Text(isBlocked ? 'Reactivar' : 'Desactivar'),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Text('Eliminar', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get rowCount => residents.length;
+
+  @override
+  int get selectedRowCount => 0;
 }

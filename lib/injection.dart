@@ -136,10 +136,13 @@ import 'application/blocs/visitor/visitor_bloc.dart';
 final sl = GetIt.instance;
 
 Future<void> inject() async {
-  // Configuration
-  const String apiBaseUrl = 'http://10.0.2.2:8080/api/v1'; // API general
-  const String biometryBaseUrl =
-      'http://10.0.2.2:8000/api/v1'; // Servicio de biometría (puerto diferente)
+  final String apiBaseUrl = kIsWeb 
+    ? 'http://localhost:8080/api/v1' 
+    : 'http://10.0.2.2:8080/api/v1';
+
+  final String biometryBaseUrl = kIsWeb 
+      ? 'http://localhost:8000/api/v1' 
+      : 'http://10.0.2.2:8000/api/v1';
 
   // Firebase
   final firebaseAuth = FirebaseAuth.instance;

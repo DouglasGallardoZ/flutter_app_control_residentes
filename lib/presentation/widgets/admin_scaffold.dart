@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'responsive_layout.dart';
 
 class AdminScaffold extends StatelessWidget {
   final String title;
@@ -22,7 +23,6 @@ class AdminScaffold extends StatelessWidget {
     this.onBackPressed,
   });
 
-  /// Mapea el nombre de la ruta al índice del tab del admin
   static int _getTabIndexFromRoute(String routeName) {
     switch (routeName) {
       case '/adminDashboard':
@@ -42,64 +42,174 @@ class AdminScaffold extends StatelessWidget {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // Usar el routeName pasado explícitamente
-    final currentRoute = routeName ?? (ModalRoute.of(context)?.settings.name ?? '');
+  static const _destinations = <NavigationDestination>[
+    NavigationDestination(
+      icon: Icon(Icons.dashboard_outlined),
+      selectedIcon: Icon(Icons.dashboard),
+      label: 'Dashboard',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.history_outlined),
+      selectedIcon: Icon(Icons.history),
+      label: 'Historial',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.people_outlined),
+      selectedIcon: Icon(Icons.people),
+      label: 'Usuarios',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.person_outlined),
+      selectedIcon: Icon(Icons.person),
+      label: 'Perfil',
+    ),
+  ];
 
-    // Calcular el tab index desde el nombre de la ruta
-    final calculatedIndex = _getTabIndexFromRoute(currentRoute);
+  static const _railDestinations = <NavigationRailDestination>[
+    NavigationRailDestination(
+      icon: Icon(Icons.dashboard_outlined),
+      selectedIcon: Icon(Icons.dashboard),
+      label: Text('Dashboard'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.history_outlined),
+      selectedIcon: Icon(Icons.history),
+      label: Text('Historial'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.people_outlined),
+      selectedIcon: Icon(Icons.people),
+      label: Text('Usuarios'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.person_outlined),
+      selectedIcon: Icon(Icons.person),
+      label: Text('Perfil'),
+    ),
+  ];
 
-    debugPrint(
-      '[AdminScaffold] title=$title, currentRoute=$currentRoute, calculatedIndex=$calculatedIndex',
+  static const _drawerDestinations = [
+    (Icons.dashboard, 'Dashboard', 0),
+    (Icons.history, 'Historial', 1),
+    (Icons.people, 'Usuarios', 2),
+    (Icons.person, 'Perfil', 3),
+  ];
+
+  Widget _buildDrawer(int calculatedIndex, BuildContext context) {
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          children: [
+            DrawerHeader(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Icon(Icons.admin_panel_settings,
+                      size: 48, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(height: 8),
+                  const Text('Panel Admin',
+                      style: TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            ..._drawerDestinations.map((entry) {
+              final (icon, label, index) = entry;
+              final selected = index == calculatedIndex;
+              return ListTile(
+                leading: Icon(icon,
+                    color: selected
+                        ? Theme.of(context).colorScheme.primary
+                        : null),
+                title: Text(label,
+                    style: TextStyle(
+                        fontWeight:
+                            selected ? FontWeight.bold : FontWeight.normal)),
+                selected: selected,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onTabSelected?.call(index);
+                },
+              );
+            }),
+          ],
+        ),
+      ),
     );
+  }
 
-    // Tabs específicos para admin
-    const destinations = <NavigationDestination>[
-      NavigationDestination(
-        icon: Icon(Icons.dashboard_outlined),
-        selectedIcon: Icon(Icons.dashboard),
-        label: 'Dashboard',
-      ),
-      NavigationDestination(
-        icon: Icon(Icons.history_outlined),
-        selectedIcon: Icon(Icons.history),
-        label: 'Historial',
-      ),
-      NavigationDestination(
-        icon: Icon(Icons.people_outlined),
-        selectedIcon: Icon(Icons.people),
-        label: 'Usuarios',
-      ),
-      NavigationDestination(
-        icon: Icon(Icons.person_outlined),
-        selectedIcon: Icon(Icons.person),
-        label: 'Perfil',
-      ),
-    ];
-
+  Widget _buildWideLayout(int calculatedIndex, BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        // Mostrar botón de atrás si showBackButton es true
         automaticallyImplyLeading: showBackButton,
         leading: showBackButton
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
+                onPressed:
+                    onBackPressed ?? () => Navigator.of(context).pop(),
               )
             : null,
         elevation: 0,
         actions: actions,
       ),
-      body: body,
-      bottomNavigationBar: onTabSelected != null
-          ? NavigationBar(
+      body: Row(
+        children: [
+          if (onTabSelected != null)
+            NavigationRail(
               selectedIndex: calculatedIndex,
-              onDestinationSelected: onTabSelected,
-              destinations: destinations,
-            )
+              onDestinationSelected: onTabSelected!,
+              destinations: _railDestinations,
+              labelType: NavigationRailLabelType.all,
+            ),
+          if (onTabSelected != null) const VerticalDivider(width: 1),
+          Expanded(child: body),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(int calculatedIndex, BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        automaticallyImplyLeading: showBackButton,
+        leading: showBackButton
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed:
+                    onBackPressed ?? () => Navigator.of(context).pop(),
+              )
+            : (onTabSelected != null
+                ? Builder(
+                    builder: (ctx) => IconButton(
+                      icon: const Icon(Icons.menu),
+                      onPressed: () =>
+                          Scaffold.of(ctx).openDrawer(),
+                    ),
+                  )
+                : null),
+        elevation: 0,
+        actions: actions,
+      ),
+      drawer: onTabSelected != null
+          ? _buildDrawer(calculatedIndex, context)
           : null,
+      body: body,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentRoute =
+        routeName ?? (ModalRoute.of(context)?.settings.name ?? '');
+    final calculatedIndex = _getTabIndexFromRoute(currentRoute);
+
+    return ResponsiveLayout(
+      mobile: _buildMobileLayout(calculatedIndex, context),
+      tablet: _buildWideLayout(calculatedIndex, context),
+      desktop: _buildWideLayout(calculatedIndex, context),
     );
   }
 }
