@@ -1,24 +1,22 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:camera/camera.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:get_it/get_it.dart';
-import '../../domain/entities/detected_face.dart';
-import '../../domain/ports/face_detection_port.dart';
 import '../../application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
 import '../../application/blocs/facial_enrollment/facial_enrollment_event.dart';
 import '../../application/blocs/facial_enrollment/facial_enrollment_state.dart';
 import '../../domain/entities/prospecto_residente.dart';
-import '../widgets/camera_facial_view.dart';
+import '../widgets/facial_capture/facial_capture_view.dart';
+import '../widgets/responsive_layout.dart';
+import '../../domain/ports/face_detection_port.dart';
 import 'facial_verification_page.dart';
 import '../../injection.dart';
 
-class MemberFacialEnrollmentPage extends StatefulWidget {
+class MemberFacialEnrollmentPage extends StatelessWidget {
   final int personaId;
   final String nombres;
   final String apellidos;
-  final String? type; // 'member'
+  final String type;
 
   const MemberFacialEnrollmentPage({
     super.key,
@@ -29,16 +27,41 @@ class MemberFacialEnrollmentPage extends StatefulWidget {
   });
 
   @override
-  State<MemberFacialEnrollmentPage> createState() =>
-      _MemberFacialEnrollmentPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider<FacialEnrollmentBloc>(
+      create: (_) => sl<FacialEnrollmentBloc>(),
+      child: _MemberFacialEnrollmentView(
+        personaId: personaId,
+        nombres: nombres,
+        apellidos: apellidos,
+        type: type,
+      ),
+    );
+  }
 }
 
-class _MemberFacialEnrollmentPageState
-    extends State<MemberFacialEnrollmentPage> {
+class _MemberFacialEnrollmentView extends StatefulWidget {
+  final int personaId;
+  final String nombres;
+  final String apellidos;
+  final String type;
+
+  const _MemberFacialEnrollmentView({
+    required this.personaId,
+    required this.nombres,
+    required this.apellidos,
+    required this.type,
+  });
+
+  @override
+  State<_MemberFacialEnrollmentView> createState() =>
+      _MemberFacialEnrollmentViewState();
+}
+
+class _MemberFacialEnrollmentViewState
+    extends State<_MemberFacialEnrollmentView> {
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
-  DateTime? _lastCaptureTime;
-  double _currentAngle = 0.0;  // Para mostrar el ángulo en tiempo real
 
   @override
   void initState() {
@@ -46,7 +69,7 @@ class _MemberFacialEnrollmentPageState
     _initializeCamera();
   }
 
-  Future<void> _disposeCameraIfSuccess() async {
+  Future<void> _disposeCamera() async {
     try {
       if (_cameraController != null && _cameraController!.value.isInitialized) {
         await _cameraController!.dispose();
@@ -72,7 +95,6 @@ class _MemberFacialEnrollmentPageState
         return;
       }
 
-      // Preferir cámara frontal
       final camera = cameras.firstWhere(
         (c) => c.lensDirection == CameraLensDirection.front,
         orElse: () => cameras.first,
@@ -88,10 +110,8 @@ class _MemberFacialEnrollmentPageState
 
       if (mounted) {
         setState(() => _isCameraInitialized = true);
-
-        // Iniciar el BLoC con el registro facial
         context.read<FacialEnrollmentBloc>().add(
-              InitiateFacialEnrollment(personaId: widget.personaId.toString()),
+              EnrollmentStarted(personaId: widget.personaId.toString()),
             );
       }
     } catch (e) {
@@ -106,368 +126,570 @@ class _MemberFacialEnrollmentPageState
     }
   }
 
-  Future<String> _captureImage() async {
-    try {
-      final image = await _cameraController!.takePicture();
-      final directory = await getTemporaryDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final path = '${directory.path}/facial_enrollment_$timestamp.jpg';
-      await File(image.path).copy(path);
-      return path;
-    } catch (e) {
-      debugPrint('Error capturando imagen: $e');
-      return '';
-    }
-  }
-
-  void _onFacesDetected(List<DetectedFace> faces) async {
-    if (faces.isEmpty) return;
-
-    // No procesar si el registro fue exitoso o está en error
-    final state = context.read<FacialEnrollmentBloc>().state;
-    if (state is FacialEnrollmentSuccess || state is FacialEnrollmentError) {
-      return;
-    }
-
-    final face = faces[0];
-    final angle = face.headEulerAngleY ?? 0.0;
-    
-    // Actualizar ángulo en tiempo real
-    setState(() {
-      _currentAngle = angle;
-    });
-    
-    // Debug: mostrar ángulo en consola
-    print('Ángulo detectado: ${angle.toStringAsFixed(2)}°');
-
-    // Throttle para no capturar muy frecuente
-    final now = DateTime.now();
-    if (_lastCaptureTime != null &&
-        now.difference(_lastCaptureTime!).inMilliseconds < 800) {
-      return;
-    }
-    _lastCaptureTime = now;
-
-    // Capturar imagen
-    final imagePath = await _captureImage();
-
-    if (imagePath.isNotEmpty && mounted) {
-      context.read<FacialEnrollmentBloc>().add(
-            FaceDetected(
-              eulerAngleY: angle,
-              imagePath: imagePath,
-            ),
-          );
-    }
+  void _onFaceCaptured(Uint8List bytes, FaceAngle angle) {
+    context.read<FacialEnrollmentBloc>().add(
+          FaceCaptured(bytes: bytes, angle: angle),
+        );
   }
 
   @override
   void dispose() {
-    _disposeCameraIfSuccess();
+    _disposeCamera();
     super.dispose();
+  }
+
+  void _mostrarDialogoExito(FacialEnrollmentSuccess state) {
+    _disposeCamera();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: const Text('¡Validación Facial Exitosa!'),
+          content: Text(state.mensaje),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                final prospectoMiembro = ProspectoMiembro(
+                  existe: true,
+                  personaEncontrada: true,
+                  personaId: widget.personaId,
+                  nombres: widget.nombres,
+                  apellidos: widget.apellidos,
+                );
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (_) => FacialVerificationPage(
+                        prospecto: prospectoMiembro),
+                  ),
+                );
+              },
+              child: const Text('Continuar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _mostrarDialogoError(FacialEnrollmentError state) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: const Text('Error en Captura Facial'),
+          content: Text(state.mensaje),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                context
+                    .read<FacialEnrollmentBloc>()
+                    .add(const EnrollmentResubmit());
+              },
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    return BlocConsumer<FacialEnrollmentBloc, FacialEnrollmentState>(
+      listener: (context, state) {
+        if (state is FacialEnrollmentSuccess) {
+          _mostrarDialogoExito(state);
+        } else if (state is FacialEnrollmentError) {
+          _mostrarDialogoError(state);
+        }
+      },
+      builder: (context, state) => _buildContent(state),
+    );
+  }
+
+  Widget _buildContent(FacialEnrollmentState state) {
+    if (!_isCameraInitialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state is FacialEnrollmentSubmitting) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('PROCESANDO BIOMETRÍA...',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      );
+    }
+
+    if (state is FacialEnrollmentSuccess) {
+      return const SizedBox.shrink();
+    }
+
+    final Map<FaceAngle, Uint8List?> imagenes =
+        state is FacialEnrollmentInProgress
+            ? state.imagenes
+            : <FaceAngle, Uint8List?>{};
+    final poseActual = state is FacialEnrollmentInProgress
+        ? state.poseActual
+        : FaceAngle.front;
+    final instruccion = state is FacialEnrollmentInProgress
+        ? state.instruccion
+        : 'MIRE AL FRENTE';
+    final fotosCapturadas =
+        imagenes.values.where((i) => i != null).length;
+    final hayError = state is FacialEnrollmentError;
+
+    final cameraView = FacialCaptureView(
+      controller: _cameraController!,
+      faceDetection: sl<FaceDetectionPort>(),
+      onFaceCaptured: _onFaceCaptured,
+    );
+
+    final panelDeControl = _EnrollmentSidePanel(
+      title: 'Validación Facial',
+      subtitle: '${widget.nombres} ${widget.apellidos}',
+      imagenes: imagenes,
+      poseActual: poseActual,
+      instruccion: instruccion,
+      fotosCapturadas: fotosCapturadas,
+      hayError: hayError,
+      onCerrar: () => Navigator.of(context).pop(),
+      onReintentar: hayError
+          ? () {
+              context
+                  .read<FacialEnrollmentBloc>()
+                  .add(const EnrollmentResubmit());
+            }
+          : null,
+    );
+
+    if (ResponsiveLayout.isDesktop(context)) {
+      return _buildDesktopLayout(cameraView, panelDeControl);
+    }
+
+    return _buildMobileLayout(
+        cameraView, imagenes, poseActual, instruccion,
+        fotosCapturadas, hayError);
+  }
+
+  Widget _buildDesktopLayout(Widget cameraView, Widget sidePanel) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Validación Facial - ${widget.nombres} ${widget.apellidos}'),
-        centerTitle: true,
+        title: Text(
+            'Validación Facial - ${widget.nombres} ${widget.apellidos}'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: BlocConsumer<FacialEnrollmentBloc, FacialEnrollmentState>(
-        listener: (context, state) {
-          if (state is FacialEnrollmentSuccess) {
-            // Cerrar la cámara cuando el registro es exitoso
-            _disposeCameraIfSuccess();
-            
-            // Mostrar diálogo de éxito
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (dialogContext) => WillPopScope(
-                onWillPop: () async => false, // Evitar cerrar con back
-                child: AlertDialog(
-                  title: const Text('¡Validación Facial Exitosa!'),
-                  content: Text(state.mensaje),
-                  actions: [
-                    TextButton(
-                      onPressed: () async {
-                        // Cerrar el diálogo
-                        if (mounted && Navigator.of(dialogContext).canPop()) {
-                          Navigator.of(dialogContext).pop();
-                        }
-                        
-                        // Pequeña pausa para actualizar el estado
-                        await Future.delayed(const Duration(milliseconds: 100));
-                        
-                        if (mounted) {
-                          // Crear ProspectoMiembro para pasar a facial_verification_page
-                          final prospectoMiembro = ProspectoMiembro(
-                            existe: true,
-                            personaEncontrada: true,
-                            personaId: widget.personaId,
-                            nombres: widget.nombres,
-                            apellidos: widget.apellidos,
-                          );
-                          
-                          // Navegar a facial_verification_page para verificar el rostro
-                          if (mounted) {
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(
-                                builder: (context) => FacialVerificationPage(
-                                  prospecto: prospectoMiembro,
-                                ),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      child: const Text('Continuar'),
-                    ),
-                  ],
-                ),
+      body: Row(
+        children: [
+          Expanded(flex: 3, child: cameraView),
+          const VerticalDivider(width: 1),
+          SizedBox(width: 320, child: sidePanel),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(
+    Widget cameraView,
+    Map<FaceAngle, Uint8List?> imagenes,
+    FaceAngle poseActual,
+    String instruccion,
+    int fotosCapturadas,
+    bool hayError,
+  ) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+            'Validación Facial - ${widget.nombres} ${widget.apellidos}'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: Stack(
+        children: [
+          cameraView,
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            left: 8,
+            right: 8,
+            child: _buildMobilePoseIndicators(imagenes, poseActual),
+          ),
+          Positioned(
+            bottom: 80,
+            left: 16,
+            right: 16,
+            child: _buildMobileInstruction(
+                instruccion, fotosCapturadas),
+          ),
+          Positioned(
+            bottom: 20,
+            left: 16,
+            child: FloatingActionButton(
+              heroTag: 'close_member',
+              backgroundColor: Colors.red.shade700,
+              mini: true,
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Icon(Icons.close),
+            ),
+          ),
+          if (hayError)
+            Positioned(
+              bottom: 20,
+              right: 16,
+              child: FloatingActionButton(
+                heroTag: 'retry_member',
+                backgroundColor: Colors.orange,
+                mini: true,
+                onPressed: () {
+                  context
+                      .read<FacialEnrollmentBloc>()
+                      .add(const EnrollmentResubmit());
+                },
+                child: const Icon(Icons.refresh),
               ),
-            );
-          } else if (state is FacialEnrollmentError) {
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (dialogContext) => WillPopScope(
-                onWillPop: () async => false,
-                child: AlertDialog(
-                  title: const Text('Error en Captura Facial'),
-                  content: Text(state.mensaje),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        if (mounted && Navigator.of(dialogContext).canPop()) {
-                          Navigator.of(dialogContext).pop(); // Cerrar diálogo
-                        }
-                        // Reintentar
-                        context.read<FacialEnrollmentBloc>().add(
-                              RetryFacialEnrollment(),
-                            );
-                      },
-                      child: const Text('Reintentar'),
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        if (mounted && Navigator.of(dialogContext).canPop()) {
-                          Navigator.of(dialogContext).pop(); // Cerrar diálogo
-                        }
-                        
-                        // Esperar a que se cierre completamente
-                        await Future.delayed(const Duration(milliseconds: 300));
-                        
-                        if (mounted && Navigator.of(context).canPop()) {
-                          Navigator.of(context).pop(); // Volver atrás
-                        }
-                      },
-                      child: const Text('Cancelar'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (!_isCameraInitialized) {
-            return const Center(child: CircularProgressIndicator());
-          }
+            ),
+        ],
+      ),
+    );
+  }
 
-          if (state is FacialEnrollmentSubmitting) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    'PROCESANDO BIOMETRÍA...',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // Cuando el registro es exitoso, mostrar un widget vacío
-          // El diálogo de éxito se muestra en el listener
-          if (state is FacialEnrollmentSuccess) {
-            return Container();
-          }
-
-          String instruction = 'MIRE AL FRENTE';
-          int progress = 0;
-          bool showRetryButton = false;
-
-          if (state is FacialEnrollmentInProgress) {
-            instruction = state.instruccion;
-            progress = state.fotosCapturadas;
-          } else if (state is FacialPhotoCaptured) {
-            progress = state.fotoNumero;
-          } else if (state is FacialEnrollmentError) {
-            showRetryButton = true;
-          }
-
-          return Stack(
+  Widget _buildMobilePoseIndicators(
+      Map<FaceAngle, Uint8List?> imagenes, FaceAngle poseActual) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: FaceAngle.values.map((angulo) {
+        final capturada = imagenes[angulo] != null;
+        final esActual = angulo == poseActual;
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Vista de cámara
-              CameraFacialView(
-                controller: _cameraController!,
-                faceDetection: sl<FaceDetectionPort>(),
-                onFacesDetected: _onFacesDetected,
-              ),
-
-              // Barra de progreso (superior)
-              Positioned(
-                top: 20,
-                left: 16,
-                right: 16,
-                child: _buildProgressBar(progress),
-              ),
-
-              // Banner de instrucciones (inferior)
-              Positioned(
-                bottom: 40,
-                left: 16,
-                right: 16,
-                child: _buildInstructionBanner(instruction),
-              ),
-
-              // Contador de fotos
-              Positioned(
-                top: 80,
-                right: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Foto ${progress}/3',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Ángulo: ${_currentAngle.toStringAsFixed(1)}°',
-                        style: TextStyle(
-                          color: _currentAngle.abs() < 15
-                              ? Colors.greenAccent
-                              : Colors.orangeAccent,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black.withValues(alpha: 0.55),
+                  border: Border.all(
+                    color: esActual && !capturada
+                        ? Colors.cyanAccent
+                        : Colors.transparent,
+                    width: 2,
                   ),
                 ),
+                child: Center(
+                  child: capturada
+                      ? const Icon(Icons.check,
+                          color: Colors.greenAccent, size: 22)
+                      : Icon(_iconoPose(angulo),
+                          color: esActual ? Colors.cyanAccent : Colors.white54,
+                          size: 20),
+                ),
               ),
-
-              // Botones de acción (cancelar/reintentar)
-              Positioned(
-                bottom: 20,
-                left: 16,
-                right: 16,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    FloatingActionButton(
-                      backgroundColor: Colors.red.shade700,
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: const Icon(Icons.close),
-                    ),
-                    if (showRetryButton)
-                      FloatingActionButton(
-                        backgroundColor: Colors.orange,
-                        onPressed: () {
-                          // Reiniciar captura
-                          context.read<FacialEnrollmentBloc>().add(
-                                RetryFacialEnrollment(),
-                              );
-                        },
-                        child: const Icon(Icons.refresh),
-                      ),
+              const SizedBox(height: 2),
+              Text(
+                _etiquetaPose(angulo),
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 10,
+                  fontWeight:
+                      esActual ? FontWeight.bold : FontWeight.normal,
+                  shadows: const [
+                    Shadow(color: Colors.black, blurRadius: 4)
                   ],
                 ),
               ),
             ],
-          );
-        },
-      ),
-    );
-  }
-
-  /// Barra de progreso con 3 segmentos
-  Widget _buildProgressBar(int progress) {
-    return Row(
-      children: List.generate(
-        3,
-        (index) => Expanded(
-          child: Container(
-            height: 8,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(
-              color: index < progress ? Colors.green : Colors.grey.shade400,
-              borderRadius: BorderRadius.circular(4),
-            ),
           ),
-        ),
-      ),
+        );
+      }).toList(),
     );
   }
 
-  /// Banner con instrucciones
-  Widget _buildInstructionBanner(String instruction) {
+  Widget _buildMobileInstruction(
+      String instruccion, int fotosCapturadas) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black87,
+        color: Colors.black.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.cyan, width: 2),
+        border: Border.all(
+            color: Colors.cyanAccent.withValues(alpha: 0.6), width: 1.5),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            instruction,
+            instruccion,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Mantenga el rostro centrado en la pantalla',
+          const SizedBox(height: 4),
+          Text(
+            '$fotosCapturadas/3 capturas',
             style: TextStyle(
-              color: Colors.grey,
-              fontSize: 12,
-            ),
-            textAlign: TextAlign.center,
+                color: Colors.cyanAccent.withValues(alpha: 0.9),
+                fontSize: 12),
           ),
         ],
       ),
     );
+  }
+
+  IconData _iconoPose(FaceAngle angulo) {
+    switch (angulo) {
+      case FaceAngle.front:
+        return Icons.face;
+      case FaceAngle.left:
+        return Icons.arrow_back;
+      case FaceAngle.right:
+        return Icons.arrow_forward;
+    }
+  }
+
+  String _etiquetaPose(FaceAngle angulo) {
+    switch (angulo) {
+      case FaceAngle.front:
+        return 'FRENTE';
+      case FaceAngle.left:
+        return 'IZQ.';
+      case FaceAngle.right:
+        return 'DER.';
+    }
+  }
+}
+
+class _EnrollmentSidePanel extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final Map<FaceAngle, Uint8List?> imagenes;
+  final FaceAngle poseActual;
+  final String instruccion;
+  final int fotosCapturadas;
+  final bool hayError;
+  final VoidCallback onCerrar;
+  final VoidCallback? onReintentar;
+
+  const _EnrollmentSidePanel({
+    required this.title,
+    required this.subtitle,
+    required this.imagenes,
+    required this.poseActual,
+    required this.instruccion,
+    required this.fotosCapturadas,
+    required this.hayError,
+    required this.onCerrar,
+    this.onReintentar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      color: theme.colorScheme.surfaceContainerLow,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: theme.hintColor),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Complete las 3 capturas requeridas',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.hintColor),
+              ),
+              const SizedBox(height: 32),
+              _buildPoseSteps(theme),
+              const SizedBox(height: 32),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.secondaryContainer
+                      .withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      instruccion,
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: fotosCapturadas / 3,
+                      minHeight: 8,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$fotosCapturadas de 3 poses capturadas',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: theme.hintColor),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              if (hayError)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline,
+                          color: theme.colorScheme.error, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Ocurrió un error en la captura',
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const Divider(),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onCerrar,
+                      icon: const Icon(Icons.close),
+                      label: const Text('Salir'),
+                    ),
+                  ),
+                  if (onReintentar != null) ...[
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: onReintentar,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Reintentar'),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPoseSteps(ThemeData theme) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: FaceAngle.values.map((angulo) {
+        final capturada = imagenes[angulo] != null;
+        final esActual = angulo == poseActual;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: capturada
+                    ? Colors.green
+                    : (esActual
+                        ? Colors.blue.shade100
+                        : Colors.grey.shade200),
+                border: Border.all(
+                  color: esActual ? Colors.blue : Colors.transparent,
+                  width: 2.5,
+                ),
+              ),
+              child: Center(
+                child: capturada
+                    ? const Icon(Icons.check, color: Colors.white, size: 30)
+                    : Icon(_icono(angulo),
+                        size: 28,
+                        color: esActual ? Colors.blue : Colors.grey),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _etiqueta(angulo),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight:
+                    esActual ? FontWeight.bold : FontWeight.normal,
+                color: capturada ? Colors.green : Colors.grey.shade700,
+              ),
+            ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  IconData _icono(FaceAngle a) {
+    switch (a) {
+      case FaceAngle.front:
+        return Icons.face;
+      case FaceAngle.left:
+        return Icons.arrow_back;
+      case FaceAngle.right:
+        return Icons.arrow_forward;
+    }
+  }
+
+  String _etiqueta(FaceAngle a) {
+    switch (a) {
+      case FaceAngle.front:
+        return 'FRENTE';
+      case FaceAngle.left:
+        return 'IZQUIERDA';
+      case FaceAngle.right:
+        return 'DERECHA';
+    }
   }
 }

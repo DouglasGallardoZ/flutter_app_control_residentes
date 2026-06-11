@@ -1,37 +1,41 @@
 import 'package:dio/dio.dart';
 import '../../domain/entities/prospecto_residente.dart';
-import '../../core/constants/api_constants.dart';
 
 class AccountApiProvider {
   final Dio dio;
 
   AccountApiProvider({required this.dio});
 
-  Future<ProspectoResidente> validarProspectoResidente(String identificacion) async {
+  Future<ProspectoResidente> validarProspectoResidente(
+      String identificacion) async {
     try {
       final response = await dio.get(
-        '${ApiConstants.baseUrl}${ApiConstants.cuentasEndpoint}/prospecto/residente/$identificacion',
+        '/cuentas/prospecto/residente/$identificacion',
       );
       return ProspectoResidente.fromJson(response.data);
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
-        throw Exception(e.response?.data['detail'] ?? 'Prospecto no encontrado');
+        throw Exception(e.response?.data['detail'] ??
+            'Prospecto no encontrado');
       } else if (e.response?.statusCode == 409) {
-        throw Exception(e.response?.data['detail'] ?? 'Esta persona ya tiene una cuenta creada');
+        throw Exception(e.response?.data['detail'] ??
+            'Esta persona ya tiene una cuenta creada');
       }
       rethrow;
     }
   }
 
-  Future<ProspectoMiembro> validarProspectoMiembro(String identificacion) async {
+  Future<ProspectoMiembro> validarProspectoMiembro(
+      String identificacion) async {
     try {
       final response = await dio.get(
-        '${ApiConstants.baseUrl}${ApiConstants.cuentasEndpoint}/prospecto/miembro/$identificacion',
+        '/cuentas/prospecto/miembro/$identificacion',
       );
       return ProspectoMiembro.fromJson(response.data);
     } on DioException catch (e) {
       if (e.response?.statusCode == 409) {
-        throw Exception(e.response?.data['detail'] ?? 'Esta persona ya tiene una cuenta creada');
+        throw Exception(e.response?.data['detail'] ??
+            'Esta persona ya tiene una cuenta creada');
       }
       rethrow;
     }
@@ -44,7 +48,7 @@ class AccountApiProvider {
   }) async {
     try {
       final response = await dio.post(
-        '${ApiConstants.baseUrl}${ApiConstants.cuentasEndpoint}/residente/firebase',
+        '/cuentas/residente/firebase',
         data: {
           'persona_id': personaId,
           'firebase_uid': firebaseUid,
@@ -55,11 +59,14 @@ class AccountApiProvider {
       return CuentaResponse.fromJson(response.data);
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
-        throw Exception(e.response?.data['detail'] ?? 'Residente no encontrado');
+        throw Exception(
+            e.response?.data['detail'] ?? 'Residente no encontrado');
       } else if (e.response?.statusCode == 409) {
-        throw Exception(e.response?.data['detail'] ?? 'Cuenta ya existe para este residente');
+        throw Exception(
+            e.response?.data['detail'] ?? 'Cuenta ya existe para este residente');
       } else if (e.response?.statusCode == 400) {
-        throw Exception(e.response?.data['detail'] ?? 'Persona no es residente activo');
+        throw Exception(
+            e.response?.data['detail'] ?? 'Persona no es residente activo');
       }
       rethrow;
     }
@@ -72,7 +79,7 @@ class AccountApiProvider {
   }) async {
     try {
       final response = await dio.post(
-        '${ApiConstants.baseUrl}${ApiConstants.cuentasEndpoint}/miembro/firebase',
+        '/cuentas/miembro/firebase',
         data: {
           'persona_id': personaId,
           'firebase_uid': firebaseUid,
@@ -83,11 +90,14 @@ class AccountApiProvider {
       return CuentaResponse.fromJson(response.data);
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
-        throw Exception(e.response?.data['detail'] ?? 'Miembro no encontrado');
+        throw Exception(
+            e.response?.data['detail'] ?? 'Miembro no encontrado');
       } else if (e.response?.statusCode == 409) {
-        throw Exception(e.response?.data['detail'] ?? 'Cuenta ya existe para este miembro');
+        throw Exception(
+            e.response?.data['detail'] ?? 'Cuenta ya existe para este miembro');
       } else if (e.response?.statusCode == 400) {
-        throw Exception(e.response?.data['detail'] ?? 'Persona no es miembro activo');
+        throw Exception(
+            e.response?.data['detail'] ?? 'Persona no es miembro activo');
       }
       rethrow;
     }

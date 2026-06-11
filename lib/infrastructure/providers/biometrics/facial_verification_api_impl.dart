@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import '../../../domain/ports/biometrics/facial_verification_api_port.dart';
 
@@ -9,17 +10,15 @@ class FacialVerificationApiImpl implements FacialVerificationApiPort {
   @override
   Future<Map<String, dynamic>> verificarFacial({
     required int personaId,
-    required String fotoPath,
+    required Uint8List fotoBytes,
   }) async {
     try {
       final formData = FormData();
 
-      // Agregar persona ID
       formData.fields.add(MapEntry('persona_id', personaId.toString()));
 
-      // Agregar imagen
-      final archivo = await MultipartFile.fromFile(
-        fotoPath,
+      final archivo = MultipartFile.fromBytes(
+        fotoBytes,
         filename: 'face.jpg',
       );
       formData.files.add(MapEntry('image', archivo));
@@ -35,16 +34,14 @@ class FacialVerificationApiImpl implements FacialVerificationApiPort {
         'personaId': response.data['persona_id'],
       };
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(_extraerMensajeError(e));
     }
   }
 
-  /// Método auxiliar para extraer errores detallados de la respuesta API
-  String _extractErrorMessage(dynamic error) {
+  String _extraerMensajeError(dynamic error) {
     if (error is DioException && error.response != null) {
       final data = error.response?.data;
       if (data is Map) {
-        // Intenta extraer el field 'detail' primero
         if (data.containsKey('detail')) {
           final detail = data['detail'];
           if (detail is String) return detail;
@@ -55,7 +52,6 @@ class FacialVerificationApiImpl implements FacialVerificationApiPort {
             }
           }
         }
-        // Si hay 'message', usa eso
         if (data.containsKey('message')) {
           return data['message'] ?? 'Error desconocido';
         }

@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import '../../../domain/ports/biometrics/facial_enrollment_api_port.dart';
 
@@ -9,23 +10,20 @@ class FacialEnrollmentApiImpl implements FacialEnrollmentApiPort {
   @override
   Future<Map<String, dynamic>> enrollFacialData({
     required String personaId,
-    required List<String> imagenesRutas,
+    required List<Uint8List> imagenesBytes,
     String? usuarioCreado,
   }) async {
     try {
       final formData = FormData();
 
-      // Agregar persona ID como persona_id
       formData.fields.add(MapEntry('persona_id', personaId));
 
-      // Agregar usuario_creado para auditoría
       formData.fields
           .add(MapEntry('usuario_creado', usuarioCreado ?? 'flutter_app'));
 
-      // Agregar cada imagen
-      for (int i = 0; i < imagenesRutas.length; i++) {
-        final archivo = await MultipartFile.fromFile(
-          imagenesRutas[i],
+      for (int i = 0; i < imagenesBytes.length; i++) {
+        final archivo = MultipartFile.fromBytes(
+          imagenesBytes[i],
           filename: 'face_$i.jpg',
         );
         formData.files.add(MapEntry('images', archivo));
@@ -37,16 +35,14 @@ class FacialEnrollmentApiImpl implements FacialEnrollmentApiPort {
       );
       return response.data ?? {};
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(_extraerMensajeError(e));
     }
   }
 
-  /// Método auxiliar para extraer errores detallados de la respuesta API
-  String _extractErrorMessage(dynamic error) {
+  String _extraerMensajeError(dynamic error) {
     if (error is DioException && error.response != null) {
       final data = error.response?.data;
       if (data is Map) {
-        // Intenta extraer el field 'detail' primero
         if (data.containsKey('detail')) {
           final detail = data['detail'];
           if (detail is String) return detail;
@@ -57,7 +53,6 @@ class FacialEnrollmentApiImpl implements FacialEnrollmentApiPort {
             }
           }
         }
-        // Si hay 'message', usa eso
         if (data.containsKey('message')) {
           return data['message'] ?? 'Error desconocido';
         }

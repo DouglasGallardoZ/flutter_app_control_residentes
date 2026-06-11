@@ -20,7 +20,7 @@ class FacialVerificationBloc
     try {
       final response = await verificationApi.verificarFacial(
         personaId: event.personaId,
-        fotoPath: event.fotoPath,
+        fotoBytes: event.fotoBytes,
       );
 
       final match = response['match'] as bool? ?? false;

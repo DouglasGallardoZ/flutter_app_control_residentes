@@ -1,4 +1,7 @@
+import 'dart:typed_data';
 import 'package:equatable/equatable.dart';
+
+enum FaceAngle { front, left, right }
 
 abstract class FacialEnrollmentEvent extends Equatable {
   const FacialEnrollmentEvent();
@@ -7,45 +10,41 @@ abstract class FacialEnrollmentEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Inicia el proceso de registro facial
-class InitiateFacialEnrollment extends FacialEnrollmentEvent {
+class EnrollmentStarted extends FacialEnrollmentEvent {
   final String personaId;
 
-  const InitiateFacialEnrollment({required this.personaId});
+  const EnrollmentStarted({required this.personaId});
 
   @override
   List<Object?> get props => [personaId];
 }
 
-/// Se detectó un rostro en la cámara
-class FaceDetected extends FacialEnrollmentEvent {
-  final double eulerAngleY; // Ángulo de rotación de cabeza
-  final String imagePath; // Ruta de la imagen capturada
+class FaceCaptured extends FacialEnrollmentEvent {
+  final Uint8List bytes;
+  final FaceAngle angle;
 
-  const FaceDetected({
-    required this.eulerAngleY,
-    required this.imagePath,
+  const FaceCaptured({
+    required this.bytes,
+    required this.angle,
   });
 
   @override
-  List<Object?> get props => [eulerAngleY, imagePath];
+  List<Object?> get props => [bytes, angle];
 }
 
-/// Enviar datos de biometría al servidor
-class SubmitFacialEnrollment extends FacialEnrollmentEvent {
-  final List<String> imagenesRutas; // 3 rutas de imágenes
-  final String? usuarioCreado; // Usuario que realiza el registro
+class EnrollmentSubmitted extends FacialEnrollmentEvent {
+  final String? usuarioCreado;
 
-  const SubmitFacialEnrollment({
-    required this.imagenesRutas,
-    this.usuarioCreado,
-  });
+  const EnrollmentSubmitted({this.usuarioCreado});
 
   @override
-  List<Object?> get props => [imagenesRutas, usuarioCreado];
+  List<Object?> get props => [usuarioCreado];
 }
 
-/// Reintentar captura
-class RetryFacialEnrollment extends FacialEnrollmentEvent {
-  const RetryFacialEnrollment();
+class EnrollmentRetried extends FacialEnrollmentEvent {
+  const EnrollmentRetried();
+}
+
+class EnrollmentResubmit extends FacialEnrollmentEvent {
+  const EnrollmentResubmit();
 }
