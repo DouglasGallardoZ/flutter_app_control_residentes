@@ -31,6 +31,20 @@ class _CredentialsResidentePageState extends State<CredentialsResidentePage> {
   bool showPassword = false;
   bool isCreating = false;
 
+  late final bool _isEmailReadOnly;
+
+  @override
+  void initState() {
+    super.initState();
+    final correo = widget.prospecto.correo;
+    if (correo != null && correo.isNotEmpty) {
+      emailCtrl.text = correo;
+      _isEmailReadOnly = true;
+    } else {
+      _isEmailReadOnly = false;
+    }
+  }
+
   @override
   void dispose() {
     emailCtrl.dispose();
@@ -163,6 +177,7 @@ class _CredentialsResidentePageState extends State<CredentialsResidentePage> {
                           const SizedBox(height: 32),
                           TextFormField(
                             controller: emailCtrl,
+                            enabled: !_isEmailReadOnly,
                             keyboardType: TextInputType.emailAddress,
                             decoration: const InputDecoration(
                               labelText: 'Correo Electrónico',
