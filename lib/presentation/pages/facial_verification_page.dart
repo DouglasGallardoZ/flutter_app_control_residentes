@@ -5,9 +5,13 @@ import 'package:camera/camera.dart';
 import '../../domain/entities/prospecto_residente.dart';
 import '../../application/blocs/registro_residente/registro_residente_bloc.dart';
 import '../../application/blocs/registro_residente/registro_residente_event.dart';
+import '../../application/blocs/facial_enrollment/facial_enrollment_event.dart';
 import '../../application/blocs/facial_verification/facial_verification_bloc.dart';
 import '../../application/blocs/facial_verification/facial_verification_event.dart';
 import '../../application/blocs/facial_verification/facial_verification_state.dart';
+import '../widgets/facial_capture/facial_capture_view.dart';
+import '../widgets/facial_capture/facial_capture_mobile.dart';
+import '../../domain/ports/face_detection_port.dart';
 import '../../injection.dart';
 
 class FacialVerificationPage extends StatelessWidget {
@@ -18,7 +22,8 @@ class FacialVerificationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<FacialVerificationBloc>(
-      create: (_) => sl<FacialVerificationBloc>(),
+      create: (_) => sl<FacialVerificationBloc>()
+        ..add(IniciarVerificacionLiveness()),
       child: _FacialVerificationView(prospecto: prospecto),
     );
   }
@@ -37,7 +42,6 @@ class _FacialVerificationView extends StatefulWidget {
 class _FacialVerificationViewState extends State<_FacialVerificationView> {
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
-  bool _isVerifying = false;
   String? _ultimaFotoPath;
 
   String get _tipoRegistro {
@@ -73,11 +77,15 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
   Future<void> _disposeCamera() async {
     try {
       if (_cameraController != null && _cameraController!.value.isInitialized) {
+        _detenerStreamCamara();
         await _cameraController!.dispose();
-        _cameraController = null;
       }
     } catch (e) {
       debugPrint('Error cerrando cámara: $e');
+    } finally {
+      _cameraController = null;
+      _isCameraInitialized = false;
+      if (mounted) setState(() {});
     }
   }
 
@@ -124,13 +132,13 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
     }
   }
 
-  Future<void> _captureFoto() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+  Future<void> _enviarFotoAlServidor() async {
+    if (_cameraController == null) return;
+    try {
+      if (!_cameraController!.value.isInitialized) return;
+    } catch (_) {
       return;
     }
-    if (_isVerifying) return;
-
-    setState(() => _isVerifying = true);
 
     try {
       final photo = await _cameraController!.takePicture();
@@ -153,9 +161,16 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
             backgroundColor: Colors.red,
           ),
         );
-        setState(() => _isVerifying = false);
       }
     }
+  }
+
+  void _detenerStreamCamara() {
+    try {
+      if (_cameraController?.value.isStreamingImages == true) {
+        _cameraController?.stopImageStream();
+      }
+    } catch (_) {}
   }
 
   void _mostrarResultado({
@@ -193,7 +208,9 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
             TextButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
-                setState(() => _isVerifying = false);
+                context
+                    .read<FacialVerificationBloc>()
+                    .add(IniciarVerificacionLiveness());
               },
               child: const Text('Reintentar'),
             ),
@@ -225,12 +242,42 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
     );
   }
 
+  void _onFrameProcessed(FrameLivenessData data) {
+    context.read<FacialVerificationBloc>().add(
+          ProcesarFrameCamara(
+            eulerX: data.eulerX,
+            eulerY: data.eulerY,
+            smilingProb: data.smilingProb,
+            leftEyeOpenProb: data.leftEyeOpenProb,
+            rightEyeOpenProb: data.rightEyeOpenProb,
+          ),
+        );
+  }
+
+  void _onFaceCaptured(Uint8List bytes, FaceAngle angle) {
+    // Enrollment callback — no usado en flujo de liveness
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocListener<FacialVerificationBloc, FacialVerificationState>(
+    return BlocConsumer<FacialVerificationBloc, FacialVerificationState>(
       listener: (context, state) {
-        if (state is FacialVerificationSuccess) {
-          setState(() => _isVerifying = false);
+        if (state is LivenessExitoCaptura) {
+          _detenerStreamCamara();
+          _enviarFotoAlServidor();
+        } else if (state is LivenessErrorTimeout) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.mensaje),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          context
+              .read<FacialVerificationBloc>()
+              .add(IniciarVerificacionLiveness());
+        } else if (state is FacialVerificationSuccess) {
+          _disposeCamera();
           context.read<RegistroResidenteBloc>().add(
                 VerificacionFacialCompleta(
                   esValida: state.match,
@@ -243,78 +290,46 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
             imagePath: _ultimaFotoPath ?? '',
           );
         } else if (state is FacialVerificationFailure) {
-          setState(() => _isVerifying = false);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error: ${state.mensaje}'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${state.mensaje}'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          context
+              .read<FacialVerificationBloc>()
+              .add(IniciarVerificacionLiveness());
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Verificación Facial'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed:
-                _isVerifying ? null : () => Navigator.of(context).pop(),
+      builder: (context, state) {
+        final livenessProps =
+            state is LivenessRetoPresentado ? state : null;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Verificación Facial'),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
           ),
-        ),
-        body: _isCameraInitialized
-            ? Stack(
-                fit: StackFit.expand,
-                children: [
-                  CameraPreview(_cameraController!),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 40),
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                              color: Colors.white, width: 4),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 8,
-                            ),
-                          ],
-                        ),
-                        child: FloatingActionButton(
-                          heroTag: 'verify_capture',
-                          backgroundColor: _isVerifying
-                              ? Colors.grey
-                              : const Color(0xFF04345C),
-                          onPressed:
-                              _isVerifying ? null : _captureFoto,
-                          child: _isVerifying
-                              ? const SizedBox(
-                                  height: 28,
-                                  width: 28,
-                                  child: CircularProgressIndicator(
-                                    valueColor:
-                                        AlwaysStoppedAnimation<Color>(
-                                            Colors.white),
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.camera_alt,
-                                  color: Colors.white, size: 32),
-                        ),
-                      ),
-                      const SizedBox(height: 48),
-                    ],
-                  ),
-                ],
-              )
-            : const Center(child: CircularProgressIndicator()),
-      ),
+          body: _isCameraInitialized
+              ? FacialCaptureView(
+                  controller: _cameraController!,
+                  faceDetection: sl<FaceDetectionPort>(),
+                  onFaceCaptured: _onFaceCaptured,
+                  onFrameProcessed: livenessProps != null
+                      ? _onFrameProcessed
+                      : null,
+                  instruccionLiveness: livenessProps?.instruccion,
+                  indiceReto: livenessProps?.indiceReto,
+                  totalRetos: livenessProps?.totalRetos,
+                  segundosRestantes: livenessProps?.segundosRestantes,
+                )
+              : const Center(child: CircularProgressIndicator()),
+        );
+      },
     );
   }
 }

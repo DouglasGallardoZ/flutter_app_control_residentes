@@ -11,12 +11,22 @@ class FacialCaptureView extends StatelessWidget {
   final CameraController controller;
   final FaceDetectionPort? faceDetection;
   final void Function(Uint8List bytes, FaceAngle angle) onFaceCaptured;
+  final void Function(FrameLivenessData data)? onFrameProcessed;
+  final String? instruccionLiveness;
+  final int? indiceReto;
+  final int? totalRetos;
+  final int? segundosRestantes;
 
   const FacialCaptureView({
     super.key,
     required this.controller,
     required this.faceDetection,
     required this.onFaceCaptured,
+    this.onFrameProcessed,
+    this.instruccionLiveness,
+    this.indiceReto,
+    this.totalRetos,
+    this.segundosRestantes,
   });
 
   @override
@@ -31,6 +41,11 @@ class FacialCaptureView extends StatelessWidget {
       controller: controller,
       faceDetection: faceDetection!,
       onFaceCaptured: onFaceCaptured,
+      onFrameProcessed: onFrameProcessed,
+      instruccionLiveness: instruccionLiveness,
+      indiceReto: indiceReto,
+      totalRetos: totalRetos,
+      segundosRestantes: segundosRestantes,
     );
   }
 }

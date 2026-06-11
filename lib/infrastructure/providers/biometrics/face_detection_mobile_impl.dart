@@ -11,7 +11,7 @@ class FaceDetectionMobileImpl implements FaceDetectionPort {
     _faceDetector = FaceDetector(
       options: FaceDetectorOptions(
         enableLandmarks: true,
-        enableClassification: false,
+        enableClassification: true,
         enableTracking: true,
         performanceMode: FaceDetectorMode.fast,
       ),
@@ -32,8 +32,12 @@ class FaceDetectionMobileImpl implements FaceDetectionPort {
 
     return faces.map((face) {
       return DetectedFace(
+        headEulerAngleX: face.headEulerAngleX,
         headEulerAngleY: face.headEulerAngleY,
         headEulerAngleZ: face.headEulerAngleZ,
+        smilingProbability: face.smilingProbability,
+        leftEyeOpenProbability: face.leftEyeOpenProbability,
+        rightEyeOpenProbability: face.rightEyeOpenProbability,
       );
     }).toList();
   }

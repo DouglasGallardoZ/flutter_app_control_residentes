@@ -116,6 +116,7 @@ import 'domain/usecases/get_owner_with_spouses_usecase.dart';
 import 'domain/usecases/create_spouse_usecase.dart';
 import 'domain/usecases/delete_spouse_usecase.dart';
 import 'domain/usecases/block_spouse_usecase.dart';
+import 'domain/usecases/generar_retos_liveness_usecase.dart';
 
 // BLoCs
 import 'application/blocs/admin/admin_dashboard_bloc.dart';
@@ -528,6 +529,10 @@ Future<void> inject() async {
     () => BlockSpouseUseCase(sl<OwnerRepository>()),
   );
 
+  sl.registerLazySingleton<GenerarRetosLivenessUseCase>(
+    () => GenerarRetosLivenessUseCase(),
+  );
+
   sl.registerLazySingleton<SessionPort>(
     () => SessionPortImpl(
         authRepo: sl<AuthRepository>(), accountRepo: sl<AccountRepository>()),
@@ -573,7 +578,9 @@ Future<void> inject() async {
 
   sl.registerLazySingleton<FacialVerificationBloc>(
     () => FacialVerificationBloc(
-        verificationApi: sl<FacialVerificationApiPort>()),
+      verificationApi: sl<FacialVerificationApiPort>(),
+      generarRetos: sl<GenerarRetosLivenessUseCase>(),
+    ),
   );
 
   sl.registerLazySingleton<OwnerBloc>(
