@@ -28,11 +28,27 @@ class QrSelfPage extends StatefulWidget {
 class _QrSelfPageState extends State<QrSelfPage> {
   final GlobalKey qrBoundaryKey = GlobalKey();
 
-  bool useCustomDateTime = false; // Toggle para usar fecha/hora personalizadas
+  bool useCustomDateTime = false;
   DateTime? startDate;
   TimeOfDay? startTime;
-  int? durationHours; // 1,3,6,12
+  int? durationHours;
   bool qrGenerated = false;
+  late TextEditingController _fechaController;
+  late TextEditingController _horaController;
+
+  @override
+  void initState() {
+    super.initState();
+    _fechaController = TextEditingController();
+    _horaController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _fechaController.dispose();
+    _horaController.dispose();
+    super.dispose();
+  }
 
   DateTime? get validFrom {
     if (!useCustomDateTime) {
@@ -71,12 +87,23 @@ class _QrSelfPageState extends State<QrSelfPage> {
       firstDate: DateTime(now.year, now.month, now.day),
       lastDate: now.add(const Duration(days: 365)),
     );
-    if (res != null) setState(() => startDate = res);
+    if (res != null) {
+      setState(() {
+        startDate = res;
+        _fechaController.text = '${res.month}/${res.day}/${res.year}';
+      });
+    }
   }
 
   Future<void> _pickTime() async {
-    final res = await showTimePicker(context: context, initialTime: startTime ?? TimeOfDay.now());
-    if (res != null) setState(() => startTime = res);
+    final res = await showTimePicker(
+        context: context, initialTime: startTime ?? TimeOfDay.now());
+    if (res != null) {
+      setState(() {
+        startTime = res;
+        _horaController.text = res.format(context);
+      });
+    }
   }
 
   // helper removed (snackbars are shown inline where needed)
@@ -351,7 +378,17 @@ class _QrSelfPageState extends State<QrSelfPage> {
                           ),
                           Switch(
                             value: useCustomDateTime,
-                            onChanged: (value) => setState(() => useCustomDateTime = value),
+                            onChanged: (value) => setState(() {
+                              useCustomDateTime = value;
+                              if (value && startDate != null) {
+                                _fechaController.text =
+                                    '${startDate!.month}/${startDate!.day}/${startDate!.year}';
+                              }
+                              if (value && startTime != null) {
+                                _horaController.text =
+                                    startTime!.format(context);
+                              }
+                            }),
                           ),
                         ],
                       ),
@@ -367,15 +404,13 @@ class _QrSelfPageState extends State<QrSelfPage> {
                           children: [
                             Align(alignment: Alignment.centerLeft, child: Text('Fecha de Inicio', style: theme.textTheme.labelLarge)),
                             const SizedBox(height: 6),
-                            TextField(
+                            TextFormField(
                               readOnly: true,
+                              controller: _fechaController,
                               decoration: const InputDecoration(
                                 prefixIcon: Icon(Icons.calendar_today),
                                 hintText: 'mm / dd / yyyy',
                                 border: OutlineInputBorder(),
-                              ),
-                              controller: TextEditingController(
-                                text: startDate == null ? '' : '${startDate!.month}/${startDate!.day}/${startDate!.year}',
                               ),
                               onTap: useCustomDateTime ? _pickDate : null,
                             ),
@@ -383,14 +418,14 @@ class _QrSelfPageState extends State<QrSelfPage> {
 
                             Align(alignment: Alignment.centerLeft, child: Text('Hora de Inicio', style: theme.textTheme.labelLarge)),
                             const SizedBox(height: 6),
-                            TextField(
+                            TextFormField(
                               readOnly: true,
+                              controller: _horaController,
                               decoration: const InputDecoration(
                                 prefixIcon: Icon(Icons.schedule),
                                 hintText: '-- : -- --',
                                 border: OutlineInputBorder(),
                               ),
-                              controller: TextEditingController(text: startTime == null ? '' : startTime!.format(context)),
                               onTap: useCustomDateTime ? _pickTime : null,
                             ),
                             const SizedBox(height: 12),

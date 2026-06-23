@@ -75,7 +75,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
         emit(AuthInitial());
       } catch (ex) {
-        emit(AuthInitial());
+        emit(AuthFailure(
+            'Error al restaurar sesión. Por favor, inicie nuevamente.'));
       }
     });
 

@@ -76,16 +76,6 @@ class LoadResidentsByLocationEvent extends ResidentEvent {
   List<Object?> get props => [manzana, villa];
 }
 
-/// Obtener residente específico
-class GetResidentEvent extends ResidentEvent {
-  final String personaId;
-
-  const GetResidentEvent(this.personaId);
-
-  @override
-  List<Object?> get props => [personaId];
-}
-
 /// Desactivar residente
 class DeactivateResidentEvent extends ResidentEvent {
   final int personaId;

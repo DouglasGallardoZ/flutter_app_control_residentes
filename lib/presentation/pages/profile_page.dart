@@ -30,6 +30,19 @@ class _ProfilePageState extends State<ProfilePage> {
   String editedEmail = '';
   String error = '';
   bool isSavingEmail = false;
+  TextEditingController? _emailCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailCtrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _emailCtrl?.dispose();
+    super.dispose();
+  }
 
   /// Convierte el código de rol a nombre legible
   String _getRoleDisplayName(String role) {
@@ -546,6 +559,7 @@ class _ProfilePageState extends State<ProfilePage> {
           onPressed: () => setState(() {
             isEditing = true;
             editedEmail = email != '—' ? email : '';
+            _emailCtrl?.text = editedEmail;
             error = '';
           }),
         ),
@@ -561,8 +575,8 @@ class _ProfilePageState extends State<ProfilePage> {
     return Column(
       children: [
         TextField(
-          controller: TextEditingController(text: editedEmail),
-          onChanged: (value) => setState(() => editedEmail = value),
+          controller: _emailCtrl,
+          onChanged: (value) => editedEmail = value,
           decoration: InputDecoration(
             labelText: 'Correo electrónico',
             prefixIcon: const Icon(Icons.email),

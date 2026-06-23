@@ -17,8 +17,9 @@ class VisitorBloc extends Bloc<VisitorEvent, VisitorState> {
             : 'Seleccione un visitante o busque por nombre/identificación.';
         emit(VisitorLoaded(
             all: list, filtered: list, selected: null, helper: helper));
-      } catch (_) {
-        emit(VisitorError('Error al cargar visitantes'));
+      } catch (e) {
+        emit(VisitorError(
+            'Error al cargar visitantes: ${e.toString().replaceAll('Exception: ', '')}'));
       }
     });
 
@@ -32,8 +33,9 @@ class VisitorBloc extends Bloc<VisitorEvent, VisitorState> {
             : 'Seleccione un visitante de la lista.';
         emit(VisitorLoaded(
             all: list, filtered: list, selected: null, helper: helper));
-      } catch (_) {
-        emit(VisitorError('Error al cargar visitantes'));
+      } catch (e) {
+        emit(VisitorError(
+            'Error al cargar visitantes: ${e.toString().replaceAll('Exception: ', '')}'));
       }
     });
 
@@ -64,9 +66,9 @@ class VisitorBloc extends Bloc<VisitorEvent, VisitorState> {
           personaId: e.personaId,
         );
         emit(VisitorSuccess(v));
-      } catch (_) {
-        emit(
-            VisitorError('No se pudo registrar/actualizar el visitante'));
+      } catch (e) {
+        emit(VisitorError(
+            'No se pudo registrar/actualizar el visitante: ${e.toString().replaceAll('Exception: ', '')}'));
       }
     });
   }

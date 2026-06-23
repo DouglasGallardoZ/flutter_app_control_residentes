@@ -228,7 +228,7 @@ class _AdminResidentsPageState extends State<AdminResidentsPage> {
           ),
         ],
       ),
-    );
+    ).then((_) => reasonController.dispose());
   }
 
   void _showDeleteDialog(Map<String, dynamic> resident, String nombreCompleto) {

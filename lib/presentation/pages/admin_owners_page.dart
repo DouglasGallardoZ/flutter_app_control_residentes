@@ -236,7 +236,7 @@ class _AdminOwnersPageState extends State<AdminOwnersPage> {
           ),
         ],
       ),
-    );
+    ).then((_) => reasonController.dispose());
   }
 
   void _showDeleteDialog(OwnerEntity owner) {

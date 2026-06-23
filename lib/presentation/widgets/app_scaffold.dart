@@ -9,9 +9,9 @@ class AppScaffold extends StatelessWidget {
   final int? currentIndex;
   final void Function(int)? onTabSelected;
   final List<Widget>? actions;
-  final bool isRoot; // 👈 marca pantallas raíz (sin back)
-  final String? routeName; // 👈 nombre explícito de la ruta para calcular el índice
-  final bool showBackButton; // 👈 mostrar botón de back
+  final bool isRoot; //  marca pantallas raíz (sin back)
+  final String? routeName; //  nombre explícito de la ruta para calcular el índice
+  final bool showBackButton; //  mostrar botón de back
 
   const AppScaffold({
     super.key,
@@ -104,7 +104,7 @@ class AppScaffold extends StatelessWidget {
       body: body,
       bottomNavigationBar: onTabSelected != null
           ? NavigationBar(
-              selectedIndex: calculatedIndex, // 👈 USAR índice calculado desde la ruta actual
+              selectedIndex: calculatedIndex, // USAR índice calculado desde la ruta actual
               onDestinationSelected: onTabSelected!,
               destinations: destinations,
             )

@@ -23,39 +23,51 @@ class AdminProfilePage extends StatefulWidget {
 
 class _AdminProfilePageState extends State<AdminProfilePage> {
   bool isEditing = false;
-  bool notificationsEnabled = true;
   String editedEmail = '';
   String error = '';
+  bool notificationsEnabled = true;
   bool showSuccess = false;
+  TextEditingController? _emailCtrl;
 
-  bool _isValidEmail(String email) {
-    final regex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
-    return regex.hasMatch(email);
+  @override
+  void initState() {
+    super.initState();
+    _emailCtrl = TextEditingController();
   }
 
-  void _confirmLogout() async {
-    final ok = await showDialog<bool>(
+  @override
+  void dispose() {
+    _emailCtrl?.dispose();
+    super.dispose();
+  }
+
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[\w\.-]+@[\w\.-]+\.\w{2,}$').hasMatch(email);
+  }
+
+  void _confirmLogout() {
+    showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Cerrar Sesión'),
-        content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Está seguro de que desea cerrar sesión?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, false),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancelar'),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, true),
-            child: const Text('Cerrar Sesión'),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<AuthBloc>().add(LogoutRequested());
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/login', (route) => false);
+            },
+            child: const Text('Cerrar sesión'),
           ),
         ],
       ),
     );
-
-    if (ok == true) {
-      context.read<AuthBloc>().add(LogoutRequested());
-      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (r) => false);
-    }
   }
 
   @override
@@ -233,6 +245,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                               onPressed: () => setState(() {
                                 isEditing = true;
                                 editedEmail = correo != '—' ? correo : '';
+                                _emailCtrl?.text = editedEmail;
                                 error = '';
                               }),
                             ),
@@ -242,8 +255,8 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                         Column(
                           children: [
                             TextField(
-                              controller: TextEditingController(text: editedEmail),
-                              onChanged: (value) => setState(() => editedEmail = value),
+                              controller: _emailCtrl,
+                              onChanged: (value) => editedEmail = value,
                               decoration: InputDecoration(
                                 labelText: 'Correo electrónico',
                                 prefixIcon: const Icon(Icons.email),

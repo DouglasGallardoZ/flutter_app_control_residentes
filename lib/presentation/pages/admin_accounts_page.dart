@@ -177,7 +177,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
           ],
         ),
       ),
-    );
+    ).then((_) => reasonController.dispose());
   }
 
   void _showDeleteDialog(Map<String, dynamic> account, String accountName) {

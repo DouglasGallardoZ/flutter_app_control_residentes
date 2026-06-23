@@ -17,8 +17,9 @@ class QrVisitBloc extends Bloc<QrVisitEvent, QrVisitState> {
           durationHours: e.durationHours,
         );
         emit(QrVisitReady(qr));
-      } catch (_) {
-        emit(QrVisitError('No se pudo generar el QR de visitante'));
+      } catch (e) {
+        emit(QrVisitError(
+            'No se pudo generar el QR de visitante: ${e.toString().replaceAll('Exception: ', '')}'));
       }
     });
   }

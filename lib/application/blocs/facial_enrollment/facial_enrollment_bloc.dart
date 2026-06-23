@@ -68,6 +68,10 @@ class FacialEnrollmentBloc
       } else {
         emit(updated);
       }
+    } catch (e) {
+      emit(FacialEnrollmentError(
+        mensaje: e.toString().replaceAll('Exception: ', ''),
+      ));
     } finally {
       _estaCapturando = false;
     }

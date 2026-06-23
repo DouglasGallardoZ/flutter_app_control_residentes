@@ -16,8 +16,8 @@ class QrBloc extends Bloc<QrEvent, QrState> {
           maxUses: e.maxUses,
         );
         emit(QrReady(qr));
-      } catch (_) {
-        emit(QrError('No se pudo generar el QR'));
+      } catch (e) {
+        emit(QrError('No se pudo generar el QR: ${e.toString().replaceAll('Exception: ', '')}'));
       }
     });
 

@@ -231,7 +231,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           ),
         ],
       ),
-    );
+    ).then((_) => reasonController.dispose());
   }
 
   void _showDeleteDialog(Map<String, dynamic> member, String nombreCompleto) {

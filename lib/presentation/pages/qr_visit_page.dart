@@ -31,18 +31,21 @@ class QrVisitPage extends StatefulWidget {
 class _QrVisitPageState extends State<QrVisitPage> {
   final GlobalKey qrBoundaryKey = GlobalKey();
   late ScrollController _scrollController;
-  String mode = 'saved'; // saved | new
+  String mode = 'saved';
   final searchCtrl = TextEditingController();
   final nameCtrl = TextEditingController();
   final idCtrl = TextEditingController();
 
-  bool useCustomDateTime = false; // Toggle para usar fecha/hora personalizadas
+  bool useCustomDateTime = false;
   DateTime? startDate;
   TimeOfDay? startTime;
   int? durationHours;
 
   bool qrGenerated = false;
-  String? successBadge; // "Visitante registrado exitosamente" cuando es new
+  String? successBadge;
+
+  late TextEditingController _fechaController;
+  late TextEditingController _horaController;
 
   DateTime? get validFrom {
     if (!useCustomDateTime) {
@@ -66,6 +69,8 @@ class _QrVisitPageState extends State<QrVisitPage> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    _fechaController = TextEditingController();
+    _horaController = TextEditingController();
   }
 
   @override
@@ -74,6 +79,8 @@ class _QrVisitPageState extends State<QrVisitPage> {
     nameCtrl.dispose();
     idCtrl.dispose();
     _scrollController.dispose();
+    _fechaController.dispose();
+    _horaController.dispose();
     super.dispose();
   }
 
@@ -110,12 +117,24 @@ class _QrVisitPageState extends State<QrVisitPage> {
       firstDate: DateTime(now.year, now.month, now.day),
       lastDate: now.add(const Duration(days: 365)),
     );
-    if (res != null) setState(() => startDate = res);
+    if (res != null) {
+      setState(() {
+        startDate = res;
+        _fechaController.text =
+            '${res.month}/${res.day}/${res.year}';
+      });
+    }
   }
 
   Future<void> _pickTime() async {
-    final res = await showTimePicker(context: context, initialTime: startTime ?? TimeOfDay.now());
-    if (res != null) setState(() => startTime = res);
+    final res = await showTimePicker(
+        context: context, initialTime: startTime ?? TimeOfDay.now());
+    if (res != null) {
+      setState(() {
+        startTime = res;
+        _horaController.text = res.format(context);
+      });
+    }
   }
 
   Future<void> _confirmDialog(BuildContext builderCtx) async {
@@ -568,7 +587,17 @@ class _QrVisitPageState extends State<QrVisitPage> {
                                   ),
                                   Switch(
                                     value: useCustomDateTime,
-                                    onChanged: (value) => setState(() => useCustomDateTime = value),
+                                    onChanged: (value) => setState(() {
+                                      useCustomDateTime = value;
+                                      if (value && startDate != null) {
+                                        _fechaController.text =
+                                            '${startDate!.month}/${startDate!.day}/${startDate!.year}';
+                                      }
+                                      if (value && startTime != null) {
+                                        _horaController.text =
+                                            startTime!.format(context);
+                                      }
+                                    }),
                                   ),
                                 ],
                               ),
@@ -584,24 +613,24 @@ class _QrVisitPageState extends State<QrVisitPage> {
                                 children: [
                                   Align(alignment: Alignment.centerLeft, child: Text('Fecha de Inicio', style: theme.textTheme.labelLarge)),
                                   const SizedBox(height: 6),
-                                  TextField(
+                                  TextFormField(
                                     readOnly: true,
+                                    controller: _fechaController,
                                     decoration: const InputDecoration(prefixIcon: Icon(Icons.calendar_today), hintText: 'mm / dd / yyyy', border: OutlineInputBorder()),
-                                    controller: TextEditingController(text: startDate == null ? '' : '${startDate!.month}/${startDate!.day}/${startDate!.year}'),
                                     onTap: useCustomDateTime ? _pickDate : null,
                                   ),
                                   const SizedBox(height: 12),
                                   // Hora
                                   Align(alignment: Alignment.centerLeft, child: Text('Hora de Inicio', style: theme.textTheme.labelLarge)),
                                   const SizedBox(height: 6),
-                                  TextField(
+                                  TextFormField(
                                     readOnly: true,
+                                    controller: _horaController,
                                     decoration: const InputDecoration(
                                       prefixIcon: Icon(Icons.schedule),
                                       hintText: '-- : -- --',
                                       border: OutlineInputBorder(),
                                     ),
-                                    controller: TextEditingController(text: startTime == null ? '' : startTime!.format(context)),
                                     onTap: useCustomDateTime ? _pickTime : null,
                                   ),
                                   const SizedBox(height: 12),
