@@ -51,40 +51,51 @@ class _LoginPageState extends State<LoginPage> {
                 child: BlocConsumer<AuthBloc, AuthState>(
                   listener: (ctx, state) {
                     if (state is AuthSuccess) {
-                      // Lógica de navegación en la capa de presentación
-                      final rol = state.user['rol'] as String? ?? 'residente';
-                      final personaId = state.user['personaId'] as int? ?? 0;
-                      final identificacion = state.user['identificacion'] as String? ?? '';
-                      final vivienda = state.user['vivienda'] as Map<String, dynamic>?;
-                      final nombreCompleto = state.user['name'] as String? ?? 'Usuario';
-                      final residenceId = vivienda != null ? '${vivienda['manzana']}-${vivienda['villa']}' : '';
+                      try {
+                        final rol = state.user['rol'] as String? ?? 'residente';
+                        final personaId = state.user['personaId'] as int? ?? 0;
+                        final identificacion = state.user['identificacion'] as String? ?? '';
+                        final vivienda = state.user['vivienda'] as Map<String, dynamic>?;
+                        final nombreCompleto = state.user['name'] as String? ?? 'Usuario';
+                        final residenceId = vivienda != null
+                            ? '${vivienda['manzana']}-${vivienda['villa']}'
+                            : '';
 
-                      final args = {
-                        'personaId': personaId,
-                        'identificacion': identificacion,
-                        'residenceId': residenceId,
-                        'userName': nombreCompleto,
-                      };
+                        final args = {
+                          'personaId': personaId,
+                          'identificacion': identificacion,
+                          'residenceId': residenceId,
+                          'userName': nombreCompleto,
+                        };
 
-                      // Determinar ruta según rol
-                      late final String route;
-                      switch (rol.toLowerCase()) {
-                        case 'residente':
-                          route = AppRoutes.residentDashboard;
-                          break;
-                        case 'miembro_familia':
-                        case 'family':
-                          route = AppRoutes.familyDashboard;
-                          break;
-                        case 'admin':
-                        case 'administrador':
-                          route = AppRoutes.adminDashboard;
-                          break;
-                        default:
-                          route = AppRoutes.residentDashboard;
+                        late final String route;
+                        switch (rol.toLowerCase()) {
+                          case 'residente':
+                            route = AppRoutes.residentDashboard;
+                            break;
+                          case 'miembro_familia':
+                          case 'family':
+                            route = AppRoutes.familyDashboard;
+                            break;
+                          case 'admin':
+                          case 'administrador':
+                            route = AppRoutes.adminDashboard;
+                            break;
+                          default:
+                            route = AppRoutes.residentDashboard;
+                        }
+
+                        Navigator.pushReplacementNamed(
+                            ctx, route, arguments: args);
+                      } catch (e) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Error al navegar al panel: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
                       }
-
-                      Navigator.pushReplacementNamed(ctx, route, arguments: args);
                     } else if (state is AuthFailure) {
                       ScaffoldMessenger.of(ctx).showSnackBar(
                         SnackBar(

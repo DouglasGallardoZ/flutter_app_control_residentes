@@ -192,21 +192,14 @@ class AppRoutes {
       }
 
       case residentDashboard: {
-        // Ya no requiere argumentos - obtiene datos del AuthBloc y QrBloc
         final args = settings.arguments as Map<String, dynamic>?;
         final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
-        // Solo usar argumentos si vienen, sino dejar que la página los obtenga del BLoC
         if (personaId != null && identificacion != null && residenceId != null) {
-          return MaterialPageRoute(
-            builder: (_) => ResidentDashboardPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId),
-          );
+          return _fadeRoute(ResidentDashboardPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId), settings: settings);
         }
-        // Fallback: retornar sin argumentos y dejar que la página use los BLoCs
-        return MaterialPageRoute(
-          builder: (_) => const ResidentDashboardPage(personaId: 0, identificacion: '', residenceId: ''),
-        );
+        return _fadeRoute(const ResidentDashboardPage(personaId: 0, identificacion: '', residenceId: ''), settings: settings);
       }
 
       case qrSelf: {
@@ -215,7 +208,7 @@ class AppRoutes {
         final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
         if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en QrSelfPage');
-        return MaterialPageRoute(builder: (_) => QrSelfPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId));
+        return _fadeRoute(QrSelfPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId), settings: settings);
       }
 
       case qrVisit: {
@@ -226,8 +219,9 @@ class AppRoutes {
         if (personaId == null || identificacion == null || residenceId == null) {
           return _errorRoute('Faltan argumentos en QrVisitPage');
         }
-        return MaterialPageRoute(
-          builder: (_) => QrVisitPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId),
+        return _fadeRoute(
+          QrVisitPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId),
+          settings: settings,
         );
       }
 
@@ -239,47 +233,45 @@ class AppRoutes {
         if (personaId == null || identificacion == null || residenceId == null) {
           return _errorRoute('Faltan argumentos en QrListPage');
         }
-        return MaterialPageRoute(
-          builder: (_) => BlocProvider<QrListBloc>(
+        return _fadeRoute(
+          BlocProvider<QrListBloc>(
             create: (_) => GetIt.instance<QrListBloc>(),
             child: QrListPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId),
           ),
+          settings: settings,
         );
       }
 
       case accessHistory: {
-        // Ya no requiere argumentos estrictamente
         final args = settings.arguments as Map<String, dynamic>?;
         final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
         if (personaId != null && identificacion != null) {
-          return MaterialPageRoute(builder: (_) => AccessHistoryPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId));
+          return _fadeRoute(AccessHistoryPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId), settings: settings);
         }
-        return MaterialPageRoute(builder: (_) => const AccessHistoryPage(personaId: 0, identificacion: '', residenceId: ''));
+        return _fadeRoute(const AccessHistoryPage(personaId: 0, identificacion: '', residenceId: ''), settings: settings);
       }
 
       case profile: {
-        // Ya no requiere argumentos estrictamente
         final args = settings.arguments as Map<String, dynamic>?;
         final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         if (personaId != null && identificacion != null) {
-          return MaterialPageRoute(builder: (_) => ProfilePage(personaId: personaId, identificacion: identificacion));
+          return _fadeRoute(ProfilePage(personaId: personaId, identificacion: identificacion), settings: settings);
         }
-        return MaterialPageRoute(builder: (_) => const ProfilePage(personaId: 0, identificacion: ''));
+        return _fadeRoute(const ProfilePage(personaId: 0, identificacion: ''), settings: settings);
       }
 
       case members: {
-        // Ya no requiere argumentos estrictamente
         final args = settings.arguments as Map<String, dynamic>?;
         final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
         if (personaId != null && identificacion != null) {
-          return MaterialPageRoute(builder: (_) => MembersPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId));
+          return _fadeRoute(MembersPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId), settings: settings);
         }
-        return MaterialPageRoute(builder: (_) => const MembersPage(personaId: 0, identificacion: '', residenceId: ''));
+        return _fadeRoute(const MembersPage(personaId: 0, identificacion: '', residenceId: ''), settings: settings);
       }
 
       case adminDashboard: {
@@ -287,7 +279,7 @@ class AppRoutes {
         final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminDashboardPage');
-        return MaterialPageRoute(builder: (_) => AdminDashboardPage(personaId: personaId, identificacion: identificacion));
+        return _fadeRoute(AdminDashboardPage(personaId: personaId, identificacion: identificacion), settings: settings);
       }
 
       case adminAccessHistory: {
@@ -295,7 +287,7 @@ class AppRoutes {
         final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminAccessHistoryPage');
-        return MaterialPageRoute(builder: (_) => AdminAccessHistoryPage(personaId: personaId, identificacion: identificacion));
+        return _fadeRoute(AdminAccessHistoryPage(personaId: personaId, identificacion: identificacion), settings: settings);
       }
 
       case adminUsers: {
@@ -303,7 +295,7 @@ class AppRoutes {
         final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminUsersPage');
-        return MaterialPageRoute(builder: (_) => AdminUsersPage(personaId: personaId, identificacion: identificacion));
+        return _fadeRoute(AdminUsersPage(personaId: personaId, identificacion: identificacion), settings: settings);
       }
 
       case adminResidents: {
@@ -386,7 +378,7 @@ class AppRoutes {
         final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminProfilePage');
-        return MaterialPageRoute(builder: (_) => AdminProfilePage(personaId: personaId, identificacion: identificacion));
+        return _fadeRoute(AdminProfilePage(personaId: personaId, identificacion: identificacion), settings: settings);
       }
 
       case familyDashboard: {
@@ -394,21 +386,26 @@ class AppRoutes {
         final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
         final identificacion = args?['identificacion'] as String?;
         final residenceId = args?['residenceId'] as String?;
-        // Los argumentos son opcionales - la página puede obtener datos del AuthBloc
         if (personaId != null && identificacion != null && residenceId != null) {
-          return MaterialPageRoute(
-            builder: (_) => FamilyDashboardPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId),
-          );
+          return _fadeRoute(FamilyDashboardPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId), settings: settings);
         }
-        // Fallback: retornar sin argumentos y dejar que la página use los BLoCs
-        return MaterialPageRoute(
-          builder: (_) => const FamilyDashboardPage(personaId: 0, identificacion: '', residenceId: ''),
-        );
+        return _fadeRoute(const FamilyDashboardPage(personaId: 0, identificacion: '', residenceId: ''), settings: settings);
       }
 
       default:
         return _errorRoute('Ruta desconocida: ${settings.name}');
     }
+  }
+
+  static Route<dynamic> _fadeRoute(Widget page, {RouteSettings? settings}) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionDuration: const Duration(milliseconds: 150),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      settings: settings,
+    );
   }
 
   static Route<dynamic> _errorRoute(String message) {
