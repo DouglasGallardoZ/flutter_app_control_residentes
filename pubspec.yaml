@@ -20,6 +20,8 @@ dependencies:
   google_mlkit_face_detection: ^0.13.1
   equatable: ^2.0.5
   intl: ^0.20.2
+  shared_preferences: ^2.5.3
+  flutter_secure_storage: ^9.2.4
 
   # Firebase
   firebase_core: ^4.2.1

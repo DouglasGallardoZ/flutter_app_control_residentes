@@ -1,4 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/ports/session_cleanup_port.dart';
 import '../../domain/ports/firebase_auth_provider_port.dart';
 import '../providers/http_client.dart';
@@ -25,6 +28,8 @@ class SessionCleanupImpl implements SessionCleanupPort {
       results['clear_dio_biometry'] =
           _clearDioHeaders(biometryHttpClient!);
     }
+    results['clear_shared_prefs'] = await _clearSharedPreferences();
+    results['clear_secure_storage'] = await _clearSecureStorage();
     results['propagation_delay'] = await _waitPropagation();
 
     print(
@@ -79,6 +84,46 @@ class SessionCleanupImpl implements SessionCleanupPort {
     } catch (e) {
       print(
           ' LOGOUT: error al limpiar headers HTTP - continuando');
+      return false;
+    }
+  }
+
+  Future<bool> _clearSharedPreferences() async {
+    try {
+      print(' LOGOUT: limpiando SharedPreferences...');
+      final prefs = await SharedPreferences.getInstance();
+      final keysToRemove = prefs.getKeys().where(
+          (k) => k.toLowerCase().contains('token') ||
+              k.toLowerCase().contains('auth') ||
+              k.toLowerCase().contains('session'));
+      for (final key in keysToRemove) {
+        await prefs.remove(key);
+      }
+      print(
+          ' LOGOUT: SharedPreferences limpiado (${keysToRemove.length} claves)');
+      return true;
+    } catch (e) {
+      print(
+          ' LOGOUT: error al limpiar SharedPreferences - continuando');
+      return false;
+    }
+  }
+
+  Future<bool> _clearSecureStorage() async {
+    if (kIsWeb) {
+      print(
+          ' LOGOUT: FlutterSecureStorage no soportado en web - omitiendo');
+      return false;
+    }
+    try {
+      print(' LOGOUT: limpiando FlutterSecureStorage...');
+      const storage = FlutterSecureStorage();
+      await storage.deleteAll();
+      print(' LOGOUT: FlutterSecureStorage limpiado');
+      return true;
+    } catch (e) {
+      print(
+          ' LOGOUT: error al limpiar FlutterSecureStorage - continuando');
       return false;
     }
   }
