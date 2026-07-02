@@ -62,6 +62,7 @@ class _MemberFacialEnrollmentViewState
     extends State<_MemberFacialEnrollmentView> {
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
+  bool _cameraDisposeInProgress = false;
 
   @override
   void initState() {
@@ -70,13 +71,17 @@ class _MemberFacialEnrollmentViewState
   }
 
   Future<void> _disposeCamera() async {
+    if (_cameraDisposeInProgress) return;
+    _cameraDisposeInProgress = true;
     try {
       if (_cameraController != null && _cameraController!.value.isInitialized) {
         await _cameraController!.dispose();
-        _cameraController = null;
       }
     } catch (e) {
       debugPrint('Error cerrando cámara: $e');
+    } finally {
+      _cameraController = null;
+      _isCameraInitialized = false;
     }
   }
 

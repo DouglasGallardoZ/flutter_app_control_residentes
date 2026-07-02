@@ -9,9 +9,21 @@ class AppScaffold extends StatelessWidget {
   final int? currentIndex;
   final void Function(int)? onTabSelected;
   final List<Widget>? actions;
-  final bool isRoot; //  marca pantallas raíz (sin back)
-  final String? routeName; //  nombre explícito de la ruta para calcular el índice
-  final bool showBackButton; //  mostrar botón de back
+  final bool isRoot;
+  final String? routeName;
+  final bool showBackButton;
+
+  static const _rutasPublicas = [
+    '/login',
+    '/registerOption',
+    '/prospectoResidente',
+    '/prospectoMiembro',
+    '/facialVerification',
+    '/credentialsResidente',
+    '/credentialsMiembro',
+    '/memberCreateRegistration',
+    '/memberFacialEnrollment',
+  ];
 
   const AppScaffold({
     super.key,
@@ -25,14 +37,14 @@ class AppScaffold extends StatelessWidget {
     this.showBackButton = false,
   });
 
-  /// Determina si el usuario es miembro familiar basado en su rol
   static bool _isFamilyMemberByRole(String? role) {
     if (role == null) return false;
     final normalized = role.toLowerCase();
-    return normalized == 'miembro_familia' || normalized == 'family' || normalized == 'miembro de familia';
+    return normalized == 'miembro_familia' ||
+        normalized == 'family' ||
+        normalized == 'miembro de familia';
   }
 
-  /// Mapea el nombre de la ruta al índice del tab
   static int _getTabIndexFromRoute(String routeName, bool isFamilyMember) {
     switch (routeName) {
       case '/residentDashboard':
@@ -44,54 +56,81 @@ class AppScaffold extends StatelessWidget {
       case '/accessHistory':
         return 2;
       case '/members':
-        return isFamilyMember ? 3 : 3; // Familia (solo residentes)
+        return isFamilyMember ? 3 : 3;
       case '/profile':
-        return isFamilyMember ? 3 : 4; // Perfil (último tab)
+        return isFamilyMember ? 3 : 4;
       default:
         return 0;
     }
   }
 
+  static bool _esRutaPublica(String? route) {
+    if (route == null) return false;
+    return _rutasPublicas.contains(route);
+  }
+
+  void _protegerRuta(BuildContext context, String currentRoute) {
+    if (_esRutaPublica(currentRoute)) {
+      debugPrint(
+          'AppScaffold: Ruta pública $currentRoute — sin protección');
+      return;
+    }
+
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthSuccess) {
+      debugPrint(
+          'AppScaffold: Sin sesión en ruta protegida $currentRoute — redirigiendo a /login');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+              '/login', (route) => false);
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Obtener el rol desde AuthBloc (fuente de verdad)
+    final currentRoute =
+        routeName ?? (ModalRoute.of(context)?.settings.name ?? '');
+    _protegerRuta(context, currentRoute);
+
     final authState = context.read<AuthBloc>().state;
     String? userRole;
     if (authState is AuthSuccess) {
       userRole = authState.user['rol'] as String?;
     }
     final isFamilyMember = _isFamilyMemberByRole(userRole);
-    
-    // Usar el routeName pasado explícitamente, o intentar obtenerlo del context
-    final currentRoute = routeName ?? (ModalRoute.of(context)?.settings.name ?? '');
-    
-    // Calcular el tab index desde el nombre de la ruta SIEMPRE
-    final calculatedIndex = _getTabIndexFromRoute(currentRoute, isFamilyMember);
-    
-    debugPrint('[AppScaffold] title=$title, currentRoute=$currentRoute, calculatedIndex=$calculatedIndex, isFamilyMember=$isFamilyMember, rol=$userRole');
-    
-    // Construir las destinations dinámicamente según el tipo de usuario
+    final calculatedIndex =
+        _getTabIndexFromRoute(currentRoute, isFamilyMember);
+
+    debugPrint(
+        '[AppScaffold] title=$title, currentRoute=$currentRoute, calculatedIndex=$calculatedIndex, isFamilyMember=$isFamilyMember, rol=$userRole');
+
     final destinations = <NavigationDestination>[
-      const NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Inicio'),
-      const NavigationDestination(icon: Icon(Icons.qr_code_2), label: 'Mi QR'),
-      const NavigationDestination(icon: Icon(Icons.history), label: 'Historial'),
+      const NavigationDestination(
+          icon: Icon(Icons.home_outlined), label: 'Inicio'),
+      const NavigationDestination(
+          icon: Icon(Icons.qr_code_2), label: 'Mi QR'),
+      const NavigationDestination(
+          icon: Icon(Icons.history), label: 'Historial'),
     ];
-    
-    // Si NO es miembro familiar, agregar tabs adicionales
+
     if (!isFamilyMember) {
       destinations.addAll([
-        const NavigationDestination(icon: Icon(Icons.group), label: 'Familia'),
-        const NavigationDestination(icon: Icon(Icons.person_outline), label: 'Perfil'),
+        const NavigationDestination(
+            icon: Icon(Icons.group), label: 'Familia'),
+        const NavigationDestination(
+            icon: Icon(Icons.person_outline), label: 'Perfil'),
       ]);
     } else {
-      // Si ES miembro familiar, solo agregar el tab de Perfil
-      destinations.add(const NavigationDestination(icon: Icon(Icons.person_outline), label: 'Perfil'));
+      destinations.add(const NavigationDestination(
+          icon: Icon(Icons.person_outline), label: 'Perfil'));
     }
 
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        // Mostrar back button si showBackButton es true
         automaticallyImplyLeading: showBackButton,
         leading: showBackButton
             ? IconButton(
@@ -104,7 +143,7 @@ class AppScaffold extends StatelessWidget {
       body: body,
       bottomNavigationBar: onTabSelected != null
           ? NavigationBar(
-              selectedIndex: calculatedIndex, // USAR índice calculado desde la ruta actual
+              selectedIndex: calculatedIndex,
               onDestinationSelected: onTabSelected!,
               destinations: destinations,
             )
@@ -112,4 +151,3 @@ class AppScaffold extends StatelessWidget {
     );
   }
 }
-

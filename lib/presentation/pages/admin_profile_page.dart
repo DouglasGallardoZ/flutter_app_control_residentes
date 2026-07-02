@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_event.dart';
 import '../../application/blocs/auth/auth_state.dart';
+import '../../application/blocs/security_session/security_session_bloc.dart';
+import '../../application/blocs/security_session/security_session_event.dart';
 import '../widgets/admin_scaffold.dart';
 import '../routes/app_routes.dart';
 import '../theme/theme_controller.dart';
@@ -60,6 +62,9 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
             onPressed: () {
               Navigator.pop(ctx);
               context.read<AuthBloc>().add(LogoutRequested());
+              context
+                  .read<SecuritySessionBloc>()
+                  .add(SessionTerminated());
               Navigator.of(context).pushNamedAndRemoveUntil(
                   '/login', (route) => false);
             },

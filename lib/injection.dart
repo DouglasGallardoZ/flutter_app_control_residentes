@@ -38,6 +38,7 @@ import 'infrastructure/adapters/owner_repository_impl.dart';
 import 'infrastructure/adapters/member_repository_impl.dart';
 import 'infrastructure/adapters/admin_account_repository_impl.dart';
 import 'infrastructure/adapters/session_port_impl.dart';
+import 'infrastructure/adapters/session_cleanup_impl.dart';
 
 // Domain - Ports
 import 'domain/ports/auth_repository.dart';
@@ -66,6 +67,7 @@ import 'domain/ports/access_management/access_history_api_port.dart';
 import 'domain/ports/qr_management/qr_generation_api_port.dart';
 import 'domain/ports/qr_management/qr_query_api_port.dart';
 import 'domain/ports/session_port.dart';
+import 'domain/ports/session_cleanup_port.dart';
 
 // Domain - Use Cases
 import 'domain/usecases/login_usecase.dart';
@@ -117,6 +119,7 @@ import 'domain/usecases/create_spouse_usecase.dart';
 import 'domain/usecases/delete_spouse_usecase.dart';
 import 'domain/usecases/block_spouse_usecase.dart';
 import 'domain/usecases/generar_retos_liveness_usecase.dart';
+import 'domain/usecases/perform_full_logout_usecase.dart';
 
 // BLoCs
 import 'application/blocs/admin/admin_dashboard_bloc.dart';
@@ -133,6 +136,7 @@ import 'application/blocs/account/account_bloc.dart';
 import 'application/blocs/prospecto_validation/prospecto_validation_bloc.dart';
 import 'application/blocs/registro_residente/registro_residente_bloc.dart';
 import 'application/blocs/visitor/visitor_bloc.dart';
+import 'application/blocs/security_session/security_session_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -494,7 +498,15 @@ Future<void> inject() async {
   );
 
   sl.registerLazySingleton<LogoutUseCase>(
-    () => LogoutUseCase(sl<AuthRepository>()),
+    () => LogoutUseCase(
+      sl<AuthRepository>(),
+      performFullLogout: sl<PerformFullLogoutUseCase>(),
+    ),
+  );
+
+  sl.registerLazySingleton<PerformFullLogoutUseCase>(
+    () =>
+        PerformFullLogoutUseCase(sessionCleanup: sl<SessionCleanupPort>()),
   );
 
   sl.registerLazySingleton<GetCurrentUserUseCase>(
@@ -538,6 +550,15 @@ Future<void> inject() async {
         authRepo: sl<AuthRepository>(), accountRepo: sl<AccountRepository>()),
   );
 
+  sl.registerLazySingleton<SessionCleanupPort>(
+    () => SessionCleanupImpl(
+      authProvider: sl<FirebaseAuthProviderPort>(),
+      generalHttpClient: sl<ApiHttpClient>(),
+      biometryHttpClient:
+          sl<ApiHttpClient>(instanceName: 'biometryClient'),
+    ),
+  );
+
   // BLoCs
   sl.registerLazySingleton<AuthBloc>(
     () => AuthBloc(
@@ -547,6 +568,7 @@ Future<void> inject() async {
       getIdToken: sl<GetIdTokenUseCase>(),
       signUp: sl<SignUpUseCase>(),
       accountRepo: sl<AccountRepository>(),
+      authProvider: sl<FirebaseAuthProviderPort>(),
     ),
   );
 
@@ -557,7 +579,7 @@ Future<void> inject() async {
     ),
   );
 
-  sl.registerLazySingleton<ResidentBloc>(
+  sl.registerFactory<ResidentBloc>(
     () => ResidentBloc(
       createResidentUseCase: sl<CreateResidentUseCase>(),
       loadResidentsByLocationUseCase: sl<LoadResidentsByLocationUseCase>(),
@@ -569,21 +591,22 @@ Future<void> inject() async {
     ),
   );
 
-  sl.registerLazySingleton<FacialEnrollmentBloc>(
+  sl.registerFactory<FacialEnrollmentBloc>(
     () => FacialEnrollmentBloc(
       enrollmentApi: sl<FacialEnrollmentApiPort>(),
       authProvider: sl<FirebaseAuthProviderPort>(),
     ),
   );
 
-  sl.registerLazySingleton<FacialVerificationBloc>(
+  sl.registerFactory<FacialVerificationBloc>(
     () => FacialVerificationBloc(
       verificationApi: sl<FacialVerificationApiPort>(),
       generarRetos: sl<GenerarRetosLivenessUseCase>(),
+      authProvider: sl<FirebaseAuthProviderPort>(),
     ),
   );
 
-  sl.registerLazySingleton<OwnerBloc>(
+  sl.registerFactory<OwnerBloc>(
     () => OwnerBloc(
       loadOwnersByLocationUseCase: sl<LoadOwnersByLocationUseCase>(),
       blockOwnerUseCase: sl<BlockOwnerUseCase>(),
@@ -598,7 +621,7 @@ Future<void> inject() async {
     ),
   );
 
-  sl.registerLazySingleton<MemberBloc>(
+  sl.registerFactory<MemberBloc>(
     () => MemberBloc(
       loadMembersByLocationUseCase: sl<LoadMembersByLocationUseCase>(),
       deactivateMemberUseCase: sl<DeactivateMemberUseCase>(),
@@ -609,7 +632,7 @@ Future<void> inject() async {
     ),
   );
 
-  sl.registerLazySingleton<AdminAccountBloc>(
+  sl.registerFactory<AdminAccountBloc>(
     () => AdminAccountBloc(
       searchByEmailUseCase: sl<SearchAccountByEmailUseCase>(),
       searchByLocationUseCase: sl<SearchAccountByLocationUseCase>(),
@@ -621,7 +644,7 @@ Future<void> inject() async {
     ),
   );
 
-  sl.registerLazySingleton<QrDisplayBloc>(
+  sl.registerFactory<QrDisplayBloc>(
     () => QrDisplayBloc(sessionPort: sl<SessionPort>()),
   );
 
@@ -629,29 +652,33 @@ Future<void> inject() async {
     () => QrListBloc(getQrListUseCase: sl<GetQrListUseCase>()),
   );
 
-  sl.registerLazySingleton<ProspectoValidationBloc>(
+  sl.registerFactory<ProspectoValidationBloc>(
     () => ProspectoValidationBloc(
       validarResidente: sl<ValidarProspectoResidenteUseCase>(),
       validarMiembro: sl<ValidarProspectoMiembroUseCase>(),
     ),
   );
 
-  sl.registerLazySingleton<RegistroResidenteBloc>(
+  sl.registerFactory<RegistroResidenteBloc>(
     () => RegistroResidenteBloc(
       crearCuentaResidente: sl<CrearCuentaResidenteUseCase>(),
       crearCuentaMiembro: sl<CrearCuentaMiembroUseCase>(),
     ),
   );
 
-  sl.registerLazySingleton<VisitorBloc>(
+  sl.registerFactory<VisitorBloc>(
     () => VisitorBloc(usecase: sl<ManageVisitorUseCase>()),
   );
 
-  sl.registerLazySingleton<AccountBloc>(
+  sl.registerFactory<AccountBloc>(
     () => AccountBloc(
       registerAccount: sl<RegisterAccountUseCase>(),
       updateEmail: sl<UpdateEmailUseCase>(),
       loadFamilyMembers: sl<LoadFamilyMembersUseCase>(),
     ),
+  );
+
+  sl.registerLazySingleton<SecuritySessionBloc>(
+    () => SecuritySessionBloc(),
   );
 }

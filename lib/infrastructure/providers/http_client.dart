@@ -18,11 +18,9 @@ class ApiHttpClient {
       receiveTimeout: const Duration(seconds: 30),
     ),
   ) {
-    // Agregar interceptor para JWT
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          // Obtener token Firebase actual
           final user = firebaseAuth.currentUser;
           if (user != null) {
             try {
@@ -45,14 +43,34 @@ class ApiHttpClient {
   }
 
   void setJwtToken(String token) {
-    _jwtToken = token;
-    dio.options.headers['Authorization'] = 'Bearer $token';
+    _setToken(token);
+  }
+
+  void setToken(String token) {
+    _setToken(token);
   }
 
   String? getJwtToken() => _jwtToken;
 
+  String? getToken() => _jwtToken;
+
   void clearJwtToken() {
+    _clearToken();
+  }
+
+  void clearToken() {
+    _clearToken();
+  }
+
+  void _setToken(String token) {
+    _jwtToken = token;
+    dio.options.headers['Authorization'] = 'Bearer $token';
+    print('HTTP: Token configurado');
+  }
+
+  void _clearToken() {
     _jwtToken = null;
     dio.options.headers.remove('Authorization');
+    print('HTTP: Token limpiado del interceptor');
   }
 }

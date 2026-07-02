@@ -35,3 +35,7 @@ class ProcesarFrameCamara extends FacialVerificationEvent {
 class RetoTiempoExpirado extends FacialVerificationEvent {
   RetoTiempoExpirado();
 }
+
+class VerificationCancelada extends FacialVerificationEvent {
+  VerificationCancelada();
+}

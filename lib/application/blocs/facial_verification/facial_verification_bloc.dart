@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/entities/liveness_reto.dart';
 import '../../../domain/ports/biometrics/facial_verification_api_port.dart';
+import '../../../domain/ports/firebase_auth_provider_port.dart';
 import '../../../domain/usecases/generar_retos_liveness_usecase.dart';
 import 'facial_verification_event.dart';
 import 'facial_verification_state.dart';
@@ -10,6 +11,7 @@ class FacialVerificationBloc
     extends Bloc<FacialVerificationEvent, FacialVerificationState> {
   final FacialVerificationApiPort verificationApi;
   final GenerarRetosLivenessUseCase generarRetos;
+  final FirebaseAuthProviderPort authProvider;
 
   List<LivenessReto> _retos = [];
   int _indiceRetoActual = 0;
@@ -20,11 +22,13 @@ class FacialVerificationBloc
   FacialVerificationBloc({
     required this.verificationApi,
     required this.generarRetos,
+    required this.authProvider,
   }) : super(FacialVerificationInitial()) {
     on<VerifyFaceSubmitted>(_onVerifyFace);
     on<IniciarVerificacionLiveness>(_onIniciarVerificacionLiveness);
     on<ProcesarFrameCamara>(_onProcesarFrameCamara);
     on<RetoTiempoExpirado>(_onRetoTiempoExpirado);
+    on<VerificationCancelada>(_onCancelada);
   }
 
   Future<void> _onVerifyFace(
@@ -53,6 +57,12 @@ class FacialVerificationBloc
     IniciarVerificacionLiveness event,
     Emitter<FacialVerificationState> emit,
   ) async {
+    if (authProvider.currentUser == null) {
+      emit(FacialVerificationFailure(
+          mensaje: 'Sesión no iniciada.'));
+      return;
+    }
+
     _retos = generarRetos.execute();
     _indiceRetoActual = 0;
 
@@ -132,6 +142,13 @@ class FacialVerificationBloc
     emit(LivenessErrorTimeout(
       mensaje: 'Tiempo expirado. Intente de nuevo.',
     ));
+  }
+
+  Future<void> _onCancelada(
+    VerificationCancelada event,
+    Emitter<FacialVerificationState> emit,
+  ) async {
+    _cancelarTemporizador();
   }
 
   @override

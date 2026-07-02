@@ -8,10 +8,14 @@ import '../../application/blocs/account/account_state.dart';
 import '../../application/blocs/resident/resident_bloc.dart';
 import '../../application/blocs/resident/resident_event.dart';
 import '../../application/blocs/resident/resident_state.dart';
+import '../../application/blocs/security_session/security_session_bloc.dart';
+import '../../application/blocs/security_session/security_session_state.dart';
+import '../../domain/entities/prospecto_residente.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/metric_card.dart';
 import '../widgets/activity_item.dart';
 import '../routes/app_routes.dart';
+import 'facial_verification_page.dart';
 
 class ResidentDashboardPage extends StatefulWidget {
   final int personaId;
@@ -32,6 +36,48 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
   int tabIndex = 0;
   bool _requestedMembers = false;
   bool _requestedAccesses = false;
+
+  Future<bool> _navigateSeguro(
+    String route, {
+    required Map<String, dynamic> args,
+    required String nombres,
+    required String apellidos,
+    required ViviendaInfo vivienda,
+  }) async {
+    final securityState = context.read<SecuritySessionBloc>().state;
+    bool canAccess = securityState is SecuritySessionActive;
+
+    if (!canAccess) {
+      final prospecto = ProspectoResidente(
+        personaId: args['personaId'] as int? ?? 0,
+        identificacion: args['identificacion'] as String? ?? '',
+        nombres: nombres,
+        apellidos: apellidos,
+        tipoRegistro: 'residente',
+        vivienda: vivienda,
+        puedeCrearCuenta: false,
+      );
+
+      final success = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => FacialVerificationPage(
+            prospecto: prospecto,
+            mode: VerificationMode.unlockApp,
+          ),
+        ),
+      );
+      canAccess = success == true;
+    }
+
+    if (canAccess && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+            route, (_) => false,
+            arguments: args);
+      });
+    }
+    return canAccess;
+  }
 
   @override
   void initState() {
@@ -61,7 +107,6 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
     int? viviendaId;
     
     if (authState is AuthSuccess) {
-      // SIEMPRE usar datos del AuthBloc (son la fuente de verdad)
       nombres = (authState.user['nombres'] ?? '') as String;
       apellidos = (authState.user['apellidos'] ?? '') as String;
       displayName = '$nombres $apellidos'.trim().isNotEmpty ? '$nombres $apellidos' : 'Usuario';
@@ -72,6 +117,22 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
       residenceId = (authState.user['residence'] ?? '') as String;
       viviendaId = authState.user['residence_id'] as int?;
     }
+
+    final viviendaMap = (authState is AuthSuccess
+            ? authState.user['vivienda'] as Map<String, dynamic>?
+            : null) ??
+        <String, dynamic>{};
+    final viviendaInfo = ViviendaInfo(
+      viviendaId: viviendaMap['vivienda_id'] as int? ?? viviendaMap['viviendaId'] as int? ?? 0,
+      manzana: viviendaMap['manzana'] as String? ?? '',
+      villa: viviendaMap['villa'] as String? ?? '',
+    );
+
+    final _args = {
+      'personaId': personaId,
+      'identificacion': identificacion,
+      'residenceId': residenceId,
+    };
     
     // Los parámetros del widget son FALLBACK (para compatibilidad con rutas antiguas)
     if (residenceId.isEmpty && widget.residenceId.isNotEmpty) residenceId = widget.residenceId;
@@ -86,12 +147,19 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
       isRoot: true,
       onTabSelected: (i) {
         if (i == 0) return;
+        if (i == 1) {
+          _navigateSeguro(AppRoutes.qrSelf,
+              args: _args,
+              nombres: nombres,
+              apellidos: apellidos,
+              vivienda: viviendaInfo);
+          return;
+        }
         WidgetsBinding.instance.addPostFrameCallback((_) {
           switch (i) {
-            case 1: Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.qrSelf, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
-            case 2: Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.accessHistory, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
-            case 3: Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.members, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
-            case 4: Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.profile, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId}); break;
+            case 2: Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.accessHistory, (route) => false, arguments: _args); break;
+            case 3: Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.members, (route) => false, arguments: _args); break;
+            case 4: Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.profile, (route) => false, arguments: _args); break;
           }
         });
       },
@@ -187,20 +255,20 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
               crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1.25,
             ),
             children: [
-              _QuickCard(icon: Icons.qr_code_2, label: 'Mi QR', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.qrSelf, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
+              _QuickCard(icon: Icons.qr_code_2, label: 'Mi QR', onTap: () async {
+                await _navigateSeguro(AppRoutes.qrSelf, args: _args, nombres: nombres, apellidos: apellidos, vivienda: viviendaInfo);
               }),
-              _QuickCard(icon: Icons.group_add, label: 'QR Visita', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.qrVisit, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
+              _QuickCard(icon: Icons.group_add, label: 'QR Visita', onTap: () async {
+                await _navigateSeguro(AppRoutes.qrVisit, args: _args, nombres: nombres, apellidos: apellidos, vivienda: viviendaInfo);
               }),
               _QuickCard(icon: Icons.history, label: 'Historial', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
+                Navigator.pushNamed(context, AppRoutes.accessHistory, arguments: _args);
               }),
               _QuickCard(icon: Icons.family_restroom, label: 'Familia', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.members, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
+                Navigator.pushNamed(context, AppRoutes.members, arguments: _args);
               }),
               _QuickCard(icon: Icons.list_alt, label: 'Mis QRs', onTap: () {
-                Navigator.pushNamed(context, AppRoutes.qrList, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
+                Navigator.pushNamed(context, AppRoutes.qrList, arguments: _args);
               }),
             ],
           ),

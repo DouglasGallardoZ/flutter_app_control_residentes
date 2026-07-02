@@ -59,7 +59,7 @@ Future<void> navigateToHome(BuildContext context, {String? routeUserId, String? 
     userName ??= authState.user['name'] as String?;
   }
 
-  final role = authState is AuthSuccess ? (authState.user['role'] as String? ?? 'resident') : 'resident';
+  final role = authState is AuthSuccess ? (authState.user['rol'] as String? ?? 'residente') : 'residente';
 
   switch (role) {
     case 'admin':

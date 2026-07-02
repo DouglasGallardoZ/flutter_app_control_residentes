@@ -14,6 +14,7 @@ class FacialCaptureMobile extends StatefulWidget {
   final int? indiceReto;
   final int? totalRetos;
   final int? segundosRestantes;
+  final bool navigatingAway;
 
   const FacialCaptureMobile({
     required this.controller,
@@ -24,6 +25,7 @@ class FacialCaptureMobile extends StatefulWidget {
     this.indiceReto,
     this.totalRetos,
     this.segundosRestantes,
+    this.navigatingAway = false,
   });
 
   @override
@@ -52,6 +54,7 @@ class FacialCaptureMobileState extends State<FacialCaptureMobile> {
   DateTime? _lastCaptureTime;
   DateTime? _lastFrameDispatch;
   bool _isDisposing = false;
+  bool _isNavigatingAway = false;
 
   static const _throttleCapturaMs = 800;
   static const _throttleFrameMs = 100;
@@ -71,6 +74,14 @@ class FacialCaptureMobileState extends State<FacialCaptureMobile> {
           !_cameraController!.value.isInitialized;
     } catch (_) {
       return true;
+    }
+  }
+
+  @override
+  void didUpdateWidget(FacialCaptureMobile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.navigatingAway && !_isNavigatingAway) {
+      setState(() => _isNavigatingAway = true);
     }
   }
 
@@ -208,18 +219,11 @@ class FacialCaptureMobileState extends State<FacialCaptureMobile> {
   void dispose() {
     _isDisposing = true;
 
-    final CameraController? oldController = _cameraController;
-    _cameraController = null;
-
-    if (oldController != null) {
-      if (oldController.value.isStreamingImages) {
-        oldController.stopImageStream().then((_) {
-          oldController.dispose();
-        }).catchError((_) {});
-      } else {
-        oldController.dispose();
-      }
+    if (_cameraController != null &&
+        _cameraController!.value.isStreamingImages) {
+      _cameraController!.stopImageStream().catchError((_) {});
     }
+    _cameraController = null;
 
     super.dispose();
   }
@@ -230,10 +234,12 @@ class FacialCaptureMobileState extends State<FacialCaptureMobile> {
       return const SizedBox.shrink();
     }
 
+    final preview = _buildCameraPreview();
+
     if (_modoLiveness) {
       return Stack(
         children: [
-          CameraPreview(_cameraController!),
+          preview,
           if (widget.instruccionLiveness != null)
             Positioned(
               top: MediaQuery.of(context).padding.top + 8,
@@ -244,7 +250,22 @@ class FacialCaptureMobileState extends State<FacialCaptureMobile> {
         ],
       );
     }
-    return CameraPreview(_cameraController!);
+    return preview;
+  }
+
+  Widget _buildCameraPreview() {
+    if (_isNavigatingAway || _isDisposing) {
+      return const SizedBox.shrink();
+    }
+    try {
+      if (_cameraController == null ||
+          !_cameraController!.value.isInitialized) {
+        return const SizedBox.shrink();
+      }
+      return CameraPreview(_cameraController!);
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
   }
 
   Widget _buildBannerLiveness(BuildContext context) {

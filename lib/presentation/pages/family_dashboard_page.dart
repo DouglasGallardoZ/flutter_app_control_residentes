@@ -3,9 +3,13 @@ import '../routes/app_routes.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_state.dart';
+import '../../application/blocs/security_session/security_session_bloc.dart';
+import '../../application/blocs/security_session/security_session_state.dart';
+import '../../domain/entities/prospecto_residente.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/activity_item.dart';
 import '../widgets/metric_card.dart';
+import 'facial_verification_page.dart';
 
 /// Extensión helper para determinar el rol del usuario
 extension AuthStateExtension on AuthState {
@@ -30,6 +34,48 @@ class FamilyDashboardPage extends StatefulWidget {
 }
 
 class _FamilyDashboardPageState extends State<FamilyDashboardPage> {
+
+  Future<bool> _navigateSeguro(
+    String route, {
+    required Map<String, dynamic> args,
+    required String nombres,
+    required String apellidos,
+    required ViviendaInfo vivienda,
+  }) async {
+    final securityState = context.read<SecuritySessionBloc>().state;
+    bool canAccess = securityState is SecuritySessionActive;
+
+    if (!canAccess) {
+      final prospecto = ProspectoResidente(
+        personaId: args['personaId'] as int? ?? 0,
+        identificacion: args['identificacion'] as String? ?? '',
+        nombres: nombres,
+        apellidos: apellidos,
+        tipoRegistro: 'miembro_familia',
+        vivienda: vivienda,
+        puedeCrearCuenta: false,
+      );
+
+      final success = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => FacialVerificationPage(
+            prospecto: prospecto,
+            mode: VerificationMode.unlockApp,
+          ),
+        ),
+      );
+      canAccess = success == true;
+    }
+
+    if (canAccess && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+            route, (_) => false,
+            arguments: args);
+      });
+    }
+    return canAccess;
+  }
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -61,6 +107,22 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage> {
     if (identificacion.isEmpty && widget.identificacion.isNotEmpty) identificacion = widget.identificacion;
     if (personaId == 0 && widget.personaId != 0) personaId = widget.personaId;
 
+    final viviendaMap = (authState is AuthSuccess
+            ? authState.user['vivienda'] as Map<String, dynamic>?
+            : null) ??
+        <String, dynamic>{};
+    final viviendaInfo = ViviendaInfo(
+      viviendaId: viviendaMap['vivienda_id'] as int? ?? viviendaMap['viviendaId'] as int? ?? 0,
+      manzana: viviendaMap['manzana'] as String? ?? '',
+      villa: viviendaMap['villa'] as String? ?? '',
+    );
+
+    final _args = {
+      'personaId': personaId,
+      'identificacion': identificacion,
+      'residenceId': residenceId,
+    };
+
     final displayResidence = residenceId.isNotEmpty ? residenceId : '—';
 
     return AppScaffold(
@@ -68,16 +130,18 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage> {
       routeName: '/familyDashboard',
       onTabSelected: (i) {
         if (i == 0) return;
+        if (i == 1) {
+          _navigateSeguro(AppRoutes.qrSelf,
+              args: _args,
+              nombres: nombres,
+              apellidos: apellidos,
+              vivienda: viviendaInfo);
+          return;
+        }
         WidgetsBinding.instance.addPostFrameCallback((_) {
           switch (i) {
-            case 1:
-              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.qrSelf, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
-              break;
             case 2:
-              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.accessHistory, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
-              break;
-            case 3:
-              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.profile, (route) => false, arguments: {'personaId': personaId, 'identificacion': identificacion, 'residenceId': residenceId});
+              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.profile, (_) => false, arguments: _args);
               break;
           }
         });

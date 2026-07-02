@@ -3,36 +3,48 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:camera/camera.dart';
 import '../../domain/entities/prospecto_residente.dart';
+import '../../application/blocs/auth/auth_bloc.dart';
+import '../../application/blocs/auth/auth_state.dart';
 import '../../application/blocs/registro_residente/registro_residente_bloc.dart';
 import '../../application/blocs/registro_residente/registro_residente_event.dart';
 import '../../application/blocs/facial_enrollment/facial_enrollment_event.dart';
 import '../../application/blocs/facial_verification/facial_verification_bloc.dart';
 import '../../application/blocs/facial_verification/facial_verification_event.dart';
 import '../../application/blocs/facial_verification/facial_verification_state.dart';
+import '../../application/blocs/security_session/security_session_bloc.dart';
+import '../../application/blocs/security_session/security_session_event.dart';
 import '../widgets/facial_capture/facial_capture_view.dart';
 import '../widgets/facial_capture/facial_capture_mobile.dart';
 import '../../domain/ports/face_detection_port.dart';
 import '../../injection.dart';
 
+enum VerificationMode { createCredentials, unlockApp }
+
 class FacialVerificationPage extends StatelessWidget {
   final dynamic prospecto;
+  final VerificationMode mode;
 
-  const FacialVerificationPage({super.key, required this.prospecto});
+  const FacialVerificationPage({
+    super.key,
+    required this.prospecto,
+    this.mode = VerificationMode.createCredentials,
+  });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<FacialVerificationBloc>(
       create: (_) => sl<FacialVerificationBloc>()
         ..add(IniciarVerificacionLiveness()),
-      child: _FacialVerificationView(prospecto: prospecto),
+      child: _FacialVerificationView(prospecto: prospecto, mode: mode),
     );
   }
 }
 
 class _FacialVerificationView extends StatefulWidget {
   final dynamic prospecto;
+  final VerificationMode mode;
 
-  const _FacialVerificationView({required this.prospecto});
+  const _FacialVerificationView({required this.prospecto, required this.mode});
 
   @override
   State<_FacialVerificationView> createState() =>
@@ -43,6 +55,9 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
   String? _ultimaFotoPath;
+  bool _cameraDisposeInProgress = false;
+  bool _isNavigatingAway = false;
+  late FacialVerificationBloc _facialVerificationBloc;
 
   String get _tipoRegistro {
     if (widget.prospecto is ProspectoMiembro) return 'miembro';
@@ -65,16 +80,29 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
   @override
   void initState() {
     super.initState();
+    _facialVerificationBloc = context.read<FacialVerificationBloc>();
+
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthSuccess) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.of(context).pop();
+      });
+      return;
+    }
+
     _initializeCamera();
   }
 
   @override
   void dispose() {
+    _facialVerificationBloc.add(VerificationCancelada());
     _disposeCamera();
     super.dispose();
   }
 
   Future<void> _disposeCamera() async {
+    if (_cameraDisposeInProgress) return;
+    _cameraDisposeInProgress = true;
     try {
       if (_cameraController != null && _cameraController!.value.isInitialized) {
         _detenerStreamCamara();
@@ -85,7 +113,6 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
     } finally {
       _cameraController = null;
       _isCameraInitialized = false;
-      if (mounted) setState(() {});
     }
   }
 
@@ -258,6 +285,14 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
     // Enrollment callback — no usado en flujo de liveness
   }
 
+  bool _estaAutenticado() {
+    try {
+      return context.read<AuthBloc>().state is AuthSuccess;
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<FacialVerificationBloc, FacialVerificationState>(
@@ -266,6 +301,7 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
           _detenerStreamCamara();
           _enviarFotoAlServidor();
         } else if (state is LivenessErrorTimeout) {
+          if (!_estaAutenticado()) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.mensaje),
@@ -277,29 +313,72 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
               .read<FacialVerificationBloc>()
               .add(IniciarVerificacionLiveness());
         } else if (state is FacialVerificationSuccess) {
+          if (state.match != true) {
+            if (widget.mode == VerificationMode.unlockApp) {
+              if (mounted) setState(() => _isNavigatingAway = true);
+              _disposeCamera();
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) Navigator.of(context).pop(false);
+              });
+            } else {
+              _mostrarResultado(
+                exitosa: false,
+                distance: state.distance,
+                imagePath: _ultimaFotoPath ?? '',
+              );
+            }
+            return;
+          }
+
+          if (widget.mode == VerificationMode.unlockApp) {
+            context.read<SecuritySessionBloc>().add(UnlockSessionRequested());
+            if (mounted) setState(() => _isNavigatingAway = true);
+            _disposeCamera();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) Navigator.of(context).pop(true);
+            });
+            return;
+          }
+
           _disposeCamera();
           context.read<RegistroResidenteBloc>().add(
                 VerificacionFacialCompleta(
-                  esValida: state.match,
+                  esValida: true,
                   distancia: state.distance,
                 ),
               );
           _mostrarResultado(
-            exitosa: state.match,
+            exitosa: true,
             distance: state.distance,
             imagePath: _ultimaFotoPath ?? '',
           );
         } else if (state is FacialVerificationFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${state.mensaje}'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          context
-              .read<FacialVerificationBloc>()
-              .add(IniciarVerificacionLiveness());
+          if (widget.mode == VerificationMode.unlockApp) {
+            if (!_estaAutenticado()) return;
+            if (mounted) setState(() => _isNavigatingAway = true);
+            _disposeCamera();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Verificación fallida: ${state.mensaje}'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) Navigator.of(context).pop(false);
+            });
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error: ${state.mensaje}'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            context
+                .read<FacialVerificationBloc>()
+                .add(IniciarVerificacionLiveness());
+          }
         }
       },
       builder: (context, state) {
@@ -326,6 +405,7 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
                   indiceReto: livenessProps?.indiceReto,
                   totalRetos: livenessProps?.totalRetos,
                   segundosRestantes: livenessProps?.segundosRestantes,
+                  navigatingAway: _isNavigatingAway,
                 )
               : const Center(child: CircularProgressIndicator()),
         );

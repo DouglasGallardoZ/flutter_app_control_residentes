@@ -3,7 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_event.dart';
 import '../../application/blocs/auth/auth_state.dart';
+import '../../application/blocs/security_session/security_session_bloc.dart';
+import '../../application/blocs/security_session/security_session_event.dart';
+import '../../application/blocs/security_session/security_session_state.dart';
+import '../../domain/entities/prospecto_residente.dart';
 import '../routes/app_routes.dart';
+import 'facial_verification_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,6 +22,15 @@ class _LoginPageState extends State<LoginPage> {
   final passCtrl = TextEditingController();
   final formKey = GlobalKey<FormState>();
   bool showPassword = false;
+  bool _isNavigating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthBloc>().add(CheckAuthStatus());
+    });
+  }
 
   @override
   void dispose() {
@@ -49,17 +63,82 @@ class _LoginPageState extends State<LoginPage> {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: BlocConsumer<AuthBloc, AuthState>(
-                  listener: (ctx, state) {
-                    if (state is AuthSuccess) {
+                  listener: (ctx, state) async {
+                    if (state is AuthSuccess && !_isNavigating) {
+                      _isNavigating = true;
                       try {
                         final rol = state.user['rol'] as String? ?? 'residente';
                         final personaId = state.user['personaId'] as int? ?? 0;
                         final identificacion = state.user['identificacion'] as String? ?? '';
+                        final nombres = state.user['nombres'] as String? ?? '';
+                        final apellidos = state.user['apellidos'] as String? ?? '';
                         final vivienda = state.user['vivienda'] as Map<String, dynamic>?;
                         final nombreCompleto = state.user['name'] as String? ?? 'Usuario';
                         final residenceId = vivienda != null
                             ? '${vivienda['manzana']}-${vivienda['villa']}'
                             : '';
+
+                        if (rol.toLowerCase() == 'admin' ||
+                            rol.toLowerCase() == 'administrador') {
+                          ctx.read<SecuritySessionBloc>()
+                              .add(UnlockSessionRequested());
+                          Navigator.pushReplacementNamed(
+                            ctx,
+                            AppRoutes.adminDashboard,
+                            arguments: {
+                              'personaId': personaId,
+                              'identificacion': identificacion,
+                              'residenceId': residenceId,
+                              'userName': nombreCompleto,
+                            },
+                          );
+                          return;
+                        }
+
+                        final viviendaInfo = ViviendaInfo(
+                          viviendaId: vivienda?['vivienda_id'] as int? ??
+                              vivienda?['viviendaId'] as int? ??
+                              0,
+                          manzana: vivienda?['manzana'] as String? ?? '',
+                          villa: vivienda?['villa'] as String? ?? '',
+                        );
+
+                        final prospecto = ProspectoResidente(
+                          personaId: personaId,
+                          identificacion: identificacion,
+                          nombres: nombres,
+                          apellidos: apellidos,
+                          tipoRegistro: rol.toLowerCase(),
+                          vivienda: viviendaInfo,
+                          puedeCrearCuenta: false,
+                        );
+
+                        final success = await Navigator.of(ctx).push<bool>(
+                          MaterialPageRoute(
+                            builder: (_) => FacialVerificationPage(
+                              prospecto: prospecto,
+                              mode: VerificationMode.unlockApp,
+                            ),
+                          ),
+                        );
+
+                        if (success != true) {
+                          _isNavigating = false;
+                          if (ctx.mounted) {
+                            FocusScope.of(ctx).unfocus();
+                            ctx.read<AuthBloc>().add(LogoutRequested());
+                            ctx.read<SecuritySessionBloc>()
+                                .add(SessionTerminated());
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Verificación facial requerida para acceder.'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                          }
+                          return;
+                        }
 
                         final args = {
                           'personaId': personaId,
@@ -106,7 +185,18 @@ class _LoginPageState extends State<LoginPage> {
                     }
                   },
                   builder: (ctx, state) {
-                    final loading = state is AuthLoading;
+                    if (state is AuthLoading) {
+                      return const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text('Verificando sesión...'),
+                          ],
+                        ),
+                      );
+                    }
                     return Form(
                       key: formKey,
                       child: SingleChildScrollView(
@@ -175,9 +265,7 @@ class _LoginPageState extends State<LoginPage> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: loading
-                                  ? null
-                                  : () {
+                              onPressed: () {
                                       if (formKey.currentState!.validate()) {
                                         context.read<AuthBloc>().add(
                                               LoginSubmitted(
@@ -187,15 +275,7 @@ class _LoginPageState extends State<LoginPage> {
                                             );
                                       }
                                     },
-                              child: loading
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text('Ingresar'),
+                              child: const Text('Ingresar'),
                             ),
                           ),
                           const SizedBox(height: 24),
@@ -209,9 +289,7 @@ class _LoginPageState extends State<LoginPage> {
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
-                              onPressed: loading
-                                  ? null
-                                  : () {
+                              onPressed: () {
                                       Navigator.of(context)
                                           .pushNamed('/registerOption');
                                     },

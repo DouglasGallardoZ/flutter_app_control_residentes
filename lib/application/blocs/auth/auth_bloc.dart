@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/usecases/login_usecase.dart';
 import '../../../domain/usecases/logout_usecase.dart';
@@ -5,6 +6,8 @@ import '../../../domain/usecases/get_current_user_usecase.dart';
 import '../../../domain/usecases/get_id_token_usecase.dart';
 import '../../../domain/usecases/sign_up_usecase.dart';
 import '../../../domain/ports/account_repository.dart';
+import '../../../domain/ports/firebase_auth_provider_port.dart';
+import '../../../domain/entities/auth_result.dart';
 import '../../../domain/entities/auth_session.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
@@ -16,6 +19,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final GetIdTokenUseCase getIdToken;
   final SignUpUseCase signUp;
   final AccountRepository accountRepo;
+  final FirebaseAuthProviderPort authProvider;
+
+  bool _isLoggingOut = false;
+  StreamSubscription<AuthResult?>? _authStateSubscription;
 
   AuthBloc({
     required this.login,
@@ -24,7 +31,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.getIdToken,
     required this.signUp,
     required this.accountRepo,
+    required this.authProvider,
   }) : super(AuthInitial()) {
+    _listenAuthStateChanges();
+
     on<LoginSubmitted>((event, emit) async {
       emit(AuthLoading());
       try {
@@ -40,18 +50,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     });
 
     on<LogoutRequested>((event, emit) async {
+      _isLoggingOut = true;
       try {
         await logout.execute();
         emit(AuthInitial());
       } catch (ex) {
-        emit(AuthFailure('Error al cerrar sesión: ${ex.toString()}'));
+        emit(AuthFailure(
+            'Error al cerrar sesión: ${ex.toString()}'));
+      } finally {
+        await Future.delayed(const Duration(milliseconds: 2000));
+        _isLoggingOut = false;
       }
     });
 
     on<CheckAuthStatus>((event, emit) async {
+      if (_isLoggingOut) return;
       try {
         final currentUserBasic = getCurrentUser.execute();
-        if (currentUserBasic != null && currentUserBasic['uid'] != null) {
+        if (currentUserBasic != null &&
+            currentUserBasic['uid'] != null) {
           final uid = currentUserBasic['uid'] as String;
           final email = currentUserBasic['email'] as String?;
 
@@ -97,6 +114,31 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     });
   }
 
+  void _listenAuthStateChanges() {
+    _authStateSubscription =
+        authProvider.authStateChanges.listen((user) {
+      print(
+          ' AUTH SYNC: authStateChanges emitido -> usuario=${user?.uid ?? 'null'}, _isLoggingOut=$_isLoggingOut');
+
+      if (_isLoggingOut) {
+        print(
+            ' AUTH SYNC: ignorando emisión durante logout');
+        return;
+      }
+
+      if (user == null) {
+        print(
+            ' AUTH SYNC: usuario deslogueado detectado -> emitiendo AuthInitial');
+        if (!isClosed) add(CheckAuthStatus());
+        return;
+      }
+
+      print(
+          ' AUTH SYNC: usuario autenticado detectado (${user.uid}) -> despachando CheckAuthStatus');
+      if (!isClosed) add(CheckAuthStatus());
+    });
+  }
+
   String _extractErrorMessage(Object ex) {
     final message = ex.toString();
 
@@ -125,5 +167,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
 
     return message.isEmpty ? 'Error en autenticación' : message;
+  }
+
+  @override
+  Future<void> close() {
+    _authStateSubscription?.cancel();
+    return super.close();
   }
 }

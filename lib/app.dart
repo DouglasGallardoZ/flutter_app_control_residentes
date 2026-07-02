@@ -20,6 +20,8 @@ import 'application/blocs/admin_account/admin_account_bloc.dart';
 import 'application/blocs/qr_display/qr_display_bloc.dart';
 import 'application/blocs/prospecto_validation/prospecto_validation_bloc.dart';
 import 'application/blocs/registro_residente/registro_residente_bloc.dart';
+import 'application/blocs/security_session/security_session_bloc.dart';
+import 'application/blocs/security_session/security_session_event.dart';
 import 'injection.dart';
 
 class App extends StatelessWidget {
@@ -43,21 +45,54 @@ class App extends StatelessWidget {
         BlocProvider<QrDisplayBloc>(create: (_) => sl<QrDisplayBloc>()),
         BlocProvider<ProspectoValidationBloc>(create: (_) => sl<ProspectoValidationBloc>()),
         BlocProvider<RegistroResidenteBloc>(create: (_) => sl<RegistroResidenteBloc>()),
+        BlocProvider<SecuritySessionBloc>(create: (_) => sl<SecuritySessionBloc>()),
       ],
-      child: ValueListenableBuilder<ThemeMode>(
-        valueListenable: ThemeController.mode,
-        builder: (ctx, mode, _) {
-          return MaterialApp(
-            title: 'Acceso Residencial',
-            theme: AppTheme.light,
-            darkTheme: AppTheme.dark,
-            themeMode: mode, 
-            initialRoute: AppRoutes.login,
-            onGenerateRoute: AppRoutes.onGenerateRoute,
-            debugShowCheckedModeBanner: false,
-          );
-        },
-      ),
+      child: const GlobalLifecycleWrapper(),
+    );
+  }
+}
+
+class GlobalLifecycleWrapper extends StatefulWidget {
+  const GlobalLifecycleWrapper({super.key});
+
+  @override
+  State<GlobalLifecycleWrapper> createState() => _GlobalLifecycleWrapperState();
+}
+
+class _GlobalLifecycleWrapperState extends State<GlobalLifecycleWrapper>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    context.read<SecuritySessionBloc>().add(AppLifecycleChanged(state));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeController.mode,
+      builder: (ctx, mode, _) {
+        return MaterialApp(
+          title: 'Acceso Residencial',
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: mode,
+          initialRoute: AppRoutes.login,
+          onGenerateRoute: AppRoutes.onGenerateRoute,
+          debugShowCheckedModeBanner: false,
+        );
+      },
     );
   }
 }

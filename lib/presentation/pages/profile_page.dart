@@ -6,6 +6,8 @@ import '../../application/blocs/auth/auth_state.dart';
 import '../../application/blocs/account/account_bloc.dart';
 import '../../application/blocs/account/account_event.dart';
 import '../../application/blocs/account/account_state.dart';
+import '../../application/blocs/security_session/security_session_bloc.dart';
+import '../../application/blocs/security_session/security_session_event.dart';
 import '../widgets/app_scaffold.dart';
 import '../routes/app_routes.dart';
 import '../theme/theme_controller.dart';
@@ -141,6 +143,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (confirmed == true && mounted) {
       context.read<AuthBloc>().add(LogoutRequested());
+      context.read<SecuritySessionBloc>().add(SessionTerminated());
+      Navigator.of(context).pushNamedAndRemoveUntil(
+          '/login', (route) => false);
     }
   }
 
@@ -271,21 +276,11 @@ class _ProfilePageState extends State<ProfilePage> {
           }
         });
       },
-      body: BlocListener<AuthBloc, AuthState>(
-        listener: (ctxAuth, authState) {
-          if (authState is AuthInitial) {
-            Navigator.pushNamedAndRemoveUntil(
-              ctxAuth,
-              AppRoutes.login,
-              (r) => false,
-            );
+      body: BlocBuilder<AuthBloc, AuthState>(
+        builder: (ctx, state) {
+          if (state is! AuthSuccess) {
+            return const Center(child: Text('No hay sesión activa'));
           }
-        },
-        child: BlocBuilder<AuthBloc, AuthState>(
-          builder: (ctx, state) {
-            if (state is! AuthSuccess) {
-              return const Center(child: Text('No hay sesión activa'));
-            }
 
             // Extraer datos del usuario desde el estado del AuthBloc
             final userMap = state.user;
@@ -340,9 +335,8 @@ class _ProfilePageState extends State<ProfilePage> {
             );
           },
         ),
-      ),
-    );
-  }
+      );
+    }
 
   /// Construye el contenido principal del perfil
   Widget _buildProfileContent({

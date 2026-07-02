@@ -16,6 +16,7 @@ class FacialCaptureView extends StatelessWidget {
   final int? indiceReto;
   final int? totalRetos;
   final int? segundosRestantes;
+  final bool navigatingAway;
 
   const FacialCaptureView({
     super.key,
@@ -27,6 +28,7 @@ class FacialCaptureView extends StatelessWidget {
     this.indiceReto,
     this.totalRetos,
     this.segundosRestantes,
+    this.navigatingAway = false,
   });
 
   @override
@@ -46,6 +48,7 @@ class FacialCaptureView extends StatelessWidget {
       indiceReto: indiceReto,
       totalRetos: totalRetos,
       segundosRestantes: segundosRestantes,
+      navigatingAway: navigatingAway,
     );
   }
 }
