@@ -22,6 +22,7 @@ import 'application/blocs/prospecto_validation/prospecto_validation_bloc.dart';
 import 'application/blocs/registro_residente/registro_residente_bloc.dart';
 import 'application/blocs/security_session/security_session_bloc.dart';
 import 'application/blocs/security_session/security_session_event.dart';
+import 'infrastructure/services/app_navigator.dart';
 import 'injection.dart';
 
 class App extends StatelessWidget {
@@ -85,6 +86,7 @@ class _GlobalLifecycleWrapperState extends State<GlobalLifecycleWrapper>
       builder: (ctx, mode, _) {
         return MaterialApp(
           title: 'Acceso Residencial',
+          navigatorKey: AppNavigator.navigatorKey,
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
           themeMode: mode,

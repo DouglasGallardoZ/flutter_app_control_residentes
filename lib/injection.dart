@@ -1,5 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 // Infrastructure - Providers
@@ -25,6 +27,9 @@ import 'infrastructure/providers/account_management/account_management_api_impl.
 import 'infrastructure/providers/access_management/access_history_api_impl.dart';
 import 'infrastructure/providers/qr_management/qr_generation_api_impl.dart';
 import 'infrastructure/providers/qr_management/qr_query_api_impl.dart';
+import 'infrastructure/providers/notificacion_api_provider.dart';
+import 'infrastructure/providers/admin_notificaciones_api_provider.dart';
+import 'infrastructure/services/fcm_service.dart';
 
 // Infrastructure - Adapters
 import 'infrastructure/adapters/auth_repository_impl.dart';
@@ -39,6 +44,8 @@ import 'infrastructure/adapters/member_repository_impl.dart';
 import 'infrastructure/adapters/admin_account_repository_impl.dart';
 import 'infrastructure/adapters/session_port_impl.dart';
 import 'infrastructure/adapters/session_cleanup_impl.dart';
+import 'infrastructure/adapters/notificacion_repository_impl.dart';
+import 'infrastructure/adapters/admin_notificaciones_repository_impl.dart';
 
 // Domain - Ports
 import 'domain/ports/auth_repository.dart';
@@ -68,6 +75,8 @@ import 'domain/ports/qr_management/qr_generation_api_port.dart';
 import 'domain/ports/qr_management/qr_query_api_port.dart';
 import 'domain/ports/session_port.dart';
 import 'domain/ports/session_cleanup_port.dart';
+import 'domain/ports/notificacion_repository_port.dart';
+import 'domain/ports/admin_notificaciones_repository_port.dart';
 
 // Domain - Use Cases
 import 'domain/usecases/login_usecase.dart';
@@ -121,6 +130,14 @@ import 'domain/usecases/block_spouse_usecase.dart';
 import 'domain/usecases/generar_retos_liveness_usecase.dart';
 import 'domain/usecases/perform_full_logout_usecase.dart';
 
+// Domain - Use Cases (Notificaciones)
+import 'domain/usecases/obtener_notificaciones_usecase.dart';
+import 'domain/usecases/obtener_no_leidas_usecase.dart';
+import 'domain/usecases/marcar_notificacion_leida_usecase.dart';
+import 'domain/usecases/marcar_todas_leidas_usecase.dart';
+import 'domain/usecases/eliminar_notificacion_usecase.dart';
+import 'domain/usecases/registrar_token_fcm_usecase.dart';
+
 // BLoCs
 import 'application/blocs/admin/admin_dashboard_bloc.dart';
 import 'application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
@@ -137,6 +154,8 @@ import 'application/blocs/prospecto_validation/prospecto_validation_bloc.dart';
 import 'application/blocs/registro_residente/registro_residente_bloc.dart';
 import 'application/blocs/visitor/visitor_bloc.dart';
 import 'application/blocs/security_session/security_session_bloc.dart';
+import 'application/blocs/notificaciones/notificaciones_bloc.dart';
+import 'application/blocs/admin/admin_notificaciones_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -144,16 +163,22 @@ Future<void> inject() async {
   final String apiBaseUrl = kIsWeb 
     ? 'http://localhost:8080/api/v1' 
     // : 'http://10.0.2.2:8080/api/v1';
-    : 'http://192.168.1.13:8080/api/v1';
+    : 'http://192.168.1.18:8080/api/v1';
 
   final String biometryBaseUrl = kIsWeb 
       ? 'http://localhost:8000/api/v1' 
       // : 'http://10.0.2.2:8000/api/v1';
-      : 'http://192.168.1.13:8000/api/v1';
+      : 'http://192.168.1.18:8000/api/v1';
 
   // Firebase
   final firebaseAuth = FirebaseAuth.instance;
   sl.registerLazySingleton<FirebaseAuth>(() => firebaseAuth);
+
+  final firebaseMessaging = FirebaseMessaging.instance;
+  sl.registerLazySingleton<FirebaseMessaging>(() => firebaseMessaging);
+
+  final firestore = FirebaseFirestore.instance;
+  sl.registerLazySingleton<FirebaseFirestore>(() => firestore);
 
   // HTTP Client - API General
   final apiHttpClient = ApiHttpClient(
@@ -275,6 +300,11 @@ Future<void> inject() async {
     () => QrQueryApiImpl(apiHttpClient.dio),
   );
 
+  // Providers - Notificaciones
+  sl.registerLazySingleton<NotificacionApiProvider>(
+    () => NotificacionApiProvider(sl<ApiHttpClient>()),
+  );
+
   // Adapters (Repositories)
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
@@ -338,6 +368,11 @@ Future<void> inject() async {
     () => AdminAccountRepositoryImpl(
       accountManagementApi: sl<AccountManagementApiPort>(),
     ),
+  );
+
+  // Notificaciones
+  sl.registerLazySingleton<NotificacionRepositoryPort>(
+    () => NotificacionRepositoryImpl(sl<NotificacionApiProvider>()),
   );
 
   // Use Cases
@@ -681,4 +716,58 @@ Future<void> inject() async {
   sl.registerLazySingleton<SecuritySessionBloc>(
     () => SecuritySessionBloc(),
   );
+
+  // ── Casos de Uso de Notificaciones ──
+  sl.registerLazySingleton<ObtenerNotificacionesUseCase>(
+    () => ObtenerNotificacionesUseCase(sl<NotificacionRepositoryPort>()),
+  );
+
+  sl.registerLazySingleton<ObtenerNoLeidasUseCase>(
+    () => ObtenerNoLeidasUseCase(sl<NotificacionRepositoryPort>()),
+  );
+
+  sl.registerLazySingleton<MarcarNotificacionLeidaUseCase>(
+    () => MarcarNotificacionLeidaUseCase(sl<NotificacionRepositoryPort>()),
+  );
+
+  sl.registerLazySingleton<MarcarTodasLeidasUseCase>(
+    () => MarcarTodasLeidasUseCase(sl<NotificacionRepositoryPort>()),
+  );
+
+  sl.registerLazySingleton<EliminarNotificacionUseCase>(
+    () => EliminarNotificacionUseCase(sl<NotificacionRepositoryPort>()),
+  );
+
+  sl.registerLazySingleton<RegistrarTokenFCMUseCase>(
+    () => RegistrarTokenFCMUseCase(sl<NotificacionRepositoryPort>()),
+  );
+
+  // ── BLoC de Notificaciones ──
+  sl.registerFactory<NotificacionesBloc>(
+    () => NotificacionesBloc(
+      obtenerNotificaciones: sl<ObtenerNotificacionesUseCase>(),
+      obtenerNoLeidas: sl<ObtenerNoLeidasUseCase>(),
+      marcarComoLeida: sl<MarcarNotificacionLeidaUseCase>(),
+      marcarTodasComoLeidas: sl<MarcarTodasLeidasUseCase>(),
+      eliminarNotificacion: sl<EliminarNotificacionUseCase>(),
+    ),
+  );
+
+  // ── Admin Notificaciones ──
+  sl.registerLazySingleton<AdminNotificacionesApiProvider>(
+    () => AdminNotificacionesApiProvider(sl<ApiHttpClient>()),
+  );
+
+  sl.registerLazySingleton<AdminNotificacionesRepositoryPort>(
+    () => AdminNotificacionesRepositoryImpl(
+        sl<AdminNotificacionesApiProvider>()),
+  );
+
+  sl.registerFactory<AdminNotificacionesBloc>(
+    () =>
+        AdminNotificacionesBloc(sl<AdminNotificacionesRepositoryPort>()),
+  );
+
+  // Services
+  sl.registerLazySingleton<FcmService>(() => FcmService());
 }

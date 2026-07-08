@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
@@ -7,6 +8,8 @@ import '../../application/blocs/security_session/security_session_bloc.dart';
 import '../../application/blocs/security_session/security_session_event.dart';
 import '../../application/blocs/security_session/security_session_state.dart';
 import '../../domain/entities/prospecto_residente.dart';
+import '../../infrastructure/services/fcm_service.dart';
+import '../../injection.dart';
 import '../routes/app_routes.dart';
 import 'facial_verification_page.dart';
 
@@ -37,6 +40,12 @@ class _LoginPageState extends State<LoginPage> {
     emailCtrl.dispose();
     passCtrl.dispose();
     super.dispose();
+  }
+
+  void _inicializarFCM(String usuarioId) {
+    if (kIsWeb) return;
+    final fcmService = sl<FcmService>();
+    fcmService.inicializar(usuarioId);
   }
 
   @override
@@ -77,6 +86,8 @@ class _LoginPageState extends State<LoginPage> {
                         final residenceId = vivienda != null
                             ? '${vivienda['manzana']}-${vivienda['villa']}'
                             : '';
+
+                        _inicializarFCM(personaId.toString());
 
                         if (rol.toLowerCase() == 'admin' ||
                             rol.toLowerCase() == 'administrador') {

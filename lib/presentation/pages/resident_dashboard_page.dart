@@ -14,6 +14,7 @@ import '../../domain/entities/prospecto_residente.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/metric_card.dart';
 import '../widgets/activity_item.dart';
+import '../widgets/insignia_notificaciones.dart';
 import '../routes/app_routes.dart';
 import 'facial_verification_page.dart';
 
@@ -145,6 +146,11 @@ class _ResidentDashboardPageState extends State<ResidentDashboardPage> {
       title: 'Acceso Residencial',
       routeName: '/residentDashboard',
       isRoot: true,
+      actions: [
+        InsigniaNotificaciones(
+          usuarioId: personaId.toString(),
+        ),
+      ],
       onTabSelected: (i) {
         if (i == 0) return;
         if (i == 1) {

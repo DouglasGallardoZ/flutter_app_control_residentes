@@ -5,6 +5,7 @@ import '../../application/blocs/admin/admin_dashboard_event.dart';
 import '../../application/blocs/admin/admin_dashboard_state.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_state.dart';
+import '../routes/app_routes.dart';
 import '../widgets/admin_scaffold.dart';
 
 class AdminDashboardPage extends StatefulWidget {
@@ -47,6 +48,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     return AdminScaffold(
       title: 'Panel de Administración',
       routeName: '/adminDashboard',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined),
+          tooltip: 'Enviar notificación',
+          onPressed: () {
+            Navigator.pushNamed(
+              context,
+              AppRoutes.adminNotificaciones,
+            );
+          },
+        ),
+      ],
       onTabSelected: (index) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           switch (index) {

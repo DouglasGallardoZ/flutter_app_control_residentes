@@ -8,6 +8,7 @@ import '../../application/blocs/security_session/security_session_state.dart';
 import '../../domain/entities/prospecto_residente.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/activity_item.dart';
+import '../widgets/insignia_notificaciones.dart';
 import '../widgets/metric_card.dart';
 import 'facial_verification_page.dart';
 
@@ -76,7 +77,6 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage> {
     }
     return canAccess;
   }
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -128,6 +128,11 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage> {
     return AppScaffold(
       title: 'Acceso Residencial',
       routeName: '/familyDashboard',
+      actions: [
+        InsigniaNotificaciones(
+          usuarioId: personaId.toString(),
+        ),
+      ],
       onTabSelected: (i) {
         if (i == 0) return;
         if (i == 1) {

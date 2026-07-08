@@ -22,6 +22,7 @@ import '../pages/admin_create_resident_page.dart';
 import '../pages/admin_create_owner_page.dart';
 import '../pages/admin_create_member_page.dart';
 import '../pages/admin_facial_enrollment_page.dart';
+import '../pages/admin/admin_notificaciones_page.dart';
 import '../pages/family_dashboard_page.dart';
 import '../pages/register_option_page.dart';
 import '../pages/prospecto_residente_page.dart';
@@ -68,6 +69,7 @@ class AppRoutes {
   static const String adminCreateMember = '/adminCreateMember';
   static const String adminFacialEnrollment = '/adminFacialEnrollment';
   static const String adminProfile = '/adminProfile';
+  static const String adminNotificaciones = '/adminNotificaciones';
   static const String familyDashboard = '/familyDashboard';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -380,6 +382,12 @@ class AppRoutes {
         if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminProfilePage');
         return _fadeRoute(AdminProfilePage(personaId: personaId, identificacion: identificacion), settings: settings);
       }
+
+      case adminNotificaciones:
+        return MaterialPageRoute(
+          builder: (_) => const AdminNotificacionesPage(),
+          settings: settings,
+        );
 
       case familyDashboard: {
         final args = settings.arguments as Map<String, dynamic>?;
