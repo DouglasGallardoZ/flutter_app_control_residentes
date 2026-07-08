@@ -84,6 +84,14 @@ class _AdminAccessHistoryPageState extends State<AdminAccessHistoryPage> {
                 },
               );
               break;
+            case 4:
+              Navigator.pushNamedAndRemoveUntil(
+                  context, '/adminNotificaciones', (route) => false,
+                  arguments: {
+                    'personaId': widget.personaId,
+                    'identificacion': widget.identificacion,
+                  });
+              break;
           }
         });
       },

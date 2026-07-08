@@ -119,6 +119,14 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
             case 3:
               // Ya estamos aquí
               break;
+            case 4:
+              Navigator.pushNamedAndRemoveUntil(
+                  context, '/adminNotificaciones', (route) => false,
+                  arguments: {
+                    'personaId': widget.personaId,
+                    'identificacion': widget.identificacion,
+                  });
+              break;
           }
         });
       },

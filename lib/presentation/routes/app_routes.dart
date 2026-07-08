@@ -389,12 +389,18 @@ class AppRoutes {
         return _fadeRoute(AdminProfilePage(personaId: personaId, identificacion: identificacion), settings: settings);
       }
 
-      case adminNotificaciones:
+      case adminNotificaciones: {
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        final personaId = args['personaId'] as int? ?? 0;
+        final identificacion = args['identificacion'] as String? ?? '';
         return MaterialPageRoute(
-          builder: (_) =>
-              const AdminNotificacionesPage(),
+          builder: (_) => AdminNotificacionesPage(
+            personaId: personaId,
+            identificacion: identificacion,
+          ),
           settings: settings,
         );
+      }
 
       case notificaciones:
         final userId =

@@ -341,6 +341,14 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                 },
               );
               break;
+            case 4:
+              Navigator.pushNamedAndRemoveUntil(
+                  context, '/adminNotificaciones', (route) => false,
+                  arguments: {
+                    'personaId': widget.personaId,
+                    'identificacion': widget.identificacion,
+                  });
+              break;
           }
         });
       },

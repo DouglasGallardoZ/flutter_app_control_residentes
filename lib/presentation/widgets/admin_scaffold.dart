@@ -37,6 +37,8 @@ class AdminScaffold extends StatelessWidget {
         return 2;
       case '/adminProfile':
         return 3;
+      case '/adminNotificaciones':
+        return 4;
       default:
         return 0;
     }
@@ -86,6 +88,11 @@ class AdminScaffold extends StatelessWidget {
       selectedIcon: Icon(Icons.person),
       label: Text('Perfil'),
     ),
+    NavigationRailDestination(
+      icon: Icon(Icons.notifications_outlined),
+      selectedIcon: Icon(Icons.notifications),
+      label: Text('Notificaciones'),
+    ),
   ];
 
   static const _drawerDestinations = [
@@ -93,6 +100,7 @@ class AdminScaffold extends StatelessWidget {
     (Icons.history, 'Historial', 1),
     (Icons.people, 'Usuarios', 2),
     (Icons.person, 'Perfil', 3),
+    (Icons.notifications, 'Notificaciones', 4),
   ];
 
   Widget _buildDrawer(int calculatedIndex, BuildContext context) {

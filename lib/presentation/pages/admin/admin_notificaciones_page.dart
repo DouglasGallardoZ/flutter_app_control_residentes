@@ -2,9 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../application/blocs/admin/admin_notificaciones_bloc.dart';
 import '../../../injection.dart';
+import '../../widgets/admin_scaffold.dart';
+import '../../routes/app_routes.dart';
 
 class AdminNotificacionesPage extends StatefulWidget {
-  const AdminNotificacionesPage({super.key});
+  final int personaId;
+  final String identificacion;
+
+  const AdminNotificacionesPage({
+    super.key,
+    required this.personaId,
+    required this.identificacion,
+  });
 
   @override
   State<AdminNotificacionesPage> createState() =>
@@ -37,11 +46,9 @@ class _AdminNotificacionesPageState
     return BlocProvider(
       create: (_) => sl<AdminNotificacionesBloc>()
         ..add(AdminDestinatariosSolicitados()),
-      child: Scaffold(
-        appBar: AppBar(
-          title:
-              const Text('Enviar Notificación'),
-        ),
+      child: AdminScaffold(
+        title: 'Enviar Notificación',
+        routeName: AppRoutes.adminNotificaciones,
         body:
             BlocConsumer<AdminNotificacionesBloc,
                 AdminNotificacionesState>(
@@ -102,6 +109,36 @@ class _AdminNotificacionesPageState
             );
           },
         ),
+        onTabSelected: (index) {
+          final args = <String, dynamic>{
+            'personaId': widget.personaId,
+            'identificacion': widget.identificacion,
+          };
+          switch (index) {
+            case 0:
+              Navigator.pushNamedAndRemoveUntil(
+                  context, '/adminDashboard', (route) => false,
+                  arguments: args);
+              break;
+            case 1:
+              Navigator.pushNamedAndRemoveUntil(
+                  context, '/adminAccessHistory', (route) => false,
+                  arguments: args);
+              break;
+            case 2:
+              Navigator.pushNamedAndRemoveUntil(
+                  context, '/adminUsers', (route) => false,
+                  arguments: args);
+              break;
+            case 3:
+              Navigator.pushNamedAndRemoveUntil(
+                  context, '/adminProfile', (route) => false,
+                  arguments: args);
+              break;
+            case 4:
+              break;
+          }
+        },
       ),
     );
   }
