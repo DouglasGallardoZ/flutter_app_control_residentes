@@ -3,7 +3,11 @@ import '../entities/destinatario.dart';
 abstract class AdminNotificacionesRepositoryPort {
   Future<List<Destinatario>> obtenerDestinatarios({
     String? busqueda,
+    String? manzana,
+    String? villa,
   });
+
+  Future<List<String>> obtenerManzanas();
 
   Future<void> enviarNotificacion({
     required String titulo,

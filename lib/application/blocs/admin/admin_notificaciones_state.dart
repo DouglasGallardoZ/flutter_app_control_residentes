@@ -12,10 +12,16 @@ class AdminDestinatariosCargados
     extends AdminNotificacionesState {
   final List<Destinatario> destinatarios;
   final int seleccionados;
+  final List<String> manzanas;
+  final String? manzanaSeleccionada;
+  final String? villaSeleccionada;
 
   AdminDestinatariosCargados({
     required this.destinatarios,
     required this.seleccionados,
+    this.manzanas = const [],
+    this.manzanaSeleccionada,
+    this.villaSeleccionada,
   });
 
   List<int> get destinatariosSeleccionados =>

@@ -36,3 +36,15 @@ class AdminNotificacionEnviada
     required this.enviarATodos,
   });
 }
+
+class AdminFiltroManzanaCambiado
+    extends AdminNotificacionesEvent {
+  final String? manzana;
+  AdminFiltroManzanaCambiado(this.manzana);
+}
+
+class AdminFiltroVillaCambiado
+    extends AdminNotificacionesEvent {
+  final String? villa;
+  AdminFiltroVillaCambiado(this.villa);
+}

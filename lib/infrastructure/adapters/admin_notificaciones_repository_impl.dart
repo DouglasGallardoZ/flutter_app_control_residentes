@@ -11,12 +11,22 @@ class AdminNotificacionesRepositoryImpl
   @override
   Future<List<Destinatario>> obtenerDestinatarios({
     String? busqueda,
+    String? manzana,
+    String? villa,
   }) async {
     final data = await _apiProvider.obtenerDestinatarios(
-        busqueda: busqueda);
+      busqueda: busqueda,
+      manzana: manzana,
+      villa: villa,
+    );
     return data
         .map((json) => Destinatario.fromJson(json))
         .toList();
+  }
+
+  @override
+  Future<List<String>> obtenerManzanas() async {
+    return _apiProvider.obtenerManzanas();
   }
 
   @override

@@ -7,18 +7,37 @@ class AdminNotificacionesApiProvider {
 
   Future<List<Map<String, dynamic>>> obtenerDestinatarios({
     String? busqueda,
+    String? manzana,
+    String? villa,
   }) async {
     final queryParams = <String, dynamic>{};
     if (busqueda != null && busqueda.isNotEmpty) {
       queryParams['busqueda'] = busqueda;
     }
+    if (manzana != null && manzana.isNotEmpty) {
+      queryParams['manzana'] = manzana;
+    }
+    if (villa != null && villa.isNotEmpty) {
+      queryParams['villa'] = villa;
+    }
     final respuesta = await _cliente.dio.get(
       '/notificaciones/destinatarios',
-      queryParameters: queryParams,
+      queryParameters:
+          queryParams.isEmpty ? null : queryParams,
     );
     final lista = respuesta.data;
     if (lista is List) {
       return lista.cast<Map<String, dynamic>>();
+    }
+    return [];
+  }
+
+  Future<List<String>> obtenerManzanas() async {
+    final respuesta =
+        await _cliente.dio.get('/notificaciones/manzanas');
+    final lista = respuesta.data;
+    if (lista is List) {
+      return lista.cast<String>();
     }
     return [];
   }
