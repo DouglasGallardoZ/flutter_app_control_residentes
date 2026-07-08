@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
 
 // Infrastructure - Providers
@@ -29,7 +30,7 @@ import 'infrastructure/providers/qr_management/qr_generation_api_impl.dart';
 import 'infrastructure/providers/qr_management/qr_query_api_impl.dart';
 import 'infrastructure/providers/notificacion_api_provider.dart';
 import 'infrastructure/providers/admin_notificaciones_api_provider.dart';
-import 'infrastructure/services/fcm_service.dart';
+import 'infrastructure/providers/fcm_provider.dart';
 
 // Infrastructure - Adapters
 import 'infrastructure/adapters/auth_repository_impl.dart';
@@ -46,6 +47,7 @@ import 'infrastructure/adapters/session_port_impl.dart';
 import 'infrastructure/adapters/session_cleanup_impl.dart';
 import 'infrastructure/adapters/notificacion_repository_impl.dart';
 import 'infrastructure/adapters/admin_notificaciones_repository_impl.dart';
+import 'infrastructure/adapters/notificacion_push_handler_impl.dart';
 
 // Domain - Ports
 import 'domain/ports/auth_repository.dart';
@@ -77,6 +79,7 @@ import 'domain/ports/session_port.dart';
 import 'domain/ports/session_cleanup_port.dart';
 import 'domain/ports/notificacion_repository_port.dart';
 import 'domain/ports/admin_notificaciones_repository_port.dart';
+import 'domain/ports/notificacion_push_handler_port.dart';
 
 // Domain - Use Cases
 import 'domain/usecases/login_usecase.dart';
@@ -769,5 +772,21 @@ Future<void> inject() async {
   );
 
   // Services
-  sl.registerLazySingleton<FcmService>(() => FcmService());
+  final localNotifications =
+      FlutterLocalNotificationsPlugin();
+  sl.registerLazySingleton<FlutterLocalNotificationsPlugin>(
+    () => localNotifications,
+  );
+
+  // FCM Provider
+  sl.registerLazySingleton<FcmProvider>(
+    () => FcmProvider(
+        sl<FirebaseMessaging>(), sl<FlutterLocalNotificationsPlugin>()),
+  );
+
+  // Notificaciones Push
+  sl.registerLazySingleton<NotificacionPushHandlerPort>(
+    () =>
+        NotificacionPushHandlerImpl(sl<FcmProvider>()),
+  );
 }

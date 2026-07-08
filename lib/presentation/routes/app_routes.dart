@@ -23,6 +23,8 @@ import '../pages/admin_create_owner_page.dart';
 import '../pages/admin_create_member_page.dart';
 import '../pages/admin_facial_enrollment_page.dart';
 import '../pages/admin/admin_notificaciones_page.dart';
+import '../pages/notificaciones/notificaciones_lista_page.dart';
+import '../pages/notificaciones/notificacion_detalle_page.dart';
 import '../pages/family_dashboard_page.dart';
 import '../pages/register_option_page.dart';
 import '../pages/prospecto_residente_page.dart';
@@ -33,6 +35,7 @@ import '../pages/credentials_miembro_page.dart';
 import '../pages/member_create_registration_page.dart';
 import '../pages/member_facial_enrollment_page.dart';
 import '../../domain/entities/prospecto_residente.dart';
+import '../../domain/entities/notificacion_item.dart';
 import '../../application/blocs/qr_list/qr_list_bloc.dart';
 import '../../application/blocs/prospecto_validation/prospecto_validation_bloc.dart';
 import '../../application/blocs/registro_residente/registro_residente_bloc.dart';
@@ -70,6 +73,9 @@ class AppRoutes {
   static const String adminFacialEnrollment = '/adminFacialEnrollment';
   static const String adminProfile = '/adminProfile';
   static const String adminNotificaciones = '/adminNotificaciones';
+  static const String notificaciones = '/notificaciones';
+  static const String notificacionDetalle =
+      '/notificaciones/detalle';
   static const String familyDashboard = '/familyDashboard';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -385,7 +391,29 @@ class AppRoutes {
 
       case adminNotificaciones:
         return MaterialPageRoute(
-          builder: (_) => const AdminNotificacionesPage(),
+          builder: (_) =>
+              const AdminNotificacionesPage(),
+          settings: settings,
+        );
+
+      case notificaciones:
+        final userId =
+            settings.arguments as String? ?? '';
+        return MaterialPageRoute(
+          builder: (_) =>
+              NotificacionesListaPage(
+                  usuarioId: userId),
+          settings: settings,
+        );
+
+      case notificacionDetalle:
+        final notificacion =
+            settings.arguments
+                as NotificacionItem;
+        return MaterialPageRoute(
+          builder: (_) =>
+              NotificacionDetallePage(
+                  notificacion: notificacion),
           settings: settings,
         );
 

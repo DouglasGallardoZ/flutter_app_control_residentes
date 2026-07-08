@@ -8,7 +8,7 @@ import '../../application/blocs/security_session/security_session_bloc.dart';
 import '../../application/blocs/security_session/security_session_event.dart';
 import '../../application/blocs/security_session/security_session_state.dart';
 import '../../domain/entities/prospecto_residente.dart';
-import '../../infrastructure/services/fcm_service.dart';
+import '../../domain/ports/notificacion_push_handler_port.dart';
 import '../../injection.dart';
 import '../routes/app_routes.dart';
 import 'facial_verification_page.dart';
@@ -44,8 +44,9 @@ class _LoginPageState extends State<LoginPage> {
 
   void _inicializarFCM(String usuarioId) {
     if (kIsWeb) return;
-    final fcmService = sl<FcmService>();
-    fcmService.inicializar(usuarioId);
+    final pushHandler =
+        sl<NotificacionPushHandlerPort>();
+    pushHandler.inicializar(usuarioId);
   }
 
   @override

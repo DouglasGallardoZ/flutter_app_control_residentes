@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../domain/usecases/obtener_no_leidas_usecase.dart';
 import '../../injection.dart';
-import '../pages/notificaciones/notificaciones_lista_page.dart';
 
 class InsigniaNotificaciones extends StatefulWidget {
   final String usuarioId;
@@ -81,15 +80,11 @@ class _InsigniaNotificacionesState
               Icons.notifications_outlined),
           onPressed: widget.onTap ??
               () async {
-                await Navigator.push(
+                await Navigator.pushNamed(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        NotificacionesListaPage(
-                      usuarioId:
-                          widget.usuarioId,
-                    ),
-                  ),
+                  '/notificaciones',
+                  arguments:
+                      widget.usuarioId,
                 );
                 _cargarNoLeidas();
               },
