@@ -146,7 +146,12 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           switch (i) {
             case 2:
-              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.profile, (_) => false, arguments: _args);
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                AppRoutes.accessHistory, (_) => false, arguments: _args);
+              break;
+            case 3:
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                AppRoutes.profile, (_) => false, arguments: _args);
               break;
           }
         });
