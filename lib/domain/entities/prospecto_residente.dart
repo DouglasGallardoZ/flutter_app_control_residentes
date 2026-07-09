@@ -49,6 +49,7 @@ class ProspectoMiembro {
   final ViviendaInfo? vivienda;
   final bool? puedeCrearCuenta;
   final String? mensaje;
+  final bool? tieneFacialEnrolado;
 
   ProspectoMiembro({
     required this.existe,
@@ -63,6 +64,7 @@ class ProspectoMiembro {
     this.vivienda,
     this.puedeCrearCuenta,
     this.mensaje,
+    this.tieneFacialEnrolado,
   });
 
   factory ProspectoMiembro.fromJson(Map<String, dynamic> json) {
@@ -79,6 +81,7 @@ class ProspectoMiembro {
       vivienda: json['vivienda'] != null ? ViviendaInfo.fromJson(json['vivienda']) : null,
       puedeCrearCuenta: json['puede_crear_cuenta'],
       mensaje: json['mensaje'],
+      tieneFacialEnrolado: json['tiene_facial_enrolado'] as bool?,
     );
   }
 }

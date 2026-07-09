@@ -41,7 +41,7 @@ class ProspectoValidationBloc
     try {
       final prospecto = await validarMiembro.execute(event.identificacion);
 
-      if (prospecto.existe && prospecto.personaEncontrada == true) {
+      if (prospecto.existe) {
         emit(ProspectoMiembroValidado(prospecto));
       } else {
         emit(ProspectoValidationError(

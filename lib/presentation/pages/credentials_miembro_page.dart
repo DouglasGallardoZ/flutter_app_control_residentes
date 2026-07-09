@@ -284,7 +284,12 @@ class _CredentialsMiembroPageState extends State<CredentialsMiembroPage> {
                           TextButton.icon(
                             onPressed: isCreating
                                 ? null
-                                : () => Navigator.of(context).pop(),
+                                : () {
+                                    Navigator.of(context).pushNamedAndRemoveUntil(
+                                      '/login',
+                                      (route) => false,
+                                    );
+                                  },
                             icon: const Icon(Icons.arrow_back),
                             label: const Text('Volver'),
                           ),

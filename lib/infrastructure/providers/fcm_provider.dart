@@ -71,10 +71,24 @@ class FcmProvider
       Map<String, dynamic> data) {
     print('📩 Tap en notificación: $data');
 
-    final tipo = data['tipo'];
+    final tipo = data['tipo'] as String?;
     final notificacionId =
-        data['notificacion_id'];
-    final rutaAccion = data['ruta_accion'];
+        data['notificacion_id'] as String?;
+    final rutaAccion =
+        data['ruta_accion'] as String?;
+
+    if (tipo == 'solicitud_miembro') {
+      if (rutaAccion != null) {
+        NavigationService.navigateTo(
+            rutaAccion,
+            arguments: data);
+      } else {
+        NavigationService.navigateTo(
+            '/aprobacionMiembro',
+            arguments: data);
+      }
+      return;
+    }
 
     if (tipo == 'notificacion' &&
         notificacionId != null) {

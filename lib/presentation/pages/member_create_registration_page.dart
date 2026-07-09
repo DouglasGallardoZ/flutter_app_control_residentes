@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import '../../domain/entities/prospecto_residente.dart';
 import '../../application/blocs/member/member_bloc.dart';
 import '../../application/blocs/member/member_event.dart';
 import '../../application/blocs/member/member_state.dart';
 import '../../application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
-import '../routes/app_routes.dart';
+import 'miembros/esperar_autorizacion_page.dart';
 import 'member_facial_enrollment_page.dart';
 
 class MemberCreateRegistrationPage extends StatefulWidget {
   final String identificacion;
+  final bool requiereAutorizacion;
 
   const MemberCreateRegistrationPage({
     super.key,
     required this.identificacion,
+    this.requiereAutorizacion = false,
   });
 
   @override
@@ -102,22 +103,39 @@ class _MemberCreateRegistrationPageState
       return;
     }
 
-    // Verificar que el BLoC aún esté disponible antes de agregar eventos
     if (!mounted) {
       return;
     }
 
-    // FLUJO REPLICADO DE admin_create_member_page.dart:
-    // 1. Validar formulario ✓ (línea anterior)
-    // 2. Enviar evento CreateMemberEvent al MemberBloc con todos los datos del formulario
-    // 3. El BLoC llamará al createMemberUseCase que ejecuta el API de creación
-    // 4. Si es exitoso: MemberCreated state → mostrar snackbar + navegar a facial enrollment
-    // 5. Si falla: MemberError state → mostrar snackbar con error
-    // Ver: admin_create_member_page.dart línea 102-118
-    
+    // FLUJO MIEMBRO: auto-registro con autorización del titular
+    if (widget.requiereAutorizacion) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => EsperarAutorizacionPage(
+            identificacion: _identificacionController.text.trim(),
+            nombres: _nombresController.text.trim(),
+            apellidos: _apellidosController.text.trim(),
+            parentesco: _parentescoController.text.trim(),
+            manzana: _manzanaController.text.trim(),
+            villa: _villaController.text.trim(),
+            fechaNacimiento: _fechaNacimientoController.text.trim(),
+            correo: _correoController.text.trim().isEmpty
+                ? null
+                : _correoController.text.trim(),
+            celular: _celularController.text.trim().isEmpty
+                ? null
+                : _celularController.text.trim(),
+            identificacionResidente: _residenteIdController.text.trim(),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // FLUJO ADMIN: crear persona directamente
     try {
       final memberBloc = context.read<MemberBloc>();
-      
+
       memberBloc.add(
         CreateMemberEvent(
           residenteId: _residenteIdController.text.trim(),
@@ -148,10 +166,9 @@ class _MemberCreateRegistrationPageState
         ),
       );
     } catch (e) {
-      // Si hay error, loguear y mostrar
       debugPrint('Error en _submitForm: $e');
       debugPrint('Stack trace: ${StackTrace.current}');
-      
+
       if (mounted) {
         _showErrorSnackBar('Error: ${e.toString()}');
       }
@@ -185,7 +202,6 @@ class _MemberCreateRegistrationPageState
           // - MemberError: Error en la creación
           
           if (state is MemberCreated) {
-            // 1. Mostrar snackbar de éxito (admin_create_member_page.dart línea 158-163)
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -195,11 +211,8 @@ class _MemberCreateRegistrationPageState
             );
 
             if (mounted) {
-              // 2. Navegar a memberFacialEnrollment envuelto con FacialEnrollmentBloc
-              //    Esta navegación:
-              //    - Abre /memberFacialEnrollment
-              //    - Pasa argumentos: persona_id (del response del API), nombres, apellidos, type='member'
-              Navigator.of(context).push(
+              // FLUJO ADMIN: crear persona → ir directo a enrolamiento facial
+              Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
                   builder: (context) => BlocProvider<FacialEnrollmentBloc>(
                     create: (_) => GetIt.instance<FacialEnrollmentBloc>(),
@@ -214,7 +227,6 @@ class _MemberCreateRegistrationPageState
               );
             }
           } else if (state is MemberError) {
-            // 3. Mostrar error si la creación falló (admin_create_member_page.dart línea 180)
             _showErrorSnackBar(state.message);
           }
         },

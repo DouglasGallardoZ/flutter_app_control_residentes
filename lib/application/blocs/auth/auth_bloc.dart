@@ -7,8 +7,10 @@ import '../../../domain/usecases/get_id_token_usecase.dart';
 import '../../../domain/usecases/sign_up_usecase.dart';
 import '../../../domain/ports/account_repository.dart';
 import '../../../domain/ports/firebase_auth_provider_port.dart';
+import '../../../domain/ports/camera_port.dart';
 import '../../../domain/entities/auth_result.dart';
 import '../../../domain/entities/auth_session.dart';
+import '../../../injection.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -52,6 +54,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LogoutRequested>((event, emit) async {
       _isLoggingOut = true;
       try {
+        sl<CameraPort>().dispose();
         await logout.execute();
         emit(AuthInitial());
       } catch (ex) {

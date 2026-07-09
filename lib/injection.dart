@@ -31,6 +31,7 @@ import 'infrastructure/providers/qr_management/qr_query_api_impl.dart';
 import 'infrastructure/providers/notificacion_api_provider.dart';
 import 'infrastructure/providers/admin_notificaciones_api_provider.dart';
 import 'infrastructure/providers/fcm_provider.dart';
+import 'infrastructure/providers/solicitud_miembro_api_provider.dart';
 
 // Infrastructure - Adapters
 import 'infrastructure/adapters/auth_repository_impl.dart';
@@ -48,6 +49,8 @@ import 'infrastructure/adapters/session_cleanup_impl.dart';
 import 'infrastructure/adapters/notificacion_repository_impl.dart';
 import 'infrastructure/adapters/admin_notificaciones_repository_impl.dart';
 import 'infrastructure/adapters/notificacion_push_handler_impl.dart';
+import 'infrastructure/adapters/solicitud_miembro_repository_impl.dart';
+import 'infrastructure/adapters/camera_port_impl.dart';
 
 // Domain - Ports
 import 'domain/ports/auth_repository.dart';
@@ -80,6 +83,8 @@ import 'domain/ports/session_cleanup_port.dart';
 import 'domain/ports/notificacion_repository_port.dart';
 import 'domain/ports/admin_notificaciones_repository_port.dart';
 import 'domain/ports/notificacion_push_handler_port.dart';
+import 'domain/ports/solicitud_miembro_repository_port.dart';
+import 'domain/ports/camera_port.dart';
 
 // Domain - Use Cases
 import 'domain/usecases/login_usecase.dart';
@@ -140,6 +145,11 @@ import 'domain/usecases/marcar_notificacion_leida_usecase.dart';
 import 'domain/usecases/marcar_todas_leidas_usecase.dart';
 import 'domain/usecases/eliminar_notificacion_usecase.dart';
 import 'domain/usecases/registrar_token_fcm_usecase.dart';
+import 'domain/usecases/solicitar_registro_miembro_usecase.dart';
+import 'domain/usecases/consultar_estado_solicitud_usecase.dart';
+import 'domain/usecases/listar_solicitudes_pendientes_usecase.dart';
+import 'domain/usecases/aprobar_solicitud_miembro_usecase.dart';
+import 'domain/usecases/rechazar_solicitud_miembro_usecase.dart';
 
 // BLoCs
 import 'application/blocs/admin/admin_dashboard_bloc.dart';
@@ -159,6 +169,8 @@ import 'application/blocs/visitor/visitor_bloc.dart';
 import 'application/blocs/security_session/security_session_bloc.dart';
 import 'application/blocs/notificaciones/notificaciones_bloc.dart';
 import 'application/blocs/admin/admin_notificaciones_bloc.dart';
+import 'application/blocs/autorizacion_miembro/autorizacion_miembro_bloc.dart';
+import 'application/blocs/aprobacion_miembro/aprobacion_miembro_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -778,6 +790,9 @@ Future<void> inject() async {
     () => localNotifications,
   );
 
+  // Camera Port — singleton para evitar ciclos create→dispose en GPU Mali
+  sl.registerLazySingleton<CameraPort>(() => CameraPortImpl());
+
   // FCM Provider
   sl.registerLazySingleton<FcmProvider>(
     () => FcmProvider(
@@ -788,5 +803,60 @@ Future<void> inject() async {
   sl.registerLazySingleton<NotificacionPushHandlerPort>(
     () =>
         NotificacionPushHandlerImpl(sl<FcmProvider>()),
+  );
+
+  // Solicitud Miembro (Autorización del titular)
+  sl.registerLazySingleton<SolicitudMiembroApiProvider>(
+    () => SolicitudMiembroApiProvider(sl<ApiHttpClient>()),
+  );
+
+  sl.registerLazySingleton<SolicitudMiembroRepositoryPort>(
+    () => SolicitudMiembroRepositoryImpl(
+        sl<SolicitudMiembroApiProvider>()),
+  );
+
+  // Use Cases — Autorización Miembro
+  sl.registerLazySingleton<SolicitarRegistroMiembroUseCase>(
+    () => SolicitarRegistroMiembroUseCase(
+        sl<SolicitudMiembroRepositoryPort>()),
+  );
+
+  sl.registerLazySingleton<ConsultarEstadoSolicitudUseCase>(
+    () => ConsultarEstadoSolicitudUseCase(
+        sl<SolicitudMiembroRepositoryPort>()),
+  );
+
+  sl.registerLazySingleton<ListarSolicitudesPendientesUseCase>(
+    () => ListarSolicitudesPendientesUseCase(
+        sl<SolicitudMiembroRepositoryPort>()),
+  );
+
+  sl.registerLazySingleton<AprobarSolicitudMiembroUseCase>(
+    () => AprobarSolicitudMiembroUseCase(
+        sl<SolicitudMiembroRepositoryPort>()),
+  );
+
+  sl.registerLazySingleton<RechazarSolicitudMiembroUseCase>(
+    () => RechazarSolicitudMiembroUseCase(
+        sl<SolicitudMiembroRepositoryPort>()),
+  );
+
+  // BLoC — Autorización Miembro (factory)
+  sl.registerFactory<AutorizacionMiembroBloc>(
+    () => AutorizacionMiembroBloc(
+      solicitarRegistro:
+          sl<SolicitarRegistroMiembroUseCase>(),
+      consultarEstado:
+          sl<ConsultarEstadoSolicitudUseCase>(),
+    ),
+  );
+
+  // BLoC — Titular: Aprobación de solicitudes (factory)
+  sl.registerFactory<AprobacionMiembroBloc>(
+    () => AprobacionMiembroBloc(
+      listarPendientes: sl<ListarSolicitudesPendientesUseCase>(),
+      aprobar: sl<AprobarSolicitudMiembroUseCase>(),
+      rechazar: sl<RechazarSolicitudMiembroUseCase>(),
+    ),
   );
 }

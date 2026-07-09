@@ -49,7 +49,6 @@ class FrameLivenessData {
 }
 
 class FacialCaptureMobileState extends State<FacialCaptureMobile> {
-  CameraController? _cameraController;
   bool _isProcessing = false;
   DateTime? _lastCaptureTime;
   DateTime? _lastFrameDispatch;
@@ -70,8 +69,7 @@ class FacialCaptureMobileState extends State<FacialCaptureMobile> {
 
   bool _isDisposed() {
     try {
-      return _cameraController == null ||
-          !_cameraController!.value.isInitialized;
+      return !widget.controller.value.isInitialized;
     } catch (_) {
       return true;
     }
@@ -88,14 +86,13 @@ class FacialCaptureMobileState extends State<FacialCaptureMobile> {
   @override
   void initState() {
     super.initState();
-    _cameraController = widget.controller;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startImageStream();
     });
   }
 
   void _startImageStream() {
-    _cameraController!.startImageStream((CameraImage image) {
+    widget.controller.startImageStream((CameraImage image) {
       if (!_isProcessing && !_isDisposing) {
         _isProcessing = true;
         _processCameraImage(image);
@@ -116,7 +113,7 @@ class FacialCaptureMobileState extends State<FacialCaptureMobile> {
         return;
       }
 
-      final rotation = _cameraController!.description.sensorOrientation;
+      final rotation = widget.controller.description.sensorOrientation;
 
       final faces = await widget.faceDetection.processImage(
         bytes: bytes,
@@ -194,7 +191,7 @@ class FacialCaptureMobileState extends State<FacialCaptureMobile> {
   Future<Uint8List?> _captureBytes() async {
     if (_isDisposing) return null;
     try {
-      final image = await _cameraController!.takePicture();
+      final image = await widget.controller.takePicture();
       return await image.readAsBytes();
     } catch (e) {
       debugPrint('Error capturando imagen: $e');
@@ -219,11 +216,9 @@ class FacialCaptureMobileState extends State<FacialCaptureMobile> {
   void dispose() {
     _isDisposing = true;
 
-    if (_cameraController != null &&
-        _cameraController!.value.isStreamingImages) {
-      _cameraController!.stopImageStream().catchError((_) {});
+    if (widget.controller.value.isStreamingImages) {
+      widget.controller.stopImageStream().catchError((_) {});
     }
-    _cameraController = null;
 
     super.dispose();
   }
@@ -258,11 +253,10 @@ class FacialCaptureMobileState extends State<FacialCaptureMobile> {
       return const SizedBox.shrink();
     }
     try {
-      if (_cameraController == null ||
-          !_cameraController!.value.isInitialized) {
+      if (!widget.controller.value.isInitialized) {
         return const SizedBox.shrink();
       }
-      return CameraPreview(_cameraController!);
+      return CameraPreview(widget.controller);
     } catch (_) {
       return const SizedBox.shrink();
     }

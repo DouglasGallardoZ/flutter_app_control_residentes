@@ -1,15 +1,14 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:camera/camera.dart';
+import '../../domain/ports/camera_port.dart';
 import '../../application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
 import '../../application/blocs/facial_enrollment/facial_enrollment_event.dart';
 import '../../application/blocs/facial_enrollment/facial_enrollment_state.dart';
-import '../../domain/entities/prospecto_residente.dart';
 import '../widgets/facial_capture/facial_capture_view.dart';
 import '../widgets/responsive_layout.dart';
 import '../../domain/ports/face_detection_port.dart';
-import 'facial_verification_page.dart';
+import 'credentials_miembro_page.dart';
 import '../../injection.dart';
 
 class MemberFacialEnrollmentPage extends StatelessWidget {
@@ -17,6 +16,8 @@ class MemberFacialEnrollmentPage extends StatelessWidget {
   final String nombres;
   final String apellidos;
   final String type;
+  final String? origen;
+  final Object? prospectoCompleto;
 
   const MemberFacialEnrollmentPage({
     super.key,
@@ -24,6 +25,8 @@ class MemberFacialEnrollmentPage extends StatelessWidget {
     required this.nombres,
     required this.apellidos,
     this.type = 'member',
+    this.origen,
+    this.prospectoCompleto,
   });
 
   @override
@@ -35,6 +38,8 @@ class MemberFacialEnrollmentPage extends StatelessWidget {
         nombres: nombres,
         apellidos: apellidos,
         type: type,
+        origen: origen,
+        prospectoCompleto: prospectoCompleto,
       ),
     );
   }
@@ -45,12 +50,16 @@ class _MemberFacialEnrollmentView extends StatefulWidget {
   final String nombres;
   final String apellidos;
   final String type;
+  final String? origen;
+  final Object? prospectoCompleto;
 
   const _MemberFacialEnrollmentView({
     required this.personaId,
     required this.nombres,
     required this.apellidos,
     required this.type,
+    this.origen,
+    this.prospectoCompleto,
   });
 
   @override
@@ -60,74 +69,28 @@ class _MemberFacialEnrollmentView extends StatefulWidget {
 
 class _MemberFacialEnrollmentViewState
     extends State<_MemberFacialEnrollmentView> {
-  CameraController? _cameraController;
-  bool _isCameraInitialized = false;
-  bool _cameraDisposeInProgress = false;
+  final CameraPort _cameraPort = sl<CameraPort>();
+  bool _isCameraReady = false;
+  String? _cameraError;
 
   @override
   void initState() {
     super.initState();
-    _initializeCamera();
+    _initCamera();
   }
 
-  Future<void> _disposeCamera() async {
-    if (_cameraDisposeInProgress) return;
-    _cameraDisposeInProgress = true;
-    try {
-      if (_cameraController != null && _cameraController!.value.isInitialized) {
-        await _cameraController!.dispose();
-      }
-    } catch (e) {
-      debugPrint('Error cerrando cámara: $e');
-    } finally {
-      _cameraController = null;
-      _isCameraInitialized = false;
+  Future<void> _initCamera() async {
+    final error = await _cameraPort.initialize();
+    if (!mounted) return;
+    if (error != null) {
+      setState(() => _cameraError = error);
+      return;
     }
-  }
-
-  Future<void> _initializeCamera() async {
-    try {
-      final cameras = await availableCameras();
-      if (cameras.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No hay cámara disponible'),
-              backgroundColor: Colors.red,
-            ),
+    setState(() => _isCameraReady = true);
+    if (mounted) {
+      context.read<FacialEnrollmentBloc>().add(
+            EnrollmentStarted(personaId: widget.personaId.toString()),
           );
-        }
-        return;
-      }
-
-      final camera = cameras.firstWhere(
-        (c) => c.lensDirection == CameraLensDirection.front,
-        orElse: () => cameras.first,
-      );
-
-      _cameraController = CameraController(
-        camera,
-        ResolutionPreset.high,
-        enableAudio: false,
-      );
-
-      await _cameraController!.initialize();
-
-      if (mounted) {
-        setState(() => _isCameraInitialized = true);
-        context.read<FacialEnrollmentBloc>().add(
-              EnrollmentStarted(personaId: widget.personaId.toString()),
-            );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al inicializar cámara: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
@@ -139,76 +102,95 @@ class _MemberFacialEnrollmentViewState
 
   @override
   void dispose() {
-    _disposeCamera();
+    _cameraPort.stopImageStream();
     super.dispose();
   }
 
-  void _mostrarDialogoExito(FacialEnrollmentSuccess state) {
-    _disposeCamera();
-    showDialog(
+  Future<void> _mostrarDialogoExito(
+      FacialEnrollmentSuccess state) async {
+    _cameraPort.stopImageStream();
+
+    if (!mounted) return;
+
+    final continuar = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => PopScope(
         canPop: false,
         child: AlertDialog(
-          title: const Text('¡Validación Facial Exitosa!'),
+          title: const Text(
+              '¡Validación Facial Exitosa!'),
           content: Text(state.mensaje),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                final prospectoMiembro = ProspectoMiembro(
-                  existe: true,
-                  personaEncontrada: true,
-                  personaId: widget.personaId,
-                  nombres: widget.nombres,
-                  apellidos: widget.apellidos,
-                );
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (_) => FacialVerificationPage(
-                        prospecto: prospectoMiembro),
-                  ),
-                );
-              },
-              child: const Text('Continuar'),
+              onPressed: () =>
+                  Navigator.of(ctx).pop(true),
+              child:
+                  const Text('Continuar'),
             ),
           ],
         ),
       ),
     );
+
+    if (continuar == true && mounted) {
+      await Future.delayed(
+          const Duration(milliseconds: 500));
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => CredentialsMiembroPage(
+            personaId: widget.personaId,
+            nombres: widget.nombres,
+            apellidos: widget.apellidos,
+          ),
+        ),
+      );
+    }
   }
 
-  void _mostrarDialogoError(FacialEnrollmentError state) {
-    showDialog(
+  Future<void> _mostrarDialogoError(
+      FacialEnrollmentError state) async {
+    final accion = await showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => PopScope(
         canPop: false,
         child: AlertDialog(
-          title: const Text('Error en Captura Facial'),
+          title: const Text(
+              'Error en Captura Facial'),
           content: Text(state.mensaje),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancelar'),
+              onPressed: () =>
+                  Navigator.of(ctx)
+                      .pop('cancelar'),
+              child:
+                  const Text('Cancelar'),
             ),
             FilledButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                context
-                    .read<FacialEnrollmentBloc>()
-                    .add(const EnrollmentResubmit());
-              },
-              child: const Text('Reintentar'),
+              onPressed: () =>
+                  Navigator.of(ctx)
+                      .pop('reintentar'),
+              child:
+                  const Text('Reintentar'),
             ),
           ],
         ),
       ),
     );
+
+    if (!mounted) return;
+
+    if (accion == 'cancelar') {
+      Navigator.of(context).pop();
+    } else if (accion == 'reintentar') {
+      context
+          .read<FacialEnrollmentBloc>()
+          .add(const EnrollmentResubmit());
+    }
   }
 
   @override
@@ -226,7 +208,14 @@ class _MemberFacialEnrollmentViewState
   }
 
   Widget _buildContent(FacialEnrollmentState state) {
-    if (!_isCameraInitialized) {
+    if (_cameraError != null) {
+      return Center(
+        child: Text('Error: $_cameraError',
+            textAlign: TextAlign.center),
+      );
+    }
+
+    if (!_isCameraReady) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -263,7 +252,7 @@ class _MemberFacialEnrollmentViewState
     final hayError = state is FacialEnrollmentError;
 
     final cameraView = FacialCaptureView(
-      controller: _cameraController!,
+      controller: _cameraPort.controller!,
       faceDetection: sl<FaceDetectionPort>(),
       onFaceCaptured: _onFaceCaptured,
     );

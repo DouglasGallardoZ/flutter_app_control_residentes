@@ -25,6 +25,8 @@ import '../pages/admin_facial_enrollment_page.dart';
 import '../pages/admin/admin_notificaciones_page.dart';
 import '../pages/notificaciones/notificaciones_lista_page.dart';
 import '../pages/notificaciones/notificacion_detalle_page.dart';
+import '../pages/miembros/esperar_autorizacion_page.dart';
+import '../pages/miembros/aprobacion_miembro_page.dart';
 import '../pages/family_dashboard_page.dart';
 import '../pages/register_option_page.dart';
 import '../pages/prospecto_residente_page.dart';
@@ -52,6 +54,12 @@ class AppRoutes {
   static const String credentialsMiembro = '/credentialsMiembro';
   static const String memberCreateRegistration = '/memberCreateRegistration';
   static const String memberFacialEnrollment = '/memberFacialEnrollment';
+  static const String esperarAutorizacion =
+      '/esperarAutorizacion';
+  static const String solicitudesPendientes =
+      '/solicitudes-pendientes';
+  static const String aprobacionMiembro =
+      '/aprobacionMiembro';
   static const String residentDashboard = '/residentDashboard';
   static const String qrSelf = '/qrSelf';
   static const String qrVisit = '/qrVisit';
@@ -180,12 +188,14 @@ class AppRoutes {
       }
 
       case memberFacialEnrollment: {
-        final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '0') ?? 0;
-        final nombres = args?['nombres'] as String? ?? '';
-        final apellidos = args?['apellidos'] as String? ?? '';
-        final type = args?['type'] as String? ?? 'member';
-        
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        final personaId = int.tryParse(args['personaId']?.toString() ?? '0') ?? 0;
+        final nombres = args['nombres'] as String? ?? '';
+        final apellidos = args['apellidos'] as String? ?? '';
+        final type = args['type'] as String? ?? 'member';
+        final origen = args['origen'] as String?;
+        final prospectoCompleto = args['prospectoCompleto'];
+
         if (personaId > 0 && nombres.isNotEmpty && apellidos.isNotEmpty) {
           return MaterialPageRoute(
             builder: (_) => MemberFacialEnrollmentPage(
@@ -193,11 +203,45 @@ class AppRoutes {
               nombres: nombres,
               apellidos: apellidos,
               type: type,
+              origen: origen,
+              prospectoCompleto: prospectoCompleto,
             ),
+            settings: settings,
           );
         }
         return _errorRoute('Falta información en MemberFacialEnrollmentPage');
       }
+
+      case esperarAutorizacion: {
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        return MaterialPageRoute(
+          builder: (_) => EsperarAutorizacionPage(
+            identificacion: args['identificacion'] ?? '',
+            nombres: args['nombres'] ?? '',
+            apellidos: args['apellidos'] ?? '',
+            parentesco: args['parentesco'] ?? '',
+            manzana: args['manzana'] ?? '',
+            villa: args['villa'] ?? '',
+            fechaNacimiento: args['fechaNacimiento'] ?? '',
+            correo: args['correo'],
+            celular: args['celular'],
+            identificacionResidente: args['identificacionResidente'] ?? '',
+          ),
+          settings: settings,
+        );
+      }
+
+      case solicitudesPendientes:
+        return MaterialPageRoute(
+          builder: (_) => const AprobacionMiembroPage(),
+          settings: settings,
+        );
+
+      case aprobacionMiembro:
+        return MaterialPageRoute(
+          builder: (_) => const AprobacionMiembroPage(),
+          settings: settings,
+        );
 
       case residentDashboard: {
         final args = settings.arguments as Map<String, dynamic>?;

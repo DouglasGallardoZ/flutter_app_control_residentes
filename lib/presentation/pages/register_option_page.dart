@@ -54,7 +54,7 @@ class RegisterOptionPage extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      Navigator.of(context).pushNamed(
+                      Navigator.of(context).pushReplacementNamed(
                         '/prospectoResidente',
                       );
                     },
@@ -88,7 +88,7 @@ class RegisterOptionPage extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      Navigator.of(context).pushNamed(
+                      Navigator.of(context).pushReplacementNamed(
                         '/prospectoMiembro',
                       );
                     },

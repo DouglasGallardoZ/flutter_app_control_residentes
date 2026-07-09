@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/ports/firebase_auth_provider_port.dart';
 import '../../../domain/ports/biometrics/facial_enrollment_api_port.dart';

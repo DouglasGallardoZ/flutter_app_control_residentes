@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:camera/camera.dart';
 import '../../domain/entities/prospecto_residente.dart';
+import '../../domain/ports/camera_port.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_state.dart';
 import '../../application/blocs/registro_residente/registro_residente_bloc.dart';
@@ -52,10 +52,10 @@ class _FacialVerificationView extends StatefulWidget {
 }
 
 class _FacialVerificationViewState extends State<_FacialVerificationView> {
-  CameraController? _cameraController;
-  bool _isCameraInitialized = false;
+  final CameraPort _cameraPort = sl<CameraPort>();
   String? _ultimaFotoPath;
-  bool _cameraDisposeInProgress = false;
+  String? _cameraError;
+  bool _isCameraReady = false;
   bool _isNavigatingAway = false;
   late FacialVerificationBloc _facialVerificationBloc;
 
@@ -90,87 +90,36 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
       return;
     }
 
-    _initializeCamera();
+    _initCameraViaPort();
+  }
+
+  Future<void> _initCameraViaPort() async {
+    final error = await _cameraPort.initialize();
+    if (!mounted) return;
+    if (error != null) {
+      setState(() => _cameraError = error);
+      return;
+    }
+    setState(() => _isCameraReady = true);
   }
 
   @override
   void dispose() {
     _facialVerificationBloc.add(VerificationCancelada());
-    _disposeCamera();
+    _cameraPort.stopImageStream();
     super.dispose();
   }
 
-  Future<void> _disposeCamera() async {
-    if (_cameraDisposeInProgress) return;
-    _cameraDisposeInProgress = true;
-    try {
-      if (_cameraController != null && _cameraController!.value.isInitialized) {
-        _detenerStreamCamara();
-        await _cameraController!.dispose();
-      }
-    } catch (e) {
-      debugPrint('Error cerrando cámara: $e');
-    } finally {
-      _cameraController = null;
-      _isCameraInitialized = false;
-    }
-  }
-
-  Future<void> _initializeCamera() async {
-    try {
-      final cameras = await availableCameras();
-      if (cameras.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No hay cámara disponible'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-
-      final camera = cameras.firstWhere(
-        (c) => c.lensDirection == CameraLensDirection.front,
-        orElse: () => cameras.first,
-      );
-
-      _cameraController = CameraController(
-        camera,
-        ResolutionPreset.high,
-        enableAudio: false,
-      );
-
-      await _cameraController!.initialize();
-
-      if (mounted) {
-        setState(() => _isCameraInitialized = true);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al inicializar cámara: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+  void _detenerStreamCamara() {
+    _cameraPort.stopImageStream();
   }
 
   Future<void> _enviarFotoAlServidor() async {
-    if (_cameraController == null) return;
-    try {
-      if (!_cameraController!.value.isInitialized) return;
-    } catch (_) {
-      return;
-    }
+    if (!_cameraPort.isReady) return;
 
     try {
-      final photo = await _cameraController!.takePicture();
-      final bytes = await photo.readAsBytes();
-      _ultimaFotoPath = photo.path;
+      final bytes = await _cameraPort.takePicture();
+      if (bytes == null) return;
 
       if (mounted) {
         context.read<FacialVerificationBloc>().add(
@@ -190,14 +139,6 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
         );
       }
     }
-  }
-
-  void _detenerStreamCamara() {
-    try {
-      if (_cameraController?.value.isStreamingImages == true) {
-        _cameraController?.stopImageStream();
-      }
-    } catch (_) {}
   }
 
   void _mostrarResultado({
@@ -316,7 +257,7 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
           if (state.match != true) {
             if (widget.mode == VerificationMode.unlockApp) {
               if (mounted) setState(() => _isNavigatingAway = true);
-              _disposeCamera();
+              _cameraPort.stopImageStream();
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) Navigator.of(context).pop(false);
               });
@@ -333,14 +274,14 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
           if (widget.mode == VerificationMode.unlockApp) {
             context.read<SecuritySessionBloc>().add(UnlockSessionRequested());
             if (mounted) setState(() => _isNavigatingAway = true);
-            _disposeCamera();
+            _cameraPort.stopImageStream();
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) Navigator.of(context).pop(true);
             });
             return;
           }
 
-          _disposeCamera();
+          _cameraPort.stopImageStream();
           context.read<RegistroResidenteBloc>().add(
                 VerificacionFacialCompleta(
                   esValida: true,
@@ -356,7 +297,7 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
           if (widget.mode == VerificationMode.unlockApp) {
             if (!_estaAutenticado()) return;
             if (mounted) setState(() => _isNavigatingAway = true);
-            _disposeCamera();
+            _cameraPort.stopImageStream();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Verificación fallida: ${state.mensaje}'),
@@ -393,21 +334,46 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),
-          body: _isCameraInitialized
-              ? FacialCaptureView(
-                  controller: _cameraController!,
-                  faceDetection: sl<FaceDetectionPort>(),
-                  onFaceCaptured: _onFaceCaptured,
-                  onFrameProcessed: livenessProps != null
-                      ? _onFrameProcessed
-                      : null,
-                  instruccionLiveness: livenessProps?.instruccion,
-                  indiceReto: livenessProps?.indiceReto,
-                  totalRetos: livenessProps?.totalRetos,
-                  segundosRestantes: livenessProps?.segundosRestantes,
-                  navigatingAway: _isNavigatingAway,
+          body: _cameraError != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.camera_alt_outlined,
+                            size: 64, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text('Error de cámara: $_cameraError',
+                            textAlign: TextAlign.center),
+                      ],
+                    ),
+                  ),
                 )
-              : const Center(child: CircularProgressIndicator()),
+              : _isCameraReady
+                  ? FacialCaptureView(
+                      controller: _cameraPort.controller!,
+                      faceDetection: sl<FaceDetectionPort>(),
+                      onFaceCaptured: _onFaceCaptured,
+                      onFrameProcessed: livenessProps != null
+                          ? _onFrameProcessed
+                          : null,
+                      instruccionLiveness: livenessProps?.instruccion,
+                      indiceReto: livenessProps?.indiceReto,
+                      totalRetos: livenessProps?.totalRetos,
+                      segundosRestantes: livenessProps?.segundosRestantes,
+                      navigatingAway: _isNavigatingAway,
+                    )
+                  : const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 24),
+                          Text('Preparando cámara...'),
+                        ],
+                      ),
+                    ),
         );
       },
     );
