@@ -55,6 +55,11 @@ class VisitorBloc extends Bloc<VisitorEvent, VisitorState> {
       if (st is VisitorLoaded) emit(st.copyWith(selected: e.visitor));
     });
 
+    on<ClearVisitorSelection>((e, emit) {
+      final st = state;
+      if (st is VisitorLoaded) emit(st.copyWith(selected: null));
+    });
+
     on<UpsertVisitorRequested>((e, emit) async {
       try {
         final v = await usecase.registerOrUpdate(

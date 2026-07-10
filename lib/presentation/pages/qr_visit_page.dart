@@ -16,7 +16,6 @@ import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_state.dart';
 import 'qr_display_page.dart';
 import '../widgets/navigation_helpers.dart';
-import '../../injection.dart';
 
 class QrVisitPage extends StatefulWidget {
   final int personaId;
@@ -93,6 +92,14 @@ class _QrVisitPageState extends State<QrVisitPage> {
       startDate = null;
       startTime = null;
       durationHours = null;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<VisitorBloc>().add(
+          LoadVisitantesVivienda(personaId: widget.personaId),
+        );
+      }
     });
   }
 
@@ -221,9 +228,7 @@ class _QrVisitPageState extends State<QrVisitPage> {
     final theme = Theme.of(context);
     final separatorColor = theme.brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade300;
 
-    return BlocProvider<VisitorBloc>(
-      create: (_) => sl<VisitorBloc>(),
-      child: PopScope(
+    return PopScope(
         canPop: true,
         onPopInvokedWithResult: (didPop, result) {
           if (didPop) {
@@ -820,7 +825,7 @@ class _QrVisitPageState extends State<QrVisitPage> {
           },
         ),
       ),
-    )));
+    ));
   }
 }
 

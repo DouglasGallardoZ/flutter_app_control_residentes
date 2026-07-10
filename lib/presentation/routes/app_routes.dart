@@ -43,6 +43,8 @@ import '../../application/blocs/prospecto_validation/prospecto_validation_bloc.d
 import '../../application/blocs/registro_residente/registro_residente_bloc.dart';
 import '../../application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
 import '../../application/blocs/member/member_bloc.dart';
+import '../../application/blocs/visitor/visitor_bloc.dart';
+import '../../injection.dart';
 
 class AppRoutes {
   static const String login = '/login';
@@ -272,7 +274,14 @@ class AppRoutes {
           return _errorRoute('Faltan argumentos en QrVisitPage');
         }
         return _fadeRoute(
-          QrVisitPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId),
+          BlocProvider<VisitorBloc>(
+            create: (_) => sl<VisitorBloc>(),
+            child: QrVisitPage(
+              personaId: personaId,
+              identificacion: identificacion,
+              residenceId: residenceId,
+            ),
+          ),
           settings: settings,
         );
       }

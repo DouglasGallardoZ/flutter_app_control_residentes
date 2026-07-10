@@ -39,3 +39,5 @@ class UpsertVisitorRequested extends VisitorEvent {
     this.personaId,
   );
 }
+
+class ClearVisitorSelection extends VisitorEvent {}
