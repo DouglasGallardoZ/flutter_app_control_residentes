@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/qr_generado.dart';
+import '../../application/blocs/qr_list/qr_list_bloc.dart';
+import '../../application/blocs/qr_list/qr_list_event.dart';
 
 class QrListCard extends StatelessWidget {
   final QrGenerado qr;
@@ -54,12 +57,55 @@ class QrListCard extends StatelessWidget {
     }
   }
 
+  void _confirmarAnular(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Anular QR'),
+        content: const Text(
+            '¿Estás seguro de anular este código QR? Esta acción no se puede deshacer.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              try {
+                context.read<QrListBloc>().add(
+                      AnularQr(qrId: qr.qrPk),
+                    );
+              } catch (_) {}
+            },
+            style: FilledButton.styleFrom(
+                backgroundColor: Colors.red),
+            child: const Text('Anular'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final backgroundColor = isDark ? Colors.grey.shade900 : Colors.grey.shade50;
     final borderColor = isDark ? Colors.grey.shade800 : Colors.grey.shade300;
+
+    final ahora = DateTime.now();
+    final estadoEfectivo = (qr.estado == 'vigente' && ahora.isAfter(qr.horaFin))
+        ? 'expirado'
+        : qr.estado;
+
+    final statusLabel = switch (estadoEfectivo) {
+      'vigente' => 'Vigente',
+      'expirado' => 'Expirado',
+      'usado' => 'Usado',
+      'anulado' => 'Anulado',
+      _ => qr.estado,
+    };
 
     return Card(
       color: backgroundColor,
@@ -106,13 +152,13 @@ class QrListCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _statusColor(qr.estado).withOpacity(0.2),
+                    color: _statusColor(estadoEfectivo).withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    qr.statusLabel,
+                    statusLabel,
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: _statusColor(qr.estado),
+                      color: _statusColor(estadoEfectivo),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -181,7 +227,7 @@ class QrListCard extends StatelessWidget {
                         _calcularTiempoRestante(qr.horaFin),
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w500,
-                          color: qr.isVigente ? Colors.green : Colors.orange,
+                          color: estadoEfectivo == 'vigente' ? Colors.green : Colors.orange,
                         ),
                       ),
                     ],
@@ -207,6 +253,24 @@ class QrListCard extends StatelessWidget {
                 ),
               ),
             ),
+            if (estadoEfectivo == 'vigente') ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _confirmarAnular(context),
+                  icon: const Icon(Icons.cancel_outlined,
+                      size: 18, color: Colors.red),
+                  label: const Text('Anular',
+                      style: TextStyle(color: Colors.red)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    side: const BorderSide(color: Colors.red),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

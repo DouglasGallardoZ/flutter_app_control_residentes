@@ -28,6 +28,7 @@ import 'infrastructure/providers/account_management/account_management_api_impl.
 import 'infrastructure/providers/access_management/access_history_api_impl.dart';
 import 'infrastructure/providers/qr_management/qr_generation_api_impl.dart';
 import 'infrastructure/providers/qr_management/qr_query_api_impl.dart';
+import 'infrastructure/providers/qr_list_api.dart';
 import 'infrastructure/providers/notificacion_api_provider.dart';
 import 'infrastructure/providers/admin_notificaciones_api_provider.dart';
 import 'infrastructure/providers/fcm_provider.dart';
@@ -318,6 +319,10 @@ Future<void> inject() async {
 
   sl.registerLazySingleton<QrQueryApiPort>(
     () => QrQueryApiImpl(apiHttpClient.dio),
+  );
+
+  sl.registerLazySingleton<QrListApi>(
+    () => QrListApi(apiHttpClient.dio),
   );
 
   // Providers - Notificaciones
@@ -704,7 +709,10 @@ Future<void> inject() async {
   );
 
   sl.registerFactory<QrListBloc>(
-    () => QrListBloc(getQrListUseCase: sl<GetQrListUseCase>()),
+    () => QrListBloc(
+      getQrListUseCase: sl<GetQrListUseCase>(),
+      qrListApi: sl<QrListApi>(),
+    ),
   );
 
   sl.registerFactory<ProspectoValidationBloc>(

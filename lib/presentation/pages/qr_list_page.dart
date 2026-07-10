@@ -106,7 +106,18 @@ class _QrListPageState extends State<QrListPage> {
       showBackButton: true,
       body: BlocProvider<QrListBloc>(
         create: (_) => context.read<QrListBloc>(),
-        child: BlocBuilder<QrListBloc, QrListState>(
+        child: BlocConsumer<QrListBloc, QrListState>(
+          listener: (context, state) {
+            if (state is QrAnuladoExito) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.mensaje),
+                  backgroundColor: Colors.green,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          },
           builder: (ctx, state) {
             if (state is QrListInitial || state is QrListLoading && state is! QrListLoaded) {
               return const Center(child: CircularProgressIndicator());

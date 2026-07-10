@@ -1,18 +1,29 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/usecases/get_qr_list_usecase.dart';
+import '../../../infrastructure/providers/qr_list_api.dart';
 import 'qr_list_event.dart';
 import 'qr_list_state.dart';
 
 class QrListBloc extends Bloc<QrListEvent, QrListState> {
   final GetQrListUseCase getQrListUseCase;
+  final QrListApi _qrListApi;
+  String _lastUsuarioId = '';
+  String _lastTipoIngreso = 'all';
 
-  QrListBloc({required this.getQrListUseCase}) : super(const QrListInitial()) {
+  QrListBloc({
+    required this.getQrListUseCase,
+    required QrListApi qrListApi,
+  })  : _qrListApi = qrListApi,
+      super(const QrListInitial()) {
     on<LoadQrList>(_onLoadQrList);
     on<FilterQrList>(_onFilterQrList);
     on<LoadMoreQrList>(_onLoadMoreQrList);
+    on<AnularQr>(_onAnularQr);
   }
 
   Future<void> _onLoadQrList(LoadQrList event, Emitter<QrListState> emit) async {
+    _lastUsuarioId = event.usuarioId;
+    _lastTipoIngreso = event.tipoIngreso;
     emit(const QrListLoading());
     try {
       final response = await getQrListUseCase(
@@ -81,6 +92,20 @@ class QrListBloc extends Bloc<QrListEvent, QrListState> {
       ));
     } catch (e) {
       emit(QrListError(message: 'Error al cargar más QRs: $e'));
+    }
+  }
+
+  Future<void> _onAnularQr(AnularQr event, Emitter<QrListState> emit) async {
+    try {
+      await _qrListApi.anularQr(event.qrId);
+      emit(const QrAnuladoExito());
+      add(LoadQrList(
+        usuarioId: _lastUsuarioId,
+        tipoIngreso: _lastTipoIngreso,
+        page: 1,
+      ));
+    } catch (e) {
+      emit(QrListError(message: 'Error al anular QR: $e'));
     }
   }
 }

@@ -67,3 +67,12 @@ class QrListError extends QrListState {
   @override
   List<Object?> get props => [message];
 }
+
+class QrAnuladoExito extends QrListState {
+  final String mensaje;
+
+  const QrAnuladoExito({this.mensaje = 'QR anulado exitosamente'});
+
+  @override
+  List<Object?> get props => [mensaje];
+}

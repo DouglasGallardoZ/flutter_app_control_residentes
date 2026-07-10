@@ -45,3 +45,12 @@ class LoadMoreQrList extends QrListEvent {
   @override
   List<Object?> get props => [usuarioId];
 }
+
+class AnularQr extends QrListEvent {
+  final int qrId;
+
+  const AnularQr({required this.qrId});
+
+  @override
+  List<Object?> get props => [qrId];
+}

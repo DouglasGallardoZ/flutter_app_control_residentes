@@ -34,4 +34,14 @@ class QrListApi {
       throw Exception('Error al conectar con el API: $e');
     }
   }
+
+  Future<void> anularQr(int qrId) async {
+    try {
+      await dio.put('/qr/$qrId/anular');
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data?['detail'] ?? 'Error al anular el QR',
+      );
+    }
+  }
 }
