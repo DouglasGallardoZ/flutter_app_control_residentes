@@ -83,6 +83,7 @@ class _AdminDashboardPageState
             '/adminUsers',
             '/adminProfile',
             '/adminNotificaciones',
+            '/adminViviendas',
           ];
           if (routes[index] != null) {
             Navigator.of(context)

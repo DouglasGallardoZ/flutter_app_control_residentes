@@ -22,6 +22,7 @@ import '../pages/admin_create_resident_page.dart';
 import '../pages/admin_create_owner_page.dart';
 import '../pages/admin_create_member_page.dart';
 import '../pages/admin_facial_enrollment_page.dart';
+import '../pages/admin_viviendas_page.dart';
 import '../pages/admin/admin_notificaciones_page.dart';
 import '../pages/notificaciones/notificaciones_lista_page.dart';
 import '../pages/notificaciones/notificacion_detalle_page.dart';
@@ -42,6 +43,7 @@ import '../../application/blocs/qr_list/qr_list_bloc.dart';
 import '../../application/blocs/prospecto_validation/prospecto_validation_bloc.dart';
 import '../../application/blocs/registro_residente/registro_residente_bloc.dart';
 import '../../application/blocs/visitor/visitor_bloc.dart';
+import '../../application/blocs/vivienda/vivienda_bloc.dart';
 import '../../application/blocs/admin/admin_notificaciones_bloc.dart';
 import '../../injection.dart';
 
@@ -82,6 +84,7 @@ class AppRoutes {
   static const String adminFacialEnrollment = '/adminFacialEnrollment';
   static const String adminProfile = '/adminProfile';
   static const String adminNotificaciones = '/adminNotificaciones';
+  static const String adminViviendas = '/adminViviendas';
   static const String notificaciones = '/notificaciones';
   static const String notificacionDetalle =
       '/notificaciones/detalle';
@@ -450,6 +453,19 @@ class AppRoutes {
               personaId: personaId,
               identificacion: identificacion,
             ),
+          ),
+          settings: settings,
+        );
+      }
+
+      case adminViviendas: {
+        final args = settings.arguments as Map<String, dynamic>?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
+        return _fadeRoute(
+          BlocProvider<ViviendaBloc>(
+            create: (_) => sl<ViviendaBloc>(),
+            child: AdminViviendasPage(personaId: personaId, identificacion: identificacion),
           ),
           settings: settings,
         );

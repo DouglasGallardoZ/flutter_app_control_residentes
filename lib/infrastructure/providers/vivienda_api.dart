@@ -1,0 +1,139 @@
+import 'package:dio/dio.dart';
+
+class ViviendaApi {
+  final Dio dio;
+
+  ViviendaApi(this.dio);
+
+  Future<Map<String, dynamic>> listar({
+    int page = 1,
+    int pageSize = 20,
+    String? manzana,
+    String? estado,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'page_size': pageSize,
+      };
+      if (manzana != null && manzana.isNotEmpty) {
+        queryParams['manzana'] =
+            manzana;
+      }
+      if (estado != null && estado.isNotEmpty) {
+        queryParams['estado'] =
+            estado;
+      }
+
+      final response = await dio.get(
+        '/viviendas',
+        queryParameters:
+            queryParams,
+      );
+      return response.data
+          as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw Exception(
+          'Error al listar viviendas: ${e.message}');
+    }
+  }
+
+  Future<Map<String, dynamic>>
+      obtenerPorId(int viviendaId) async {
+    try {
+      final response = await dio
+          .get('/viviendas/$viviendaId');
+      return response.data
+          as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw Exception(
+          'Error al obtener vivienda: ${e.message}');
+    }
+  }
+
+  Future<Map<String, dynamic>> crear({
+    required String manzana,
+    required String villa,
+  }) async {
+    try {
+      final response =
+          await dio.post(
+        '/viviendas',
+        data: {
+          'manzana': manzana,
+          'villa': villa,
+          'estado': 'activo',
+          'usuario_creado':
+              'api_system',
+        },
+      );
+      return response.data
+          as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final detail = e.response?.data?[
+              'detail']
+          ?.toString();
+      throw Exception(
+          detail ?? 'Error al crear vivienda');
+    }
+  }
+
+  Future<Map<String, dynamic>> actualizar({
+    required int viviendaId,
+    String? manzana,
+    String? villa,
+  }) async {
+    try {
+      final data =
+          <String, dynamic>{
+        'usuario_actualizado':
+            'api_system',
+      };
+      if (manzana != null) {
+        data['manzana'] = manzana;
+      }
+      if (villa != null) {
+        data['villa'] = villa;
+      }
+
+      final response =
+          await dio.put(
+        '/viviendas/$viviendaId',
+        data: data,
+      );
+      return response.data
+          as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final detail = e.response?.data?[
+              'detail']
+          ?.toString();
+      throw Exception(
+          detail ?? 'Error al actualizar vivienda');
+    }
+  }
+
+  Future<void> cambiarEstado({
+    required int viviendaId,
+    required String estado,
+    String? motivo,
+  }) async {
+    try {
+      await dio.put(
+        '/viviendas/$viviendaId/estado',
+        data: {
+          'estado': estado,
+          if (motivo != null)
+            'motivo': motivo,
+          'usuario_actualizado':
+              'api_system',
+        },
+      );
+    } on DioException catch (e) {
+      final detail = e.response?.data?[
+              'detail']
+          ?.toString();
+      throw Exception(
+          detail ?? 'Error al cambiar estado');
+    }
+  }
+}

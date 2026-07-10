@@ -43,6 +43,8 @@ class AdminScaffold extends StatelessWidget {
         return 3;
       case '/adminNotificaciones':
         return 4;
+      case '/adminViviendas':
+        return 5;
       default:
         return 0;
     }
@@ -74,6 +76,11 @@ class AdminScaffold extends StatelessWidget {
       selectedIcon: Icon(Icons.notifications),
       label: 'Notificaciones',
     ),
+    NavigationDestination(
+      icon: Icon(Icons.home_work_outlined),
+      selectedIcon: Icon(Icons.home_work),
+      label: 'Viviendas',
+    ),
   ];
 
   static const _railDestinations = <NavigationRailDestination>[
@@ -102,6 +109,11 @@ class AdminScaffold extends StatelessWidget {
       selectedIcon: Icon(Icons.notifications),
       label: Text('Notificaciones'),
     ),
+    NavigationRailDestination(
+      icon: Icon(Icons.home_work_outlined),
+      selectedIcon: Icon(Icons.home_work),
+      label: Text('Viviendas'),
+    ),
   ];
 
   static const _drawerItems = [
@@ -110,6 +122,7 @@ class AdminScaffold extends StatelessWidget {
     (Icons.people, 'Usuarios', 2),
     (Icons.person, 'Perfil', 3),
     (Icons.notifications, 'Notificaciones', 4),
+    (Icons.home_work, 'Viviendas', 5),
   ];
 
   Widget _buildDrawer(int calculatedIndex, BuildContext context) {

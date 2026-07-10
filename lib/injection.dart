@@ -34,7 +34,9 @@ import 'infrastructure/providers/admin_notificaciones_api_provider.dart';
 import 'infrastructure/providers/fcm_provider.dart';
 import 'infrastructure/providers/firestore_provider.dart';
 import 'infrastructure/providers/solicitud_miembro_api_provider.dart';
+import 'infrastructure/providers/vivienda_api.dart';
 
+import 'infrastructure/adapters/vivienda_repository_impl.dart';
 // Infrastructure - Adapters
 import 'infrastructure/adapters/auth_repository_impl.dart';
 import 'infrastructure/adapters/account_repository_impl.dart';
@@ -86,6 +88,7 @@ import 'domain/ports/notificacion_repository_port.dart';
 import 'domain/ports/admin_notificaciones_repository_port.dart';
 import 'domain/ports/notificacion_push_handler_port.dart';
 import 'domain/ports/solicitud_miembro_repository_port.dart';
+import 'domain/ports/vivienda_repository_port.dart';
 import 'domain/ports/camera_port.dart';
 
 // Domain - Use Cases
@@ -152,6 +155,12 @@ import 'domain/usecases/consultar_estado_solicitud_usecase.dart';
 import 'domain/usecases/listar_solicitudes_pendientes_usecase.dart';
 import 'domain/usecases/aprobar_solicitud_miembro_usecase.dart';
 import 'domain/usecases/rechazar_solicitud_miembro_usecase.dart';
+import 'domain/usecases/listar_viviendas_usecase.dart';
+import 'domain/usecases/crear_vivienda_usecase.dart';
+import 'domain/usecases/actualizar_vivienda_usecase.dart';
+import 'domain/usecases/cambiar_estado_vivienda_usecase.dart';
+
+import 'application/blocs/vivienda/vivienda_bloc.dart';
 
 // BLoCs
 import 'application/blocs/admin/admin_dashboard_bloc.dart';
@@ -870,6 +879,40 @@ Future<void> inject() async {
       listarPendientes: sl<ListarSolicitudesPendientesUseCase>(),
       aprobar: sl<AprobarSolicitudMiembroUseCase>(),
       rechazar: sl<RechazarSolicitudMiembroUseCase>(),
+    ),
+  );
+
+  // Providers - Viviendas
+  sl.registerLazySingleton<ViviendaApi>(
+    () => ViviendaApi(sl<ApiHttpClient>().dio),
+  );
+
+  // Adapters - Viviendas
+  sl.registerLazySingleton<ViviendaRepositoryPort>(
+    () => ViviendaRepositoryImpl(api: sl<ViviendaApi>()),
+  );
+
+  // Use Cases - Viviendas
+  sl.registerLazySingleton<ListarViviendasUseCase>(
+    () => ListarViviendasUseCase(sl<ViviendaRepositoryPort>()),
+  );
+  sl.registerLazySingleton<CrearViviendaUseCase>(
+    () => CrearViviendaUseCase(sl<ViviendaRepositoryPort>()),
+  );
+  sl.registerLazySingleton<ActualizarViviendaUseCase>(
+    () => ActualizarViviendaUseCase(sl<ViviendaRepositoryPort>()),
+  );
+  sl.registerLazySingleton<CambiarEstadoViviendaUseCase>(
+    () => CambiarEstadoViviendaUseCase(sl<ViviendaRepositoryPort>()),
+  );
+
+  // BLoCs - Viviendas
+  sl.registerFactory<ViviendaBloc>(
+    () => ViviendaBloc(
+      listarUseCase: sl<ListarViviendasUseCase>(),
+      crearUseCase: sl<CrearViviendaUseCase>(),
+      actualizarUseCase: sl<ActualizarViviendaUseCase>(),
+      cambiarEstadoUseCase: sl<CambiarEstadoViviendaUseCase>(),
     ),
   );
 }
