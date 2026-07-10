@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../application/blocs/admin/admin_dashboard_bloc.dart';
-import '../../application/blocs/admin/admin_dashboard_event.dart';
-import '../../application/blocs/admin/admin_dashboard_state.dart';
 import '../widgets/admin_scaffold.dart';
 
 class AdminUsersPage extends StatefulWidget {
@@ -21,75 +17,34 @@ class AdminUsersPage extends StatefulWidget {
 
 class _AdminUsersPageState extends State<AdminUsersPage> {
   @override
-  void initState() {
-    super.initState();
-    // Cargar datos al iniciar
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AdminDashboardBloc>().add(const LoadAdminMetrics());
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return AdminScaffold(
       title: 'Gestión de Usuarios',
       routeName: '/adminUsers',
       onTabSelected: (index) {
+        if (index == 2) return;
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          switch (index) {
-            case 0:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminDashboard',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 1:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminAccessHistory',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 2:
-              // Ya estamos aquí
-              break;
-            case 3:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminProfile',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 4:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/adminNotificaciones', (route) => false,
-                  arguments: {
-                    'personaId': widget.personaId,
-                    'identificacion': widget.identificacion,
-                  });
-              break;
+          final routes = [
+            '/adminDashboard',
+            '/adminAccessHistory',
+            null,
+            '/adminProfile',
+            '/adminNotificaciones',
+          ];
+          if (routes[index] != null) {
+            Navigator.of(context).pushReplacementNamed(
+              routes[index]!,
+              arguments: {
+                'personaId': widget.personaId,
+                'identificacion': widget.identificacion,
+              },
+            );
           }
         });
       },
-      body: BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
-        builder: (context, state) {
-          if (state is AdminDashboardLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          return ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: [
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
               // Card de Gestión de Residentes
               _UserManagementCard(
                 title: 'Gestión de Residentes',
@@ -165,9 +120,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                 },
               ),
             ],
-          );
-        },
-      ),
+          ),
     );
   }
 }

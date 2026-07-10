@@ -41,8 +41,6 @@ import '../../domain/entities/notificacion_item.dart';
 import '../../application/blocs/qr_list/qr_list_bloc.dart';
 import '../../application/blocs/prospecto_validation/prospecto_validation_bloc.dart';
 import '../../application/blocs/registro_residente/registro_residente_bloc.dart';
-import '../../application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
-import '../../application/blocs/member/member_bloc.dart';
 import '../../application/blocs/visitor/visitor_bloc.dart';
 import '../../application/blocs/admin/admin_notificaciones_bloc.dart';
 import '../../injection.dart';
