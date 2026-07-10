@@ -341,7 +341,45 @@ class _QrVisitPageState extends State<QrVisitPage> {
               ctx.read<VisitorBloc>().add(
                   LoadVisitantesVivienda(personaId: widget.personaId));
             }
-            
+
+            if (vstState is VisitorError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 56, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error al cargar visitantes',
+                        style: theme.textTheme.titleMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        vstState.message,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          ctx.read<VisitorBloc>().add(
+                            LoadVisitantesVivienda(personaId: widget.personaId),
+                          );
+                        },
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Reintentar'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
             return BlocBuilder<QrVisitBloc, QrVisitState>(
               builder: (qrCtx, qrState) {
                 return SingleChildScrollView(
