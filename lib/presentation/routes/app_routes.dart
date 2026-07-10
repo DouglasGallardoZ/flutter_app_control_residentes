@@ -394,26 +394,32 @@ class AppRoutes {
 
       case adminCreateResident: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
-        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminCreateResidentPage');
-        return MaterialPageRoute(builder: (_) => AdminCreateResidentPage(personaId: personaId, identificacion: identificacion));
+        return MaterialPageRoute(
+          builder: (_) => AdminCreateResidentPage(
+            personaId: args?['personaId'] as int? ?? 0,
+            identificacion: args?['identificacion'] as String? ?? '',
+          ),
+        );
       }
 
       case adminCreateOwner: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
-        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminCreateOwnerPage');
-        return MaterialPageRoute(builder: (_) => AdminCreateOwnerPage(personaId: personaId, identificacion: identificacion));
+        return MaterialPageRoute(
+          builder: (_) => AdminCreateOwnerPage(
+            personaId: args?['personaId'] as int? ?? 0,
+            identificacion: args?['identificacion'] as String? ?? '',
+          ),
+        );
       }
 
       case adminCreateMember: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
-        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminCreateMemberPage');
-        return MaterialPageRoute(builder: (_) => AdminCreateMemberPage(personaId: personaId, identificacion: identificacion));
+        return MaterialPageRoute(
+          builder: (_) => AdminCreateMemberPage(
+            personaId: args?['personaId'] as int? ?? 0,
+            identificacion: args?['identificacion'] as String? ?? '',
+          ),
+        );
       }
 
       case adminFacialEnrollment: {

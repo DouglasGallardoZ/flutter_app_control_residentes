@@ -151,7 +151,17 @@ class _AdminCreateMemberPageState extends State<AdminCreateMemberPage> {
       onBackPressed: () {
         Navigator.of(context).pop();
       },
-      body: BlocListener<MemberBloc, MemberState>(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: Theme.of(context).brightness == Brightness.light
+                ? const [Color(0xFFFFFFFF), Color(0xFFDCDBE5)]
+                : const [Color(0xFF1A1A2E), Color(0xFF2D1B3D)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: BlocListener<MemberBloc, MemberState>(
         listener: (context, state) {
           if (state is MemberCreated) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -533,6 +543,7 @@ class _AdminCreateMemberPageState extends State<AdminCreateMemberPage> {
           },
         ),
       ),
+    ),
     );
   }
 }

@@ -363,8 +363,11 @@ class _AdminMembersPageState
         TextButton.icon(
           onPressed: () =>
               Navigator.of(context)
-                  .pushNamed(
-                      '/adminCreateMember'),
+                  .pushNamed('/adminCreateMember',
+                      arguments: {
+                        'personaId': widget.personaId,
+                        'identificacion': widget.identificacion,
+                      }),
           icon: const Icon(
               Icons.person_add),
           label:

@@ -298,8 +298,11 @@ class _AdminResidentsPageState
         TextButton.icon(
           onPressed: () =>
               Navigator.of(context)
-                  .pushNamed(
-                      '/adminCreateResident'),
+                  .pushNamed('/adminCreateResident',
+                      arguments: {
+                        'personaId': widget.personaId,
+                        'identificacion': widget.identificacion,
+                      }),
           icon: const Icon(
               Icons.person_add),
           label:

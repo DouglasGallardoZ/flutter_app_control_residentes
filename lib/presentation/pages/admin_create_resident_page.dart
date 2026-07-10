@@ -124,7 +124,17 @@ class _AdminCreateResidentPageState extends State<AdminCreateResidentPage> {
       onBackPressed: () {
         Navigator.of(context).pop();
       },
-      body: BlocListener<ResidentBloc, ResidentState>(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: Theme.of(context).brightness == Brightness.light
+                ? const [Color(0xFFFFFFFF), Color(0xFFDCDBE5)]
+                : const [Color(0xFF1A1A2E), Color(0xFF2D1B3D)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: BlocListener<ResidentBloc, ResidentState>(
         listener: (context, state) {
           if (state is ResidentCreated) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -481,6 +491,7 @@ class _AdminCreateResidentPageState extends State<AdminCreateResidentPage> {
           },
         ),
       ),
+    ),
     );
   }
 }

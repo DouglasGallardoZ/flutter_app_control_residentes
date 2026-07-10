@@ -118,7 +118,17 @@ class _AdminCreateOwnerPageState extends State<AdminCreateOwnerPage> {
       onBackPressed: () {
         Navigator.of(context).pop();
       },
-      body: BlocListener<OwnerBloc, OwnerState>(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: Theme.of(context).brightness == Brightness.light
+                ? const [Color(0xFFFFFFFF), Color(0xFFDCDBE5)]
+                : const [Color(0xFF1A1A2E), Color(0xFF2D1B3D)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: BlocListener<OwnerBloc, OwnerState>(
         listener: (context, state) {
           if (state is OwnerCreated) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -462,6 +472,7 @@ class _AdminCreateOwnerPageState extends State<AdminCreateOwnerPage> {
           },
         ),
       ),
+    ),
     );
   }
 }
