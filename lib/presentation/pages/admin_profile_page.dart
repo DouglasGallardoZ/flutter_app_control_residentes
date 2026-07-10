@@ -6,7 +6,6 @@ import '../../application/blocs/auth/auth_state.dart';
 import '../../application/blocs/security_session/security_session_bloc.dart';
 import '../../application/blocs/security_session/security_session_event.dart';
 import '../widgets/admin_scaffold.dart';
-import '../routes/app_routes.dart';
 import '../theme/theme_controller.dart';
 
 class AdminProfilePage extends StatefulWidget {
@@ -20,414 +19,504 @@ class AdminProfilePage extends StatefulWidget {
   });
 
   @override
-  State<AdminProfilePage> createState() => _AdminProfilePageState();
+  State<AdminProfilePage> createState() =>
+      _AdminProfilePageState();
 }
 
-class _AdminProfilePageState extends State<AdminProfilePage> {
-  bool isEditing = false;
-  String editedEmail = '';
-  String error = '';
-  bool notificationsEnabled = true;
-  bool showSuccess = false;
-  TextEditingController? _emailCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _emailCtrl = TextEditingController();
-  }
+class _AdminProfilePageState
+    extends State<AdminProfilePage> {
+  final _emailCtrl =
+      TextEditingController();
+  bool _editandoEmail = false;
+  bool _notificacionesActivas =
+      true;
 
   @override
   void dispose() {
-    _emailCtrl?.dispose();
+    _emailCtrl.dispose();
     super.dispose();
   }
 
-  bool _isValidEmail(String email) {
-    return RegExp(r'^[\w\.-]+@[\w\.-]+\.\w{2,}$').hasMatch(email);
-  }
-
-  void _confirmLogout() {
-    showDialog(
+  Future<void> _confirmarCerrarSesion() async {
+    final confirmado =
+        await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Cerrar sesión'),
-        content: const Text('¿Está seguro de que desea cerrar sesión?'),
+        icon: const Icon(Icons.logout,
+            color: Colors.red,
+            size: 48),
+        title: const Text(
+            'Cerrar Sesión'),
+        content: const Text(
+            '¿Estás seguro de cerrar sesión?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
+            onPressed: () =>
+                Navigator.pop(
+                    ctx, false),
+            child: const Text(
+                'Cancelar'),
           ),
           FilledButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.read<AuthBloc>().add(LogoutRequested());
-              context
-                  .read<SecuritySessionBloc>()
-                  .add(SessionTerminated());
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                  '/login', (route) => false);
-            },
-            child: const Text('Cerrar sesión'),
+            onPressed: () =>
+                Navigator.pop(
+                    ctx, true),
+            style: FilledButton
+                .styleFrom(
+                    backgroundColor:
+                        Colors.red),
+            child: const Text(
+                'Cerrar Sesión'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmado == true &&
+        context.mounted) {
+      context
+          .read<AuthBloc>()
+          .add(LogoutRequested());
+      context
+          .read<SecuritySessionBloc>()
+          .add(SessionTerminated());
+      Navigator.of(context)
+          .pushNamedAndRemoveUntil(
+              '/login', (route) => false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final authState =
+        context.read<AuthBloc>().state;
+    String nombres = '';
+    String apellidos = '';
+    String identificacion = '';
+    String email = '';
+
+    if (authState is AuthSuccess) {
+      nombres = authState
+              .user['nombres'] as String? ??
+          '';
+      apellidos = authState
+              .user['apellidos'] as String? ??
+          '';
+      identificacion =
+          authState.user['identificacion']
+                  as String? ??
+              '';
+      email =
+          authState.user['email'] as String? ??
+              '';
+    }
+
+    if (!_editandoEmail &&
+        email.isNotEmpty) {
+      _emailCtrl.text = email;
+    }
+
+    return AdminScaffold(
+      title: 'Mi Perfil',
+      routeName: '/adminProfile',
+      showBackButton: true,
+      onBackPressed: () =>
+          Navigator.of(context)
+              .pushReplacementNamed(
+        '/adminDashboard',
+        arguments: {
+          'personaId':
+              widget.personaId,
+          'identificacion':
+              widget.identificacion,
+        },
+      ),
+      onTabSelected: (i) {
+        if (i == 3) return;
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) {
+          final routes = [
+            '/adminDashboard',
+            '/adminAccessHistory',
+            '/adminUsers',
+            null,
+            '/adminNotificaciones',
+          ];
+          if (routes[i] != null) {
+            Navigator.of(context)
+                .pushReplacementNamed(
+              routes[i]!,
+              arguments: {
+                'personaId':
+                    widget.personaId,
+                'identificacion':
+                    widget.identificacion,
+              },
+            );
+          }
+        });
+      },
+      body: ListView(
+        padding:
+            const EdgeInsets.all(24),
+        children: [
+          Center(
+            child: Column(children: [
+              CircleAvatar(
+                radius: 48,
+                backgroundColor: theme
+                    .colorScheme.primary
+                    .withOpacity(0.15),
+                child: Text(
+                  nombres.isNotEmpty
+                      ? nombres[0]
+                          .toUpperCase()
+                      : 'A',
+                  style: TextStyle(
+                    fontSize: 36,
+                    color: theme
+                        .colorScheme
+                        .primary,
+                    fontWeight:
+                        FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(
+                  height: 16),
+              Text(
+                '$nombres $apellidos'
+                    .trim(),
+                style: theme
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(
+                        fontWeight:
+                            FontWeight
+                                .bold),
+              ),
+              const SizedBox(
+                  height: 8),
+              Container(
+                padding:
+                    const EdgeInsets
+                        .symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                decoration:
+                    BoxDecoration(
+                  color: const Color(
+                          0xFF04345C)
+                      .withOpacity(
+                          0.1),
+                  borderRadius:
+                      BorderRadius
+                          .circular(20),
+                ),
+                child: const Text(
+                  'Administrador',
+                  style: TextStyle(
+                    color: Color(
+                        0xFF04345C),
+                    fontWeight:
+                        FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            'Información Personal',
+            style: theme
+                .textTheme.titleMedium
+                ?.copyWith(
+                    fontWeight:
+                        FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            elevation: 2,
+            shape:
+                RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius
+                      .circular(16),
+            ),
+            child: Padding(
+              padding:
+                  const EdgeInsets.all(
+                      16),
+              child: Column(
+                children: [
+                  _infoRow(context,
+                      'Identificación',
+                      identificacion),
+                  const Divider(),
+                  _infoRow(context,
+                      'Nombres', nombres),
+                  const Divider(),
+                  _infoRow(context,
+                      'Apellidos',
+                      apellidos),
+                  const Divider(),
+                  Row(
+                    crossAxisAlignment:
+                        CrossAxisAlignment
+                            .start,
+                    children: [
+                      SizedBox(
+                        width: 110,
+                        child: Text(
+                          'Correo',
+                          style: TextStyle(
+                            color: Colors
+                                .grey
+                                .shade600,
+                            fontWeight:
+                                FontWeight
+                                    .w500,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: _editandoEmail
+                            ? Row(
+                                children: [
+                                  Expanded(
+                                    child:
+                                        TextField(
+                                      controller:
+                                          _emailCtrl,
+                                      keyboardType:
+                                          TextInputType.emailAddress,
+                                      decoration: const InputDecoration(
+                                        border: OutlineInputBorder(),
+                                        contentPadding:
+                                            EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 8),
+                                        isDense:
+                                            true,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                      width:
+                                          8),
+                                  IconButton(
+                                    icon: const Icon(
+                                        Icons.check,
+                                        color: Colors.green),
+                                    onPressed: () => setState(() =>
+                                        _editandoEmail = false),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                        Icons.close,
+                                        color: Colors.red),
+                                    onPressed:
+                                        () {
+                                      _emailCtrl.text =
+                                          email;
+                                      setState(() =>
+                                          _editandoEmail = false);
+                                    },
+                                  ),
+                                ],
+                              )
+                            : Row(
+                                children: [
+                                  Expanded(
+                                    child:
+                                        Text(
+                                      email.isNotEmpty
+                                          ? email
+                                          : '—',
+                                      style: const TextStyle(
+                                          fontWeight:
+                                              FontWeight.w500),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                        Icons.edit,
+                                        size: 18),
+                                    onPressed: () => setState(() =>
+                                        _editandoEmail = true),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Preferencias',
+            style: theme
+                .textTheme.titleMedium
+                ?.copyWith(
+                    fontWeight:
+                        FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            elevation: 2,
+            shape:
+                RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius
+                      .circular(16),
+            ),
+            child: Column(
+              children: [
+                SwitchListTile(
+                  value:
+                      _notificacionesActivas,
+                  onChanged: (v) =>
+                      setState(() =>
+                          _notificacionesActivas =
+                              v),
+                  title: const Text(
+                      'Notificaciones Push'),
+                  subtitle: const Text(
+                      'Recibir notificaciones en tiempo real'),
+                  secondary: const Icon(
+                      Icons
+                          .notifications_active),
+                  activeColor:
+                      const Color(
+                          0xFF04345C),
+                  shape:
+                      RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius
+                            .circular(
+                                16),
+                  ),
+                ),
+                const Divider(
+                    height: 1),
+                SwitchListTile(
+                  value: theme.brightness ==
+                      Brightness.dark,
+                  onChanged: (v) =>
+                      ThemeController
+                          .toggle(),
+                  title: const Text(
+                      'Tema Oscuro'),
+                  subtitle: const Text(
+                      'Activar modo oscuro'),
+                  secondary: const Icon(
+                      Icons.dark_mode),
+                  activeColor:
+                      const Color(
+                          0xFF04345C),
+                  shape:
+                      RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius
+                            .circular(
+                                16),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed:
+                  _confirmarCerrarSesion,
+              icon: const Icon(
+                  Icons.logout,
+                  color: Colors.red),
+              label: const Text(
+                  'Cerrar Sesión',
+                  style: TextStyle(
+                      color:
+                          Colors.red)),
+              style: OutlinedButton
+                  .styleFrom(
+                side: const BorderSide(
+                    color: Colors.red),
+                padding:
+                    const EdgeInsets
+                        .symmetric(
+                        vertical:
+                            16),
+                shape:
+                    RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius
+                          .circular(
+                              12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Center(
+            child: Text(
+              'Guardin Admin v1.0',
+              style: TextStyle(
+                color: Colors
+                    .grey.shade500,
+                fontSize: 12,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return AdminScaffold(
-      title: 'Perfil',
-      routeName: '/adminProfile',
-      onTabSelected: (index) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          switch (index) {
-            case 0:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminDashboard',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 1:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminAccessHistory',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 2:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminUsers',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 3:
-              // Ya estamos aquí
-              break;
-            case 4:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/adminNotificaciones', (route) => false,
-                  arguments: {
-                    'personaId': widget.personaId,
-                    'identificacion': widget.identificacion,
-                  });
-              break;
-          }
-        });
-      },
-      body: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          if (state is! AuthSuccess) {
-            return const Center(child: Text('Error: No autenticado'));
-          }
-
-          final user = state.user;
-          final nombres = user['nombres'] as String? ?? '—';
-          final apellidos = user['apellidos'] as String? ?? '—';
-          final correo = user['correo'] as String? ?? '—';
-          final identificacion = user['identificacion'] as String? ?? widget.identificacion;
-          final rol = user['rol'] as String? ?? 'administrador';
-          final estado = user['estado'] as String? ?? 'activo';
-
-          if (!isEditing) {
-            editedEmail = correo != '—' ? correo : '';
-          }
-
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Header del perfil
-              Center(
-                child: Column(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: theme.colorScheme.primary,
-                      ),
-                      child: Icon(
-                        Icons.admin_panel_settings,
-                        size: 40,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '$nombres $apellidos',
-                      style: theme.textTheme.headlineSmall,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 4),
-                    Chip(
-                      label: Text('Administrador'),
-                      backgroundColor: theme.colorScheme.primary.withOpacity(0.2),
-                      labelStyle: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+  Widget _infoRow(
+    BuildContext context,
+    String label,
+    String value,
+  ) {
+    return Padding(
+      padding:
+          const EdgeInsets.symmetric(
+              vertical: 8),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors
+                    .grey.shade600,
+                fontWeight:
+                    FontWeight.w500,
               ),
-              const SizedBox(height: 32),
-
-              // Información Personal
-              Text(
-                'Información Personal',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Tarjeta de información
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _infoRow(context, Icons.badge, 'Identificación', identificacion),
-                      const Divider(height: 24),
-                      _infoRow(context, Icons.person, 'Nombres', nombres),
-                      const Divider(height: 24),
-                      _infoRow(context, Icons.person_outline, 'Apellidos', apellidos),
-                      const Divider(height: 24),
-                      _infoRow(context, Icons.verified_user, 'Estado', estado),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Correo Electrónico
-              Text(
-                'Correo Electrónico',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (!isEditing)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Correo',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.hintColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    correo,
-                                    style: theme.textTheme.bodyMedium,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: () => setState(() {
-                                isEditing = true;
-                                editedEmail = correo != '—' ? correo : '';
-                                _emailCtrl?.text = editedEmail;
-                                error = '';
-                              }),
-                            ),
-                          ],
-                        )
-                      else
-                        Column(
-                          children: [
-                            TextField(
-                              controller: _emailCtrl,
-                              onChanged: (value) => editedEmail = value,
-                              decoration: InputDecoration(
-                                labelText: 'Correo electrónico',
-                                prefixIcon: const Icon(Icons.email),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                            if (error.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 12),
-                                child: Text(
-                                  error,
-                                  style: TextStyle(color: theme.colorScheme.error),
-                                ),
-                              ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed: () => setState(() {
-                                      isEditing = false;
-                                      error = '';
-                                    }),
-                                    child: const Text('Cancelar'),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      if (editedEmail.isEmpty || _isValidEmail(editedEmail)) {
-                                        // TODO: Implementar actualización de correo
-                                        setState(() {
-                                          isEditing = false;
-                                          showSuccess = true;
-                                        });
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Correo actualizado exitosamente'),
-                                            duration: Duration(seconds: 3),
-                                          ),
-                                        );
-                                      } else {
-                                        setState(() => error = 'Por favor ingrese un correo válido');
-                                      }
-                                    },
-                                    child: const Text('Guardar'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Preferencias
-              Text(
-                'Preferencias',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Notificaciones'),
-                          Switch(
-                            value: notificationsEnabled,
-                            onChanged: (value) => setState(() => notificationsEnabled = value),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Tema Oscuro'),
-                          Switch(
-                            value: theme.brightness == Brightness.dark,
-                            onChanged: (value) => ThemeController.toggle(),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Botón de Cerrar Sesión
-              ElevatedButton.icon(
-                onPressed: _confirmLogout,
-                icon: const Icon(Icons.logout),
-                label: const Text('Cerrar Sesión'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.error,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Footer con versión
-              Center(
-                child: Text(
-                  'Versión 2.0.0 - Admin',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.hintColor,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _infoRow(BuildContext context, IconData icon, String label, String value) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: theme.colorScheme.primary),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.hintColor,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ],
+          Expanded(
+            child: Text(
+              value.isNotEmpty
+                  ? value
+                  : '—',
+              style: const TextStyle(
+                  fontWeight:
+                      FontWeight
+                          .w500),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
