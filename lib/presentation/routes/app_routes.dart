@@ -246,8 +246,8 @@ class AppRoutes {
 
       case residentDashboard: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         final residenceId = args?['residenceId'] as String?;
         if (personaId != null && identificacion != null && residenceId != null) {
           return _fadeRoute(ResidentDashboardPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId), settings: settings);
@@ -257,8 +257,8 @@ class AppRoutes {
 
       case qrSelf: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         final residenceId = args?['residenceId'] as String?;
         if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en QrSelfPage');
         return _fadeRoute(QrSelfPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId), settings: settings);
@@ -266,8 +266,8 @@ class AppRoutes {
 
       case qrVisit: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         final residenceId = args?['residenceId'] as String?;
         if (personaId == null || identificacion == null || residenceId == null) {
           return _errorRoute('Faltan argumentos en QrVisitPage');
@@ -287,8 +287,8 @@ class AppRoutes {
 
       case qrList: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         final residenceId = args?['residenceId'] as String?;
         if (personaId == null || identificacion == null || residenceId == null) {
           return _errorRoute('Faltan argumentos en QrListPage');
@@ -304,8 +304,8 @@ class AppRoutes {
 
       case accessHistory: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         final residenceId = args?['residenceId'] as String?;
         if (personaId != null && identificacion != null) {
           return _fadeRoute(AccessHistoryPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId), settings: settings);
@@ -315,8 +315,8 @@ class AppRoutes {
 
       case profile: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         if (personaId != null && identificacion != null) {
           return _fadeRoute(ProfilePage(personaId: personaId, identificacion: identificacion), settings: settings);
         }
@@ -325,8 +325,8 @@ class AppRoutes {
 
       case members: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         final residenceId = args?['residenceId'] as String?;
         if (personaId != null && identificacion != null) {
           return _fadeRoute(MembersPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId), settings: settings);
@@ -336,57 +336,50 @@ class AppRoutes {
 
       case adminDashboard: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
-        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminDashboardPage');
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         return _fadeRoute(AdminDashboardPage(personaId: personaId, identificacion: identificacion), settings: settings);
       }
 
       case adminAccessHistory: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
-        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminAccessHistoryPage');
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         return _fadeRoute(AdminAccessHistoryPage(personaId: personaId, identificacion: identificacion), settings: settings);
       }
 
       case adminUsers: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
-        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminUsersPage');
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         return _fadeRoute(AdminUsersPage(personaId: personaId, identificacion: identificacion), settings: settings);
       }
 
       case adminResidents: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
-        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminResidentsPage');
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         return MaterialPageRoute(builder: (_) => AdminResidentsPage(personaId: personaId, identificacion: identificacion));
       }
 
       case adminOwners: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
-        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminOwnersPage');
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         return MaterialPageRoute(builder: (_) => AdminOwnersPage(personaId: personaId, identificacion: identificacion));
       }
 
       case adminMembers: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
-        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminMembersPage');
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         return MaterialPageRoute(builder: (_) => AdminMembersPage(personaId: personaId, identificacion: identificacion));
       }
 
       case adminAccounts: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
-        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminAccountsPage');
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         return MaterialPageRoute(builder: (_) => AdminAccountsPage(personaId: personaId, identificacion: identificacion));
       }
 
@@ -441,9 +434,8 @@ class AppRoutes {
 
       case adminProfile: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
-        if (personaId == null || identificacion == null) return _errorRoute('Faltan argumentos en AdminProfilePage');
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         return _fadeRoute(AdminProfilePage(personaId: personaId, identificacion: identificacion), settings: settings);
       }
 
@@ -486,8 +478,8 @@ class AppRoutes {
 
       case familyDashboard: {
         final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '');
-        final identificacion = args?['identificacion'] as String?;
+        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+        final identificacion = args?['identificacion'] as String? ?? '';
         final residenceId = args?['residenceId'] as String?;
         if (personaId != null && identificacion != null && residenceId != null) {
           return _fadeRoute(FamilyDashboardPage(personaId: personaId, identificacion: identificacion, residenceId: residenceId), settings: settings);
