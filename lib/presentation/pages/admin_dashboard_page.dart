@@ -10,6 +10,7 @@ import '../widgets/admin_scaffold.dart';
 class AdminDashboardPage extends StatefulWidget {
   final int personaId;
   final String identificacion;
+
   const AdminDashboardPage({
     super.key,
     required this.personaId,
@@ -17,124 +18,138 @@ class AdminDashboardPage extends StatefulWidget {
   });
 
   @override
-  State<AdminDashboardPage> createState() => _AdminDashboardPageState();
+  State<AdminDashboardPage> createState() =>
+      _AdminDashboardPageState();
 }
 
-class _AdminDashboardPageState extends State<AdminDashboardPage> {
-  String _selectedTimeFilter = 'today'; // 'today', 'week', 'month', 'custom'
-  String? _customFechaInicio;
-  String? _customFechaFin;
+class _AdminDashboardPageState
+    extends State<AdminDashboardPage> {
+  String _selectedFilter = 'today';
 
   @override
   void initState() {
     super.initState();
-    // Cargar métricas después de que el widget esté completamente construido
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AdminDashboardBloc>().add(const LoadAdminMetrics());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) {
+      context
+          .read<AdminDashboardBloc>()
+          .add(const LoadAdminMetrics());
     });
+  }
+
+  void _changeFilter(String filter) {
+    setState(() => _selectedFilter = filter);
+    context.read<AdminDashboardBloc>().add(
+          ChangeTimeFilter(filterType: filter),
+        );
+  }
+
+  String get _filterLabel {
+    return switch (_selectedFilter) {
+      'today' => 'Hoy',
+      'week' => 'Últimos 7 días',
+      'month' => 'Últimos 30 días',
+      _ => 'Hoy',
+    };
   }
 
   @override
   Widget build(BuildContext context) {
-    final authState = context.read<AuthBloc>().state;
+    final theme = Theme.of(context);
+    final authState =
+        context.read<AuthBloc>().state;
     String adminName = 'Administrador';
     if (authState is AuthSuccess) {
-      final nombres = authState.user['nombres'] as String? ?? '';
-      final apellidos = authState.user['apellidos'] as String? ?? '';
-      adminName = '$nombres $apellidos'.trim();
+      final nombres = authState
+              .user['nombres'] as String? ??
+          '';
+      final apellidos = authState
+              .user['apellidos'] as String? ??
+          '';
+      adminName =
+          '$nombres $apellidos'.trim();
     }
 
     return AdminScaffold(
-      title: 'Panel de Administración',
+      title: 'Dashboard',
       routeName: '/adminDashboard',
       onTabSelected: (index) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          switch (index) {
-            case 0:
-              // Ya está en dashboard
-              break;
-            case 1:
-              // Historial de accesos admin
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminAccessHistory',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 2:
-              // Gestión de usuarios
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminUsers',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 3:
-              // Configuración/Perfil admin
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminProfile',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 4:
-              // Notificaciones
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminNotificaciones',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
+        if (index == 0) return;
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) {
+          final routes = [
+            null,
+            '/adminAccessHistory',
+            '/adminUsers',
+            '/adminProfile',
+            '/adminNotificaciones',
+          ];
+          if (routes[index] != null) {
+            Navigator.of(context)
+                .pushReplacementNamed(
+              routes[index]!,
+              arguments: {
+                'personaId': widget.personaId,
+                'identificacion':
+                    widget.identificacion,
+              },
+            );
           }
         });
       },
-      body: BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
+      body: BlocBuilder<AdminDashboardBloc,
+          AdminDashboardState>(
         builder: (context, state) {
           if (state is AdminDashboardLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+                child:
+                    CircularProgressIndicator());
           }
-
           if (state is AdminDashboardError) {
             return Center(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment:
+                    MainAxisAlignment.center,
                 children: [
-                  Text('Error: ${state.message}'),
+                  Icon(Icons.error_outline,
+                      size: 48,
+                      color: theme
+                          .colorScheme
+                          .error),
                   const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<AdminDashboardBloc>().add(const RefreshAdminMetrics());
-                    },
-                    child: const Text('Reintentar'),
+                  Text(state.message,
+                      textAlign:
+                          TextAlign.center),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => context
+                        .read<AdminDashboardBloc>()
+                        .add(const RefreshAdminMetrics()),
+                    icon: const Icon(
+                        Icons.refresh),
+                    label: const Text(
+                        'Reintentar'),
                   ),
                 ],
               ),
             );
           }
-
-          if (state is AdminDashboardLoaded) {
-            final metrics = state.metrics;
-            // Actualizar el filtro seleccionado en el estado local
-            _selectedTimeFilter = state.currentTimeFilter;
-            _customFechaInicio = state.customFechaInicio;
-            _customFechaFin = state.customFechaFin;
-            
-            return _buildDashboard(context, adminName, metrics, state);
+          if (state
+              is AdminDashboardLoaded) {
+            return RefreshIndicator(
+              onRefresh: () async {
+                context
+                    .read<AdminDashboardBloc>()
+                    .add(const RefreshAdminMetrics());
+              },
+              child: _buildDashboard(
+                  context,
+                  adminName,
+                  state),
+            );
           }
-
-          return const SizedBox.shrink();
+          return const SizedBox
+              .shrink();
         },
       ),
     );
@@ -143,278 +158,304 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Widget _buildDashboard(
     BuildContext context,
     String adminName,
-    dynamic metrics,
     AdminDashboardLoaded state,
   ) {
-    return RefreshIndicator(
-      onRefresh: () async {
-        context.read<AdminDashboardBloc>().add(const RefreshAdminMetrics());
-      },
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Header
-          _buildHeader(adminName),
-          const SizedBox(height: 24),
+    final metrics = state.metrics;
 
-          // Tabs: Hoy, Semana, Mes
-          _buildTimeTabs(),
-          const SizedBox(height: 24),
-
-          // Métricas principales
-          _buildMetricsGrid(metrics),
-          const SizedBox(height: 24),
-
-          // Actividad reciente
-          _buildRecentActivity(metrics),
-          const SizedBox(height: 24),
-
-          // Acciones rápidas
-          _buildQuickActions(context),
-        ],
-      ),
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildHeader(
+            context, adminName),
+        const SizedBox(height: 24),
+        _buildFilterChips(context),
+        const SizedBox(height: 24),
+        _buildMetricsGrid(
+            context, metrics),
+        const SizedBox(height: 24),
+        _buildRecentActivity(
+            context, metrics),
+      ],
     );
   }
 
-  Widget _buildHeader(String adminName) {
-    String dateRangeText = 'Hoy';
-    if (_selectedTimeFilter == 'week') {
-      dateRangeText = 'Últimos 7 días';
-    } else if (_selectedTimeFilter == 'month') {
-      dateRangeText = 'Últimos 30 días';
-    } else if (_selectedTimeFilter == 'custom' && _customFechaInicio != null && _customFechaFin != null) {
-      dateRangeText = 'Del $_customFechaInicio al $_customFechaFin';
-    }
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildHeader(
+      BuildContext context,
+      String adminName) {
+    final theme = Theme.of(context);
+    return Row(
       children: [
-        Text(
-          'Hola, $adminName',
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+        CircleAvatar(
+          radius: 28,
+          backgroundColor: theme
+              .colorScheme.primary
+              .withOpacity(0.15),
+          child: Text(
+            adminName.isNotEmpty
+                ? adminName[0]
+                    .toUpperCase()
+                : 'A',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: theme
+                  .colorScheme.primary,
+            ),
+          ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Panel de Administración',
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Período: $dateRangeText',
-          style: TextStyle(fontSize: 12, color: Colors.blue.shade600, fontWeight: FontWeight.w500),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Hola, $adminName',
+                style: theme
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(
+                        fontWeight:
+                            FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _filterLabel,
+                style: theme
+                    .textTheme.bodyMedium
+                    ?.copyWith(
+                        color: theme
+                            .colorScheme
+                            .primary),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildTimeTabs() {
-    const tabs = [
-      ('today', 'Hoy'),
-      ('week', 'Semana'),
-      ('month', 'Mes'),
-      ('custom', 'Rango'),
-    ];
-    
-    return Wrap(
-      spacing: 12,
-      children: tabs.map((tabData) {
-        final (filterType, label) = tabData;
-        final isSelected = _selectedTimeFilter == filterType;
-        
-        return ChipButton(
-          label: label,
-          isSelected: isSelected,
-          onTap: () async {
-            if (filterType == 'custom') {
-              // Mostrar date range picker
-              final DateTimeRange? picked = await showDateRangePicker(
-                context: context,
-                firstDate: DateTime(2020),
-                lastDate: DateTime.now(),
-                initialDateRange: DateTimeRange(
-                  start: DateTime.now().subtract(const Duration(days: 30)),
-                  end: DateTime.now(),
-                ),
-              );
-              
-              if (picked != null) {
-                setState(() {
-                  _selectedTimeFilter = 'custom';
-                  _customFechaInicio = picked.start.toIso8601String().split('T')[0];
-                  _customFechaFin = picked.end.toIso8601String().split('T')[0];
-                });
-                
-                if (mounted) {
-                  context.read<AdminDashboardBloc>().add(
-                    ChangeTimeFilter(
-                      filterType: 'custom',
-                      customFechaInicio: _customFechaInicio,
-                      customFechaFin: _customFechaFin,
-                    ),
-                  );
-                }
-              }
-            } else {
-              setState(() {
-                _selectedTimeFilter = filterType;
-              });
-              
-              context.read<AdminDashboardBloc>().add(
-                ChangeTimeFilter(filterType: filterType),
-              );
-            }
-          },
-        );
-      }).toList(),
+  Widget _buildFilterChips(
+      BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _FilterChip(
+            label: 'Hoy',
+            selected:
+                _selectedFilter == 'today',
+            onTap: () =>
+                _changeFilter('today'),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: '7 días',
+            selected:
+                _selectedFilter == 'week',
+            onTap: () =>
+                _changeFilter('week'),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: '30 días',
+            selected:
+                _selectedFilter == 'month',
+            onTap: () =>
+                _changeFilter('month'),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildMetricsGrid(dynamic metrics) {
+  Widget _buildMetricsGrid(
+      BuildContext context,
+      dynamic metrics) {
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
+      physics:
+          const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.4,
       children: [
-        MetricCard(
-          icon: Icons.check_circle,
+        _MetricCard(
+          icon: Icons.login,
           label: 'Accesos Totales',
-          value: metrics.totalAccess.toString(),
+          value: '${metrics.totalAccess}',
           color: Colors.blue,
         ),
-        MetricCard(
-          icon: Icons.verified,
+        _MetricCard(
+          icon: Icons.check_circle,
           label: 'Exitosos',
-          value: metrics.successfulAccess.toString(),
+          value: '${metrics.successfulAccess}',
           color: Colors.green,
         ),
-        MetricCard(
+        _MetricCard(
           icon: Icons.cancel,
           label: 'Rechazados',
-          value: metrics.deniedAccess.toString(),
+          value: '${metrics.deniedAccess}',
           color: Colors.red,
         ),
-        MetricCard(
+        _MetricCard(
           icon: Icons.people,
           label: 'Visitantes',
-          value: metrics.visitors.toString(),
+          value: '${metrics.visitors}',
           color: Colors.purple,
         ),
       ],
     );
   }
 
-  Widget _buildRecentActivity(dynamic metrics) {
+  Widget _buildRecentActivity(
+      BuildContext context,
+      dynamic metrics) {
+    final theme = Theme.of(context);
+    final activities =
+        metrics.recentActivity as List;
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Actividad Reciente',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleMedium
+              ?.copyWith(
+                  fontWeight:
+                      FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        if (metrics.recentActivity.isEmpty)
+        if (activities.isEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
+            padding:
+                const EdgeInsets.symmetric(
+                    vertical: 24),
             child: Center(
               child: Text(
                 'No hay actividad reciente',
-                style: TextStyle(color: Colors.grey[600]),
+                style: TextStyle(
+                    color:
+                        Colors.grey.shade600),
               ),
             ),
           )
         else
           ListView.builder(
             shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: metrics.recentActivity.length,
+            physics:
+                const NeverScrollableScrollPhysics(),
+            itemCount: activities.length,
             itemBuilder: (context, index) {
-              final activity = metrics.recentActivity[index];
-              return ActivityTile(activity: activity);
+              final activity =
+                  activities[index];
+              final personName = activity
+                      .personName ??
+                  '';
+              final isSuccessful = activity
+                      .isSuccessful ??
+                  true;
+              final entryPoint = activity
+                      .entryPoint ??
+                  '';
+              final shortTime = activity
+                      .shortTime ??
+                  '';
+              final displayLabel = activity
+                      .displayLabel ??
+                  '';
+
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor:
+                      isSuccessful
+                          ? Colors.green
+                              .withOpacity(
+                                  0.15)
+                          : Colors.red
+                              .withOpacity(
+                                  0.15),
+                  child: Icon(
+                    isSuccessful
+                        ? Icons
+                            .check_circle
+                        : Icons.cancel,
+                    color: isSuccessful
+                        ? Colors.green
+                        : Colors.red,
+                    size: 20,
+                  ),
+                ),
+                title:
+                    Text(personName),
+                subtitle: Text(
+                  '$entryPoint • $displayLabel',
+                  style: theme
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(
+                    color:
+                        theme.hintColor,
+                  ),
+                ),
+                trailing: Text(
+                  shortTime,
+                  style: theme
+                      .textTheme
+                      .labelSmall
+                      ?.copyWith(
+                    color:
+                        theme.hintColor,
+                  ),
+                ),
+              );
             },
           ),
       ],
     );
   }
-
-  Widget _buildQuickActions(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Acciones Rápidas',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        QuickActionButton(
-          icon: Icons.people_outline,
-          label: 'Gestionar Usuarios',
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Gestión de usuarios - Próximamente')),
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        QuickActionButton(
-          icon: Icons.history,
-          label: 'Ver Bitácora Completa',
-          onTap: () {
-            Navigator.of(context).pushNamed(
-              '/accessHistory',
-              arguments: {
-                'personaId': widget.personaId,
-                'identificacion': widget.identificacion,
-              },
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        QuickActionButton(
-          icon: Icons.settings_outlined,
-          label: 'Configuración de Usuarios',
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Configuración - Próximamente')),
-            );
-          },
-        ),
-      ],
-    );
-  }
 }
 
-class ChipButton extends StatelessWidget {
+class _FilterChip extends StatelessWidget {
   final String label;
-  final bool isSelected;
+  final bool selected;
   final VoidCallback onTap;
 
-  const ChipButton({
-    super.key,
+  const _FilterChip({
     required this.label,
-    required this.isSelected,
+    required this.selected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return FilterChip(
+    final theme = Theme.of(context);
+    return ChoiceChip(
       label: Text(label),
-      selected: isSelected,
+      selected: selected,
       onSelected: (_) => onTap(),
+      selectedColor:
+          const Color(0xFF04345C),
+      labelStyle: TextStyle(
+        color: selected
+            ? Colors.white
+            : theme.textTheme.bodyMedium
+                ?.color,
+        fontWeight: FontWeight.w600,
+      ),
     );
   }
 }
 
-class MetricCard extends StatelessWidget {
+class _MetricCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
   final Color color;
 
-  const MetricCard({
-    super.key,
+  const _MetricCard({
     required this.icon,
     required this.label,
     required this.value,
@@ -423,143 +464,57 @@ class MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.circular(16),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          mainAxisAlignment:
+              MainAxisAlignment.spaceBetween,
           children: [
             Container(
+              padding:
+                  const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                shape: BoxShape.circle,
+                color:
+                    color.withOpacity(0.1),
+                borderRadius:
+                    BorderRadius.circular(12),
               ),
-              padding: const EdgeInsets.all(10),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon,
+                  color: color, size: 24),
             ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class ActivityTile extends StatelessWidget {
-  final dynamic activity;
-
-  const ActivityTile({super.key, required this.activity});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: activity.isSuccessful ? Colors.green[100] : Colors.red[100],
-              shape: BoxShape.circle,
-            ),
-            padding: const EdgeInsets.all(8),
-            child: Icon(
-              activity.isSuccessful ? Icons.check_circle : Icons.cancel,
-              color: activity.isSuccessful ? Colors.green : Colors.red,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
                 Text(
-                  activity.displayLabel,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  value,
+                  style: theme
+                      .textTheme
+                      .headlineMedium
+                      ?.copyWith(
+                          fontWeight:
+                              FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  activity.personName,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-                Text(
-                  activity.entryPoint,
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  label,
+                  style: theme
+                      .textTheme.bodySmall
+                      ?.copyWith(
+                          color:
+                              Colors.grey),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                activity.shortTime,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class QuickActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const QuickActionButton({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 24),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios, size: 16),
           ],
         ),
       ),

@@ -34,6 +34,10 @@ class AdminScaffold extends StatelessWidget {
       case '/adminOwners':
       case '/adminMembers':
       case '/adminAccounts':
+      case '/adminCreateResident':
+      case '/adminCreateOwner':
+      case '/adminCreateMember':
+      case '/adminFacialEnrollment':
         return 2;
       case '/adminProfile':
         return 3;
@@ -65,6 +69,11 @@ class AdminScaffold extends StatelessWidget {
       selectedIcon: Icon(Icons.person),
       label: 'Perfil',
     ),
+    NavigationDestination(
+      icon: Icon(Icons.notifications_outlined),
+      selectedIcon: Icon(Icons.notifications),
+      label: 'Notificaciones',
+    ),
   ];
 
   static const _railDestinations = <NavigationRailDestination>[
@@ -95,7 +104,7 @@ class AdminScaffold extends StatelessWidget {
     ),
   ];
 
-  static const _drawerDestinations = [
+  static const _drawerItems = [
     (Icons.dashboard, 'Dashboard', 0),
     (Icons.history, 'Historial', 1),
     (Icons.people, 'Usuarios', 2),
@@ -109,31 +118,59 @@ class AdminScaffold extends StatelessWidget {
         child: Column(
           children: [
             DrawerHeader(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: Theme.of(context).brightness ==
+                          Brightness.light
+                      ? const [
+                          Color(0xFFFFFFFF),
+                          Color(0xFFDCDBE5)
+                        ]
+                      : const [
+                          Color(0xFF1A1A2E),
+                          Color(0xFF2D1B3D)
+                        ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                mainAxisAlignment:
+                    MainAxisAlignment.end,
                 children: [
                   Icon(Icons.admin_panel_settings,
-                      size: 48, color: Theme.of(context).colorScheme.primary),
+                      size: 48,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary),
                   const SizedBox(height: 8),
                   const Text('Panel Admin',
                       style: TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold)),
+                          fontSize: 20,
+                          fontWeight:
+                              FontWeight.bold)),
                 ],
               ),
             ),
-            ..._drawerDestinations.map((entry) {
+            ..._drawerItems.map((entry) {
               final (icon, label, index) = entry;
-              final selected = index == calculatedIndex;
+              final selected =
+                  index == calculatedIndex;
               return ListTile(
                 leading: Icon(icon,
                     color: selected
-                        ? Theme.of(context).colorScheme.primary
+                        ? Theme.of(context)
+                            .colorScheme
+                            .primary
                         : null),
                 title: Text(label,
                     style: TextStyle(
-                        fontWeight:
-                            selected ? FontWeight.bold : FontWeight.normal)),
+                        fontWeight: selected
+                            ? FontWeight.bold
+                            : FontWeight
+                                .normal)),
                 selected: selected,
                 onTap: () {
                   Navigator.of(context).pop();
@@ -147,54 +184,106 @@ class AdminScaffold extends StatelessWidget {
     );
   }
 
-  Widget _buildWideLayout(int calculatedIndex, BuildContext context) {
+  Widget _buildWideLayout(int calculatedIndex,
+      BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
         automaticallyImplyLeading: showBackButton,
         leading: showBackButton
             ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed:
-                    onBackPressed ?? () => Navigator.of(context).pop(),
+                icon:
+                    const Icon(Icons.arrow_back),
+                onPressed: onBackPressed ??
+                    () =>
+                        Navigator.of(context)
+                            .pop(),
               )
             : null,
         elevation: 0,
         actions: actions,
       ),
-      body: Row(
+      body: Column(
         children: [
-          if (onTabSelected != null)
-            NavigationRail(
-              selectedIndex: calculatedIndex,
-              onDestinationSelected: onTabSelected!,
-              destinations: _railDestinations,
-              labelType: NavigationRailLabelType.all,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+                horizontal: 24, vertical: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: Theme.of(context).brightness ==
+                        Brightness.light
+                    ? const [
+                        Color(0xFFFFFFFF),
+                        Color(0xFFDCDBE5)
+                      ]
+                    : const [
+                        Color(0xFF1A1A2E),
+                        Color(0xFF2D1B3D)
+                      ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
-          if (onTabSelected != null) const VerticalDivider(width: 1),
-          Expanded(child: body),
+            child: Text(
+              title,
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                if (onTabSelected != null)
+                  NavigationRail(
+                    selectedIndex:
+                        calculatedIndex,
+                    onDestinationSelected:
+                        onTabSelected!,
+                    destinations:
+                        _railDestinations,
+                    labelType:
+                        NavigationRailLabelType
+                            .all,
+                  ),
+                if (onTabSelected != null)
+                  const VerticalDivider(width: 1),
+                Expanded(child: body),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMobileLayout(int calculatedIndex, BuildContext context) {
+  Widget _buildMobileLayout(int calculatedIndex,
+      BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
         automaticallyImplyLeading: showBackButton,
         leading: showBackButton
             ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed:
-                    onBackPressed ?? () => Navigator.of(context).pop(),
+                icon:
+                    const Icon(Icons.arrow_back),
+                onPressed: onBackPressed ??
+                    () =>
+                        Navigator.of(context)
+                            .pop(),
               )
             : (onTabSelected != null
                 ? Builder(
                     builder: (ctx) => IconButton(
-                      icon: const Icon(Icons.menu),
+                      icon:
+                          const Icon(Icons.menu),
                       onPressed: () =>
-                          Scaffold.of(ctx).openDrawer(),
+                          Scaffold.of(ctx)
+                              .openDrawer(),
                     ),
                   )
                 : null),
@@ -202,22 +291,41 @@ class AdminScaffold extends StatelessWidget {
         actions: actions,
       ),
       drawer: onTabSelected != null
-          ? _buildDrawer(calculatedIndex, context)
+          ? _buildDrawer(
+              calculatedIndex, context)
           : null,
       body: body,
+      bottomNavigationBar:
+          onTabSelected != null
+              ? NavigationBar(
+                  selectedIndex:
+                      calculatedIndex,
+                  onDestinationSelected:
+                      onTabSelected!,
+                  destinations:
+                      _destinations,
+                )
+              : null,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentRoute =
-        routeName ?? (ModalRoute.of(context)?.settings.name ?? '');
-    final calculatedIndex = _getTabIndexFromRoute(currentRoute);
+    final currentRoute = routeName ??
+        (ModalRoute.of(context)
+                ?.settings
+                .name ??
+            '');
+    final calculatedIndex =
+        _getTabIndexFromRoute(currentRoute);
 
     return ResponsiveLayout(
-      mobile: _buildMobileLayout(calculatedIndex, context),
-      tablet: _buildWideLayout(calculatedIndex, context),
-      desktop: _buildWideLayout(calculatedIndex, context),
+      mobile: _buildMobileLayout(
+          calculatedIndex, context),
+      tablet: _buildWideLayout(
+          calculatedIndex, context),
+      desktop: _buildWideLayout(
+          calculatedIndex, context),
     );
   }
 }
