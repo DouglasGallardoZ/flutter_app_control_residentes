@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../domain/usecases/obtener_no_leidas_usecase.dart';
+import '../../infrastructure/providers/firestore_provider.dart';
 import '../../injection.dart';
 
 class InsigniaNotificaciones extends StatefulWidget {
@@ -22,31 +22,40 @@ class _InsigniaNotificacionesState
     extends State<InsigniaNotificaciones>
     with WidgetsBindingObserver {
   int _noLeidas = 0;
-  Timer? _refreshTimer;
+  StreamSubscription<int>? _subscription;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _cargarNoLeidas();
-    _refreshTimer = Timer.periodic(
-        const Duration(seconds: 30), (_) {
-      if (mounted) _cargarNoLeidas();
-    });
+    _suscribirFirestore();
+  }
+
+  void _suscribirFirestore() {
+    _subscription?.cancel();
+    final firestoreProvider = sl<FirestoreProvider>();
+    _subscription = firestoreProvider
+        .contarNoLeidas(widget.usuarioId)
+        .listen(
+      (count) {
+        if (mounted) setState(() => _noLeidas = count);
+      },
+      onError: (_) {},
+    );
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _refreshTimer?.cancel();
+    _subscription?.cancel();
     super.dispose();
   }
 
   @override
-  void didChangeAppLifecycleState(
-      AppLifecycleState state) {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _cargarNoLeidas();
+      _subscription?.cancel();
+      _suscribirFirestore();
     }
   }
 
@@ -54,19 +63,9 @@ class _InsigniaNotificacionesState
   void didUpdateWidget(
       covariant InsigniaNotificaciones oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _cargarNoLeidas();
-  }
-
-  Future<void> _cargarNoLeidas() async {
-    try {
-      final useCase = sl<ObtenerNoLeidasUseCase>();
-      final count =
-          await useCase.execute(widget.usuarioId);
-      if (mounted) {
-        setState(() => _noLeidas = count);
-      }
-    } catch (e) {
-      print('Error cargando no leídas: $e');
+    if (oldWidget.usuarioId != widget.usuarioId) {
+      _subscription?.cancel();
+      _suscribirFirestore();
     }
   }
 
@@ -86,7 +85,6 @@ class _InsigniaNotificacionesState
                   arguments:
                       widget.usuarioId,
                 );
-                _cargarNoLeidas();
               },
         ),
         if (_noLeidas > 0)

@@ -31,6 +31,7 @@ import 'infrastructure/providers/qr_management/qr_query_api_impl.dart';
 import 'infrastructure/providers/notificacion_api_provider.dart';
 import 'infrastructure/providers/admin_notificaciones_api_provider.dart';
 import 'infrastructure/providers/fcm_provider.dart';
+import 'infrastructure/providers/firestore_provider.dart';
 import 'infrastructure/providers/solicitud_miembro_api_provider.dart';
 
 // Infrastructure - Adapters
@@ -194,6 +195,10 @@ Future<void> inject() async {
 
   final firestore = FirebaseFirestore.instance;
   sl.registerLazySingleton<FirebaseFirestore>(() => firestore);
+
+  sl.registerLazySingleton<FirestoreProvider>(
+    () => FirestoreProvider(sl<FirebaseFirestore>()),
+  );
 
   // HTTP Client - API General
   final apiHttpClient = ApiHttpClient(

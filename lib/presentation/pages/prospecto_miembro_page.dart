@@ -42,6 +42,13 @@ class _ProspectoMiembroPageState
       final prospecto = await useCase.execute(
           _cedulaCtrl.text.trim());
 
+      if (!prospecto.existe) {
+        if (!mounted) return;
+        setState(() => _cargando = false);
+        _mostrarDialogoNoEncontrado();
+        return;
+      }
+
       if (!mounted) return;
 
       await Future.delayed(
