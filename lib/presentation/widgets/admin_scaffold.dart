@@ -203,59 +203,24 @@ class AdminScaffold extends StatelessWidget {
         elevation: 0,
         actions: actions,
       ),
-      body: Column(
+      body: Row(
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-                horizontal: 24, vertical: 16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: Theme.of(context).brightness ==
-                        Brightness.light
-                    ? const [
-                        Color(0xFFFFFFFF),
-                        Color(0xFFDCDBE5)
-                      ]
-                    : const [
-                        Color(0xFF1A1A2E),
-                        Color(0xFF2D1B3D)
-                      ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+          if (onTabSelected != null)
+            NavigationRail(
+              selectedIndex:
+                  calculatedIndex,
+              onDestinationSelected:
+                  onTabSelected!,
+              destinations:
+                  _railDestinations,
+              labelType:
+                  NavigationRailLabelType
+                      .all,
             ),
-            child: Text(
-              title,
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ),
-          Expanded(
-            child: Row(
-              children: [
-                if (onTabSelected != null)
-                  NavigationRail(
-                    selectedIndex:
-                        calculatedIndex,
-                    onDestinationSelected:
-                        onTabSelected!,
-                    destinations:
-                        _railDestinations,
-                    labelType:
-                        NavigationRailLabelType
-                            .all,
-                  ),
-                if (onTabSelected != null)
-                  const VerticalDivider(width: 1),
-                Expanded(child: body),
-              ],
-            ),
-          ),
+          if (onTabSelected != null)
+            const VerticalDivider(
+                width: 1),
+          Expanded(child: body),
         ],
       ),
     );
