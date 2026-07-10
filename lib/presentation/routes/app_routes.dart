@@ -44,6 +44,7 @@ import '../../application/blocs/registro_residente/registro_residente_bloc.dart'
 import '../../application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
 import '../../application/blocs/member/member_bloc.dart';
 import '../../application/blocs/visitor/visitor_bloc.dart';
+import '../../application/blocs/admin/admin_notificaciones_bloc.dart';
 import '../../injection.dart';
 
 class AppRoutes {
@@ -446,10 +447,13 @@ class AppRoutes {
         final args = settings.arguments as Map<String, dynamic>? ?? {};
         final personaId = args['personaId'] as int? ?? 0;
         final identificacion = args['identificacion'] as String? ?? '';
-        return MaterialPageRoute(
-          builder: (_) => AdminNotificacionesPage(
-            personaId: personaId,
-            identificacion: identificacion,
+        return _fadeRoute(
+          BlocProvider<AdminNotificacionesBloc>(
+            create: (_) => sl<AdminNotificacionesBloc>(),
+            child: AdminNotificacionesPage(
+              personaId: personaId,
+              identificacion: identificacion,
+            ),
           ),
           settings: settings,
         );

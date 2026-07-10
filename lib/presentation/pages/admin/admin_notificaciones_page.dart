@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../application/blocs/admin/admin_notificaciones_bloc.dart';
-import '../../../injection.dart';
 import '../../widgets/admin_scaffold.dart';
-import '../../routes/app_routes.dart';
 
-class AdminNotificacionesPage extends StatefulWidget {
+class AdminNotificacionesPage
+    extends StatefulWidget {
   final int personaId;
   final String identificacion;
 
@@ -16,968 +15,597 @@ class AdminNotificacionesPage extends StatefulWidget {
   });
 
   @override
-  State<AdminNotificacionesPage> createState() =>
+  State<AdminNotificacionesPage>
+  createState() =>
       _AdminNotificacionesPageState();
 }
 
 class _AdminNotificacionesPageState
     extends State<AdminNotificacionesPage> {
-  final _tituloController = TextEditingController();
-  final _mensajeController = TextEditingController();
-  final _villaController = TextEditingController();
-  final _busquedaController = TextEditingController();
-
+  int _currentStep = 0;
+  final _tituloCtrl =
+      TextEditingController();
+  final _mensajeCtrl =
+      TextEditingController();
   String _prioridad = 'normal';
   String _categoria = 'general';
+  String? _manzanaFiltro;
+  String? _villaFiltro;
   bool _enviarATodos = false;
-  int _currentStep = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) {
+      context
+          .read<AdminNotificacionesBloc>()
+          .add(AdminDestinatariosSolicitados());
+    });
+  }
 
   @override
   void dispose() {
-    _tituloController.dispose();
-    _mensajeController.dispose();
-    _villaController.dispose();
-    _busquedaController.dispose();
+    _tituloCtrl.dispose();
+    _mensajeCtrl.dispose();
     super.dispose();
+  }
+
+  void _enviar() {
+    context
+        .read<AdminNotificacionesBloc>()
+        .add(AdminNotificacionEnviada(
+      titulo:
+          _tituloCtrl.text.trim(),
+      mensaje:
+          _mensajeCtrl.text.trim(),
+      prioridad: _prioridad,
+      categoria: _categoria,
+      enviarATodos: _enviarATodos,
+    ));
+  }
+
+  void _resetForm() {
+    setState(() {
+      _currentStep = 0;
+      _tituloCtrl.clear();
+      _mensajeCtrl.clear();
+      _prioridad = 'normal';
+      _categoria = 'general';
+      _manzanaFiltro = null;
+      _villaFiltro = null;
+      _enviarATodos = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => sl<AdminNotificacionesBloc>()
-        ..add(AdminDestinatariosSolicitados()),
-      child: AdminScaffold(
-        title: 'Enviar Notificación',
-        routeName: AppRoutes.adminNotificaciones,
-        body:
-            BlocConsumer<AdminNotificacionesBloc,
-                AdminNotificacionesState>(
-          listener: _onStateChanged,
-          builder: (context, state) {
-            return Stepper(
-              currentStep: _currentStep,
-              onStepContinue: () =>
-                  _onStepContinue(context, state),
-              onStepCancel: _currentStep > 0
-                  ? () =>
-                      setState(() => _currentStep--)
-                  : null,
-              controlsBuilder: (context, details) =>
-                  _buildControls(
-                      context, state, details),
-              steps: [
-                Step(
-                  title: const Text(
-                      'Redactar mensaje'),
-                  subtitle: const Text(
-                      'Título, contenido y categoría'),
-                  isActive: _currentStep >= 0,
-                  state: _currentStep > 0
-                      ? StepState.complete
-                      : StepState.indexed,
-                  content: _buildPasoMensaje(
-                      context),
-                ),
-                Step(
-                  title: const Text(
-                      'Seleccionar destinatarios'),
-                  subtitle: Text(
-                      _getSubtitleDestinatarios(
-                          state)),
-                  isActive: _currentStep >= 1,
-                  state: _currentStep > 1
-                      ? StepState.complete
-                      : StepState.indexed,
-                  content:
-                      _buildPasoDestinatarios(
-                          context, state),
-                ),
-                Step(
-                  title: const Text(
-                      'Confirmar y enviar'),
-                  subtitle: const Text(
-                      'Revisar antes de enviar'),
-                  isActive: _currentStep >= 2,
-                  state: _currentStep > 2
-                      ? StepState.complete
-                      : StepState.indexed,
-                  content:
-                      _buildPasoConfirmacion(
-                          context, state),
-                ),
-              ],
+    return AdminScaffold(
+      title: 'Enviar Notificación',
+      routeName:
+          '/adminNotificaciones',
+      showBackButton: true,
+      onBackPressed: () =>
+          Navigator.of(context)
+              .pushReplacementNamed(
+        '/adminDashboard',
+        arguments: {
+          'personaId':
+              widget.personaId,
+          'identificacion':
+              widget.identificacion,
+        },
+      ),
+      onTabSelected: (i) {
+        if (i == 4) return;
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) {
+          final routes = [
+            '/adminDashboard',
+            '/adminAccessHistory',
+            '/adminUsers',
+            '/adminProfile',
+            null,
+          ];
+          if (routes[i] != null) {
+            Navigator.of(context)
+                .pushReplacementNamed(
+              routes[i]!,
+              arguments: {
+                'personaId':
+                    widget.personaId,
+                'identificacion':
+                    widget.identificacion,
+              },
             );
-          },
-        ),
-        onTabSelected: (index) {
-          final args = <String, dynamic>{
-            'personaId': widget.personaId,
-            'identificacion': widget.identificacion,
-          };
-          switch (index) {
-            case 0:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/adminDashboard', (route) => false,
-                  arguments: args);
-              break;
-            case 1:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/adminAccessHistory', (route) => false,
-                  arguments: args);
-              break;
-            case 2:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/adminUsers', (route) => false,
-                  arguments: args);
-              break;
-            case 3:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/adminProfile', (route) => false,
-                  arguments: args);
-              break;
-            case 4:
-              break;
           }
+        });
+      },
+      body: BlocConsumer<
+          AdminNotificacionesBloc,
+          AdminNotificacionesState>(
+        listener: (context,
+            state) {
+          if (state
+              is AdminNotificacionEnviadaExito) {
+            ScaffoldMessenger.of(
+                    context)
+                .showSnackBar(
+              SnackBar(
+                content: Text(
+                    '${state.mensaje} (${state.enviados} destinatarios)'),
+                backgroundColor:
+                    Colors.green,
+              ),
+            );
+            _resetForm();
+          } else if (state
+              is AdminNotificacionesError) {
+            ScaffoldMessenger.of(
+                    context)
+                .showSnackBar(
+              SnackBar(
+                content: Text(
+                    state.mensaje),
+                backgroundColor:
+                    Colors.red,
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          final theme = Theme.of(context);
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                child: Row(
+                  children: [
+                    _pasoIndicador(1, 'Mensaje', _currentStep >= 0, _currentStep > 0),
+                    Expanded(child: Divider(color: _currentStep > 0 ? const Color(0xFF04345C) : Colors.grey.shade300, thickness: 2)),
+                    _pasoIndicador(2, 'Destinatarios', _currentStep >= 1, _currentStep > 1),
+                    Expanded(child: Divider(color: _currentStep > 1 ? const Color(0xFF04345C) : Colors.grey.shade300, thickness: 2)),
+                    _pasoIndicador(3, 'Confirmar', _currentStep >= 2, _currentStep > 2),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: IndexedStack(
+                  index: _currentStep,
+                  children: [
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        children: [
+                          Text('Redacta el mensaje', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          Text('La notificación se enviará a los destinatarios seleccionados', style: TextStyle(color: Colors.grey.shade600)),
+                          const SizedBox(height: 24),
+                          TextField(
+                            controller: _tituloCtrl,
+                            decoration: InputDecoration(
+                              labelText: 'Título',
+                              hintText: 'Ej: Mantenimiento programado',
+                              prefixIcon: const Icon(Icons.title),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: _mensajeCtrl,
+                            maxLines: 5,
+                            decoration: InputDecoration(
+                              labelText: 'Mensaje',
+                              hintText: 'Escribe el contenido de la notificación...',
+                              alignLabelWithHint: true,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: DropdownButtonFormField<String>(
+                                  value: _prioridad,
+                                  decoration: InputDecoration(
+                                    labelText: 'Prioridad',
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(value: 'baja', child: Text('Baja')),
+                                    DropdownMenuItem(value: 'normal', child: Text('Normal')),
+                                    DropdownMenuItem(value: 'alta', child: Text('Alta')),
+                                  ],
+                                  onChanged: (v) => setState(() => _prioridad = v ?? 'normal'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Flexible(
+                                child: DropdownButtonFormField<String>(
+                                  value: _categoria,
+                                  decoration: InputDecoration(
+                                    labelText: 'Categoría',
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(value: 'general', child: Text('General')),
+                                    DropdownMenuItem(value: 'visita', child: Text('Visita')),
+                                    DropdownMenuItem(value: 'seguridad', child: Text('Seguridad')),
+                                    DropdownMenuItem(value: 'evento', child: Text('Evento')),
+                                  ],
+                                  onChanged: (v) => setState(() => _categoria = v ?? 'general'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: state is AdminDestinatariosCargados
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Selecciona los destinatarios', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 8),
+                                Text('${state.seleccionados} de ${state.destinatarios.length} seleccionados',
+                                    style: TextStyle(color: Colors.grey.shade600)),
+                                const SizedBox(height: 16),
+                                SwitchListTile(
+                                  value: _enviarATodos,
+                                  onChanged: (v) {
+                                    setState(() => _enviarATodos = v);
+                                    if (v) {
+                                      context.read<AdminNotificacionesBloc>().add(AdminSeleccionarTodos());
+                                    } else {
+                                      context.read<AdminNotificacionesBloc>().add(AdminDeseleccionarTodos());
+                                    }
+                                  },
+                                  title: const Text('Enviar a todos'),
+                                  activeColor: const Color(0xFF04345C),
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                                if (!_enviarATodos) ...[
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: DropdownButtonFormField<String>(
+                                          value: _manzanaFiltro,
+                                          decoration: InputDecoration(
+                                            labelText: 'Manzana',
+                                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                          ),
+                                          items: [
+                                            const DropdownMenuItem<String>(
+                                                value: '',
+                                                child: Text('Todas las manzanas',
+                                                    style: TextStyle(color: Colors.grey))),
+                                            ...state.manzanas
+                                                .map((m) => DropdownMenuItem(value: m, child: Text(m))),
+                                          ],
+                                          onChanged: (v) {
+                                            final valor = (v != null && v.isNotEmpty) ? v : null;
+                                            setState(() => _manzanaFiltro = valor);
+                                            context.read<AdminNotificacionesBloc>().add(
+                                                  AdminFiltroManzanaCambiado(valor ?? ''),
+                                                );
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Flexible(
+                                        child: DropdownButtonFormField<String>(
+                                          value: _villaFiltro,
+                                          decoration: InputDecoration(
+                                            labelText: 'Villa',
+                                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                          ),
+                                          items: [
+                                            const DropdownMenuItem<String>(
+                                                value: '',
+                                                child: Text('Todas las villas',
+                                                    style: TextStyle(color: Colors.grey))),
+                                            ...state.destinatarios
+                                                .where((d) => _manzanaFiltro == null ||
+                                                    _manzanaFiltro!.isEmpty ||
+                                                    d.manzana == _manzanaFiltro)
+                                                .map((d) => d.villa)
+                                                .where((v) => v != null)
+                                                .toSet()
+                                                .map((v) => DropdownMenuItem(value: v, child: Text(v!))),
+                                          ],
+                                          onChanged: (v) {
+                                            final valor = (v != null && v.isNotEmpty) ? v : null;
+                                            setState(() => _villaFiltro = valor);
+                                            context.read<AdminNotificacionesBloc>().add(
+                                                  AdminFiltroVillaCambiado(valor ?? ''),
+                                                );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      TextButton.icon(
+                                        onPressed: () => context.read<AdminNotificacionesBloc>().add(AdminSeleccionarTodos()),
+                                        icon: const Icon(Icons.select_all, size: 18),
+                                        label: const Text('Todos'),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      TextButton.icon(
+                                        onPressed: () => context.read<AdminNotificacionesBloc>().add(AdminDeseleccionarTodos()),
+                                        icon: const Icon(Icons.deselect, size: 18),
+                                        label: const Text('Ninguno'),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ...state.destinatarios.map((d) => CheckboxListTile(
+                                        value: d.seleccionado,
+                                        onChanged: (_) {
+                                          context.read<AdminNotificacionesBloc>().add(
+                                                AdminDestinatarioSeleccionado(d.personaId),
+                                              );
+                                        },
+                                        title: Text(d.nombreCompleto, style: const TextStyle(fontWeight: FontWeight.w500)),
+                                        subtitle: Text(
+                                          '${d.tipo == 'residente' ? 'Residente' : 'Miembro'}${d.manzana != null ? ' · Mz ${d.manzana}' : ''}${d.villa != null ? ', V ${d.villa}' : ''}',
+                                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                        ),
+                                        dense: true,
+                                        controlAffinity: ListTileControlAffinity.leading,
+                                        contentPadding: EdgeInsets.zero,
+                                      )),
+                                ],
+                              ],
+                            )
+                          : state is AdminNotificacionesError
+                              ? Center(
+                                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                    Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+                                    const SizedBox(height: 16),
+                                    Text(state.mensaje, textAlign: TextAlign.center),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton.icon(
+                                      onPressed: () =>
+                                          context.read<AdminNotificacionesBloc>().add(AdminDestinatariosSolicitados()),
+                                      icon: const Icon(Icons.refresh),
+                                      label: const Text('Reintentar'),
+                                    ),
+                                  ]),
+                                )
+                              : const Center(child: CircularProgressIndicator()),
+                    ),
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Confirma el envío', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          Text('Revisa los datos antes de enviar', style: TextStyle(color: Colors.grey.shade600)),
+                          const SizedBox(height: 24),
+                          Card(
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _resumenRow(Icons.title, 'Título', _tituloCtrl.text),
+                                  const Divider(),
+                                  _resumenRow(Icons.message, 'Mensaje', _mensajeCtrl.text, multiline: true),
+                                  const Divider(),
+                                  _resumenRow(Icons.flag, 'Prioridad', _prioridad),
+                                  const SizedBox(height: 8),
+                                  _resumenRow(Icons.category, 'Categoría', _categoria),
+                                  const Divider(),
+                                  _resumenRow(Icons.people, 'Destinatarios',
+                                      _enviarATodos ? 'Todos los residentes' : 'Seleccionados manualmente'),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              onPressed: state is AdminNotificacionEnviando ? null : _enviar,
+                              icon: state is AdminNotificacionEnviando
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Icon(Icons.send),
+                              label: Text(state is AdminNotificacionEnviando ? 'Enviando...' : 'Enviar notificación'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      if (_currentStep == 1)
+                        OutlinedButton.icon(
+                          onPressed: () => setState(() => _currentStep--),
+                          icon: const Icon(Icons.arrow_back),
+                          label: const Text('Atrás'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          ),
+                        ),
+                      if (_currentStep == 1) const SizedBox(width: 12),
+                      if (_currentStep < 2)
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: () {
+                              if (_currentStep == 0) {
+                                if (_tituloCtrl.text.trim().isEmpty || _mensajeCtrl.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Completa el título y mensaje')),
+                                  );
+                                  return;
+                                }
+                                context.read<AdminNotificacionesBloc>().add(AdminDestinatariosSolicitados());
+                              }
+
+                              if (_currentStep == 1) {
+                                final blState = context.read<AdminNotificacionesBloc>().state;
+                                if (blState is AdminDestinatariosCargados) {
+                                  if (!_enviarATodos && blState.seleccionados == 0) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Selecciona al menos un destinatario')),
+                                    );
+                                    return;
+                                  }
+                                }
+                              }
+
+                              setState(() => _currentStep++);
+                            },
+                            icon: const Icon(Icons.arrow_forward),
+                            label: Text(_currentStep == 1 ? 'Revisar y confirmar' : 'Siguiente'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFF04345C),
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            ),
+                          ),
+                        ),
+                      if (_currentStep == 2)
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => setState(() => _currentStep--),
+                            icon: const Icon(Icons.arrow_back),
+                            label: const Text('Corregir'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
+          );
         },
       ),
     );
   }
 
-  // ─── LISTENER ──────────────────────────────────────
-
-  void _onStateChanged(
-    BuildContext context,
-    AdminNotificacionesState state,
-  ) {
-    if (state
-        is AdminNotificacionEnviadaExito) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        SnackBar(
-          content: Text(state.mensaje),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      _limpiarFormulario();
-      setState(() => _currentStep = 0);
-      context
-          .read<AdminNotificacionesBloc>()
-          .add(AdminDestinatariosSolicitados());
-    }
-    if (state is AdminNotificacionesError) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        SnackBar(
-          content: Text(state.mensaje),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
-
-  void _onStepContinue(
-    BuildContext context,
-    AdminNotificacionesState state,
-  ) {
-    if (_currentStep == 0) {
-      if (_tituloController.text.trim().isEmpty) {
-        _mostrarError('El título es requerido');
-        return;
-      }
-      if (_mensajeController.text.trim().isEmpty) {
-        _mostrarError('El mensaje es requerido');
-        return;
-      }
-    }
-    if (_currentStep == 1) {
-      if (state is AdminDestinatariosCargados &&
-          state.seleccionados == 0 &&
-          !_enviarATodos) {
-        _mostrarError(
-            'Selecciona al menos un destinatario');
-        return;
-      }
-    }
-    if (_currentStep < 2) {
-      setState(() => _currentStep++);
-    }
-  }
-
-  void _mostrarError(String mensaje) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensaje),
-        backgroundColor: Colors.orange,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  String _getSubtitleDestinatarios(
-      AdminNotificacionesState state) {
-    if (state is AdminDestinatariosCargados) {
-      if (_enviarATodos) {
-        return 'Todos los residentes';
-      }
-      if (state.seleccionados > 0) {
-        return '${state.seleccionados} seleccionados';
-      }
-      return 'Ninguno seleccionado';
-    }
-    return 'Cargando...';
-  }
-
-  Widget _buildControls(
-    BuildContext context,
-    AdminNotificacionesState state,
-    ControlsDetails details,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: Row(
-        children: [
-          if (_currentStep > 0)
-            OutlinedButton(
-              onPressed: details.onStepCancel,
-              child: const Text('Anterior'),
-            ),
-          const SizedBox(width: 12),
-          if (_currentStep < 2)
-            ElevatedButton(
-              onPressed: details.onStepContinue,
-              child: const Text('Siguiente'),
-            ),
-          if (_currentStep == 2)
-            ElevatedButton.icon(
-              onPressed:
-                  state is AdminNotificacionEnviando
-                      ? null
-                      : () => _enviarNotificacion(
-                          context, state),
-              icon: state
-                      is AdminNotificacionEnviando
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child:
-                          CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.send),
-              label: Text(state
-                      is AdminNotificacionEnviando
-                  ? 'Enviando...'
-                  : 'Enviar notificación'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context)
-                    .colorScheme
-                    .primary,
-                foregroundColor: Theme.of(context)
-                    .colorScheme
-                    .onPrimary,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // ─── PASO 1: REDACTAR MENSAJE ──────────────────────
-
-  Widget _buildPasoMensaje(BuildContext context) {
+  Widget _pasoIndicador(int numero, String label, bool activo, bool completado) {
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        TextField(
-          controller: _tituloController,
-          decoration: const InputDecoration(
-            labelText:
-                'Título de la notificación',
-            hintText: 'Ej: Reunión de vecinos',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.title),
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: completado
+                ? const Color(0xFF04345C)
+                : activo
+                    ? const Color(0xFF04345C).withOpacity(0.15)
+                    : Colors.grey.shade200,
+            border: Border.all(
+              color: activo || completado ? const Color(0xFF04345C) : Colors.grey.shade300,
+              width: 2,
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _mensajeController,
-          maxLines: 4,
-          minLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Mensaje',
-            hintText:
-                'Escribe el contenido de la notificación...',
-            border: OutlineInputBorder(),
-            alignLabelWithHint: true,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child:
-                  DropdownButtonFormField<String>(
-                value: _categoria,
-                decoration:
-                    const InputDecoration(
-                  labelText: 'Categoría',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(
-                      Icons.folder_outlined),
-                ),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'general',
-                    child: Text('General'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'visita',
-                    child: Text('Visita'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'seguridad',
-                    child: Text('Seguridad'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'pago',
-                    child: Text('Pago'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'evento',
-                    child: Text('Evento'),
-                  ),
-                ],
-                onChanged: (v) =>
-                    setState(() => _categoria = v!),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child:
-                  DropdownButtonFormField<String>(
-                value: _prioridad,
-                decoration:
-                    const InputDecoration(
-                  labelText: 'Prioridad',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(
-                      Icons.flag_outlined),
-                ),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'alta',
-                    child: Text('Alta'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'normal',
-                    child: Text('Normal'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'baja',
-                    child: Text('Baja'),
-                  ),
-                ],
-                onChanged: (v) =>
-                    setState(() => _prioridad = v!),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        _buildVistaPrevia(context),
-      ],
-    );
-  }
-
-  Widget _buildVistaPrevia(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      elevation: 0,
-      color: theme
-          .colorScheme
-          .surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.smartphone,
-                    size: 18,
-                    color: theme.colorScheme
-                        .onSurfaceVariant),
-                const SizedBox(width: 8),
-                Text('Vista previa',
+          child: Center(
+            child: completado
+                ? const Icon(Icons.check, color: Colors.white, size: 18)
+                : Text(
+                    '$numero',
                     style: TextStyle(
-                        color: theme.colorScheme
-                            .onSurfaceVariant,
-                        fontWeight:
-                            FontWeight.w500,
-                        fontSize: 13)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              width: 280,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius:
-                    BorderRadius.circular(12),
-                border: Border.all(
-                    color:
-                        theme.dividerColor),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black
-                        .withOpacity(0.05),
-                    blurRadius: 4,
-                    offset:
-                        const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.notifications,
-                          size: 12,
-                          color: theme
-                              .colorScheme
-                              .primary),
-                      const SizedBox(width: 4),
-                      Text('Guardin',
-                          style: TextStyle(
-                              fontSize: 10,
-                              fontWeight:
-                                  FontWeight
-                                      .bold,
-                              color: theme
-                                  .colorScheme
-                                  .primary)),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _tituloController
-                            .text.isEmpty
-                        ? 'Título de la notificación'
-                        : _tituloController
-                            .text,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight:
-                          FontWeight.w600,
-                      color: theme.colorScheme
-                          .onSurface,
+                      color: activo ? const Color(0xFF04345C) : Colors.grey,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
-                    maxLines: 1,
-                    overflow:
-                        TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _mensajeController
-                            .text.isEmpty
-                        ? 'Cuerpo del mensaje...'
-                        : _mensajeController
-                            .text,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: theme.colorScheme
-                          .onSurfaceVariant,
-                    ),
-                    maxLines: 3,
-                    overflow:
-                        TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ─── PASO 2: SELECCIONAR DESTINATARIOS ─────────────
-
-  Widget _buildPasoDestinatarios(
-    BuildContext context,
-    AdminNotificacionesState state,
-  ) {
-    return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
-      children: [
-        TextField(
-          controller: _busquedaController,
-          decoration: InputDecoration(
-            hintText:
-                'Buscar residente por nombre o identificación',
-            border:
-                const OutlineInputBorder(),
-            prefixIcon:
-                const Icon(Icons.search),
-            suffixIcon: _busquedaController
-                    .text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(
-                        Icons.clear),
-                    onPressed: () {
-                      _busquedaController
-                          .clear();
-                      _aplicarFiltros(
-                          context, state);
-                    },
-                  )
-                : null,
           ),
-          onSubmitted: (value) =>
-              _aplicarFiltros(context, state),
-        ),
-        const SizedBox(height: 12),
-        if (state
-            is AdminDestinatariosCargados)
-          _buildFiltrosUbicacion(
-              context, state),
-        const SizedBox(height: 12),
-        SwitchListTile(
-          title: const Text(
-              'Enviar a todos los residentes'),
-          subtitle: const Text(
-              'Ignora la selección manual'),
-          value: _enviarATodos,
-          onChanged: (v) =>
-              setState(() => _enviarATodos = v),
-          dense: true,
-          contentPadding: EdgeInsets.zero,
         ),
         const SizedBox(height: 8),
-        if (state
-                is AdminDestinatariosCargados &&
-            !_enviarATodos)
-          Padding(
-            padding:
-                const EdgeInsets.only(bottom: 8),
-            child: Row(
-              mainAxisAlignment:
-                  MainAxisAlignment
-                      .spaceBetween,
-              children: [
-                Text(
-                    '${state.seleccionados} de ${state.destinatarios.length} seleccionados'),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextButton.icon(
-                      icon: const Icon(
-                          Icons.select_all,
-                          size: 16),
-                      label: const Text('Todos'),
-                      onPressed: () => context
-                          .read<
-                              AdminNotificacionesBloc>()
-                          .add(
-                              AdminSeleccionarTodos()),
-                    ),
-                    TextButton.icon(
-                      icon: const Icon(
-                          Icons.deselect,
-                          size: 16),
-                      label:
-                          const Text('Ninguno'),
-                      onPressed: () => context
-                          .read<
-                              AdminNotificacionesBloc>()
-                          .add(
-                              AdminDeseleccionarTodos()),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: activo ? FontWeight.bold : FontWeight.normal,
+            color: activo || completado ? const Color(0xFF04345C) : Colors.grey,
           ),
-        if (state
-            is AdminDestinatariosCargados)
-          SizedBox(
-            height: 300,
-            child: Material(
-              color: Colors.transparent,
-              child: ListView.builder(
-                itemCount: state
-                    .destinatarios.length,
-                itemBuilder:
-                    (context, index) {
-                  final d = state
-                      .destinatarios[index];
-                  return Card(
-                    margin: const EdgeInsets
-                        .only(bottom: 4),
-                    elevation: 0,
-                    color: d.seleccionado
-                        ? Theme.of(context)
-                            .colorScheme
-                            .primaryContainer
-                            .withOpacity(0.3)
-                        : null,
-                    child: CheckboxListTile(
-                      value:
-                          d.seleccionado,
-                      onChanged:
-                          _enviarATodos
-                              ? null
-                              : (_) => context
-                                  .read<
-                                      AdminNotificacionesBloc>()
-                                  .add(AdminDestinatarioSeleccionado(
-                                      d.personaId)),
-                      title: Text(
-                        d.nombreCompleto,
-                        style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight:
-                                FontWeight
-                                    .w500),
-                      ),
-                      subtitle: Text(
-                        '${d.identificacion} · ${d.direccion}',
-                        style: const TextStyle(
-                            fontSize: 12),
-                      ),
-                      secondary: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: d.tipo ==
-                                'residente'
-                            ? Colors.blue
-                                .withOpacity(
-                                    0.1)
-                            : Colors.green
-                                .withOpacity(
-                                    0.1),
-                        child: Icon(
-                          d.tipo == 'residente'
-                              ? Icons.person
-                              : Icons
-                                  .family_restroom,
-                          color: d.tipo ==
-                                  'residente'
-                              ? Colors.blue
-                              : Colors.green,
-                          size: 20,
-                        ),
-                      ),
-                      dense: true,
-                    ),
-                  );
-                },
-              ),
-            ),
-          )
-        else if (state
-            is AdminNotificacionesCargando)
-          const Center(
-            child:
-                CircularProgressIndicator(),
-          )
-        else if (state
-            is AdminNotificacionesError)
-          Center(
-            child: Text(
-                'Error: ${state.mensaje}'),
-          ),
+        ),
       ],
     );
   }
 
-  Widget _buildFiltrosUbicacion(
-    BuildContext context,
-    AdminDestinatariosCargados state,
-  ) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 3,
-          child: PopupMenuButton<String?>(
-            offset: const Offset(0, 50),
-            onSelected: (value) {
-              if (value == null) {
-                _villaController.clear();
-              }
-              context
-                  .read<
-                      AdminNotificacionesBloc>()
-                  .add(
-                      AdminFiltroManzanaCambiado(
-                          value));
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem<String?>(
-                value: null,
-                child: Text(
-                    'Todas las manzanas'),
-              ),
-              ...state.manzanas.map((m) =>
-                  PopupMenuItem<String?>(
-                    value: m,
-                    child:
-                        Text('Manzana $m'),
-                  )),
-            ],
-            child: Container(
-              padding: const EdgeInsets
-                  .symmetric(
-                  horizontal: 12,
-                  vertical: 10),
-              decoration: BoxDecoration(
-                border: Border.all(
-                    color: Theme.of(context)
-                        .dividerColor),
-                borderRadius:
-                    BorderRadius.circular(4),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                      Icons.location_on,
-                      size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      state.manzanaSeleccionada !=
-                              null
-                          ? 'Manzana ${state.manzanaSeleccionada}'
-                          : 'Todas las manzanas',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: state
-                                    .manzanaSeleccionada !=
-                                null
-                            ? null
-                            : Colors.grey,
-                      ),
-                    ),
-                  ),
-                  const Icon(
-                      Icons.arrow_drop_down),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          flex: 2,
-          child: TextField(
-            controller: _villaController,
-            decoration:
-                const InputDecoration(
-              hintText: 'Villa',
-              border: OutlineInputBorder(),
-              isDense: true,
-              contentPadding:
-                  EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10),
-            ),
-            enabled: state
-                    .manzanaSeleccionada !=
-                null,
-            onSubmitted: (value) {
-              context
-                  .read<
-                      AdminNotificacionesBloc>()
-                  .add(AdminFiltroVillaCambiado(
-                      value.trim().isEmpty
-                          ? null
-                          : value.trim()));
-            },
-          ),
-        ),
-        if (state.manzanaSeleccionada !=
-            null) ...[
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.clear,
-                size: 20),
-            onPressed: () {
-              _villaController.clear();
-              context
-                  .read<
-                      AdminNotificacionesBloc>()
-                  .add(
-                      AdminFiltroManzanaCambiado(
-                          null));
-            },
-          ),
-        ],
-      ],
-    );
-  }
-
-  void _aplicarFiltros(
-    BuildContext context,
-    AdminNotificacionesState state,
-  ) {
-    final busqueda =
-        _busquedaController.text.trim();
-    context
-        .read<AdminNotificacionesBloc>()
-        .add(AdminDestinatariosSolicitados(
-            busqueda: busqueda.isEmpty
-                ? null
-                : busqueda));
-  }
-
-  // ─── PASO 3: CONFIRMAR Y ENVIAR ─────────────────────
-
-  Widget _buildPasoConfirmacion(
-    BuildContext context,
-    AdminNotificacionesState state,
-  ) {
-    int destinatarios = 0;
-    if (state
-        is AdminDestinatariosCargados) {
-      destinatarios = _enviarATodos
-          ? state.destinatarios.length
-          : state.seleccionados;
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
-          children: [
-            _filaResumen(
-              Icons.title,
-              'Título',
-              _tituloController.text,
-            ),
-            const Divider(height: 24),
-            _filaResumen(
-              Icons.folder_outlined,
-              'Categoría',
-              _categoria,
-            ),
-            const Divider(height: 24),
-            _filaResumen(
-              Icons.flag_outlined,
-              'Prioridad',
-              _prioridad,
-            ),
-            const Divider(height: 24),
-            _filaResumen(
-              Icons.people_outlined,
-              'Destinatarios',
-              '$destinatarios residentes',
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Mensaje:',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHighest,
-                borderRadius:
-                    BorderRadius.circular(8),
-              ),
-              child: Text(
-                _mensajeController.text,
-                style: const TextStyle(
-                    height: 1.5),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _filaResumen(
+  Widget _resumenRow(
     IconData icon,
     String label,
-    String value,
-  ) {
-    return Row(
-      children: [
-        Icon(icon,
-            size: 20,
-            color: Theme.of(context)
-                .colorScheme
-                .primary),
-        const SizedBox(width: 12),
-        Text(
-          '$label: ',
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
-            color: Theme.of(context)
-                .colorScheme
-                .onSurfaceVariant,
+    String value, {
+    bool multiline = false,
+  }) {
+    return Padding(
+      padding:
+          const EdgeInsets.symmetric(
+              vertical: 4),
+      child: Row(
+        crossAxisAlignment:
+            multiline
+                ? CrossAxisAlignment
+                    .start
+                : CrossAxisAlignment
+                    .center,
+        children: [
+          Icon(icon,
+              size: 18,
+              color: Colors
+                  .grey
+                  .shade600),
+          const SizedBox(width: 8),
+          Text(
+            '$label: ',
+            style: TextStyle(
+                color: Colors
+                    .grey
+                    .shade600,
+                fontWeight:
+                    FontWeight.w500),
           ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-                fontWeight: FontWeight.w500),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                  fontWeight:
+                      FontWeight
+                          .w500),
+              maxLines:
+                  multiline ? 3 : 1,
+              overflow: TextOverflow
+                  .ellipsis,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
-  }
-
-  // ─── ENVIAR ─────────────────────────────────────────
-
-  void _enviarNotificacion(
-    BuildContext context,
-    AdminNotificacionesState state,
-  ) {
-    context
-        .read<AdminNotificacionesBloc>()
-        .add(AdminNotificacionEnviada(
-          titulo:
-              _tituloController.text.trim(),
-          mensaje:
-              _mensajeController.text.trim(),
-          prioridad: _prioridad,
-          categoria: _categoria,
-          enviarATodos: _enviarATodos,
-        ));
-  }
-
-  void _limpiarFormulario() {
-    _tituloController.clear();
-    _mensajeController.clear();
-    _villaController.clear();
-    _busquedaController.clear();
-    setState(() {
-      _prioridad = 'normal';
-      _categoria = 'general';
-      _enviarATodos = false;
-      _currentStep = 0;
-    });
   }
 }

@@ -253,10 +253,11 @@ class AdminNotificacionesBloc extends Bloc<
 
       emit(AdminNotificacionEnviadaExito(
         enviados: event.enviarATodos
-            ? 0
+            ? (currentState is AdminDestinatariosCargados ? currentState.destinatarios.length : 0)
             : destinatarioIds.length,
-        mensaje:
-            'Notificación enviada exitosamente',
+        mensaje: event.enviarATodos
+            ? 'Notificación enviada a todos los residentes'
+            : 'Notificación enviada exitosamente',
       ));
     } on TimeoutException {
       emit(AdminNotificacionesError(

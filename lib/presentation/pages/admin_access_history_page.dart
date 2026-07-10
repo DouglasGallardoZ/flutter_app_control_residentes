@@ -3,11 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/blocs/admin/admin_dashboard_bloc.dart';
 import '../../application/blocs/admin/admin_dashboard_event.dart';
 import '../../application/blocs/admin/admin_dashboard_state.dart';
-import '../../application/blocs/auth/auth_bloc.dart';
-import '../../application/blocs/auth/auth_state.dart';
 import '../widgets/admin_scaffold.dart';
 
-class AdminAccessHistoryPage extends StatefulWidget {
+class AdminAccessHistoryPage
+    extends StatefulWidget {
   final int personaId;
   final String identificacion;
 
@@ -18,313 +17,518 @@ class AdminAccessHistoryPage extends StatefulWidget {
   });
 
   @override
-  State<AdminAccessHistoryPage> createState() => _AdminAccessHistoryPageState();
+  State<AdminAccessHistoryPage>
+  createState() =>
+      _AdminAccessHistoryPageState();
 }
 
-class _AdminAccessHistoryPageState extends State<AdminAccessHistoryPage> {
-  String statusFilter = 'Todos';
-  String typeFilter = 'Todos';
-  String searchQuery = '';
+class _AdminAccessHistoryPageState
+    extends State<AdminAccessHistoryPage> {
+  String _statusFilter = 'all';
+  String _typeFilter = 'all';
 
   @override
   void initState() {
     super.initState();
-    // Cargar métricas (que incluyen historial)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AdminDashboardBloc>().add(const LoadAdminMetrics());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) {
+      context
+          .read<AdminDashboardBloc>()
+          .add(const LoadAccessHistory());
     });
+  }
+
+  void _recargar() {
+    context
+        .read<AdminDashboardBloc>()
+        .add(LoadAccessHistory(
+      tipo: _typeFilter == 'all'
+          ? null
+          : _typeFilter,
+      resultado: _statusFilter ==
+              'all'
+          ? null
+          : _statusFilter,
+    ));
+  }
+
+  Color _statusColor(
+      String? status) {
+    return switch (status) {
+      'exitoso' => Colors.green,
+      'rechazado' => Colors.red,
+      _ => Colors.grey,
+    };
+  }
+
+  IconData _statusIcon(
+      String? status) {
+    return switch (status) {
+      'exitoso' =>
+        Icons.check_circle,
+      'rechazado' =>
+        Icons.cancel,
+      _ => Icons.help_outline,
+    };
+  }
+
+  IconData _typeIcon(
+      String? type) {
+    return switch (type) {
+      'propio' => Icons.person,
+      'visitante' =>
+        Icons.group,
+      _ => Icons.login,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
-    final authState = context.read<AuthBloc>().state;
-    String adminName = 'Administrador';
-    if (authState is AuthSuccess) {
-      final nombres = authState.user['nombres'] as String? ?? '';
-      final apellidos = authState.user['apellidos'] as String? ?? '';
-      adminName = '$nombres $apellidos'.trim();
-    }
+    final theme = Theme.of(context);
 
     return AdminScaffold(
       title: 'Historial de Accesos',
-      routeName: '/adminAccessHistory',
-      onTabSelected: (index) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          switch (index) {
-            case 0:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminDashboard',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 1:
-              // Ya estamos aquí
-              break;
-            case 2:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminUsers',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 3:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/adminProfile',
-                (route) => false,
-                arguments: {
-                  'personaId': widget.personaId,
-                  'identificacion': widget.identificacion,
-                },
-              );
-              break;
-            case 4:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/adminNotificaciones', (route) => false,
-                  arguments: {
-                    'personaId': widget.personaId,
-                    'identificacion': widget.identificacion,
-                  });
-              break;
+      routeName:
+          '/adminAccessHistory',
+      showBackButton: true,
+      onBackPressed: () =>
+          Navigator.of(context)
+              .pushReplacementNamed(
+        '/adminDashboard',
+        arguments: {
+          'personaId':
+              widget.personaId,
+          'identificacion':
+              widget.identificacion,
+        },
+      ),
+      onTabSelected: (i) {
+        if (i == 1) return;
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) {
+          final routes = [
+            '/adminDashboard',
+            null,
+            '/adminUsers',
+            '/adminProfile',
+            '/adminNotificaciones',
+          ];
+          if (routes[i] != null) {
+            Navigator.of(context)
+                .pushReplacementNamed(
+              routes[i]!,
+              arguments: {
+                'personaId':
+                    widget.personaId,
+                'identificacion':
+                    widget.identificacion,
+              },
+            );
           }
         });
       },
-      body: BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
-        builder: (context, state) {
-          if (state is AdminDashboardLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (state is AdminDashboardError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Error: ${state.message}'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<AdminDashboardBloc>().add(const RefreshAdminMetrics());
-                    },
-                    child: const Text('Reintentar'),
+      body: Column(
+        children: [
+          Padding(
+            padding:
+                const EdgeInsets.all(
+                    16),
+            child: Column(
+              children: [
+                SingleChildScrollView(
+                  scrollDirection:
+                      Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _FilterChip(
+                        label: 'Todos',
+                        selected:
+                            _statusFilter ==
+                                'all',
+                        onTap: () =>
+                            setState(() {
+                          _statusFilter =
+                              'all';
+                          _recargar();
+                        }),
+                      ),
+                      const SizedBox(
+                          width: 8),
+                      _FilterChip(
+                        label:
+                            'Exitosos',
+                        selected:
+                            _statusFilter ==
+                                'exitoso',
+                        color:
+                            Colors.green,
+                        onTap: () =>
+                            setState(() {
+                          _statusFilter =
+                              'exitoso';
+                          _recargar();
+                        }),
+                      ),
+                      const SizedBox(
+                          width: 8),
+                      _FilterChip(
+                        label:
+                            'Rechazados',
+                        selected:
+                            _statusFilter ==
+                                'rechazado',
+                        color:
+                            Colors.red,
+                        onTap: () =>
+                            setState(() {
+                          _statusFilter =
+                              'rechazado';
+                          _recargar();
+                        }),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          }
-
-          if (state is AdminDashboardLoaded) {
-            final metrics = state.metrics as dynamic; // metrics es AdminMetrics
-            final recentActivityList = (metrics is Map<String, dynamic>)
-                ? metrics['recent_activity'] as List<dynamic>? ?? []
-                : (metrics.recentActivity as List<dynamic>? ?? []);
-
-            // Convertir RecentActivity objects a Map para procesamiento uniforme
-            final recentActivity = recentActivityList.map((item) {
-              if (item is Map<String, dynamic>) {
-                return item;
-              } else {
-                // Si es un objeto RecentActivity, convertir a Map
-                return {
-                  'person_name': item.personName ?? '—',
-                  'person_role': item.personRole ?? '',
-                  'access_type': item.accessType ?? 'own',
-                  'related_person': item.relatedPerson ?? '',
-                  'timestamp': item.timestamp?.toIso8601String() ?? '',
-                  'entry_point': item.entryPoint ?? '—',
-                  'is_successful': item.isSuccessful ?? true,
-                };
-              }
-            }).toList() as List<dynamic>;
-
-            // Aplicar filtros
-            final filteredActivity = recentActivity.where((item) {
-              final activity = item as Map<String, dynamic>;
-              final personName = activity['person_name'] as String? ?? '';
-              final isSuccessful = activity['is_successful'] as bool? ?? true;
-              final accessType = activity['access_type'] as String? ?? 'own';
-
-              // Filtrar por búsqueda
-              if (searchQuery.isNotEmpty) {
-                if (!personName.toLowerCase().contains(searchQuery.toLowerCase())) {
-                  return false;
+                ),
+                const SizedBox(
+                    height: 8),
+                SingleChildScrollView(
+                  scrollDirection:
+                      Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _FilterChip(
+                        label:
+                            'Todos los tipos',
+                        selected:
+                            _typeFilter ==
+                                'all',
+                        onTap: () =>
+                            setState(() {
+                          _typeFilter =
+                              'all';
+                          _recargar();
+                        }),
+                      ),
+                      const SizedBox(
+                          width: 8),
+                      _FilterChip(
+                        label: 'Propio',
+                        selected:
+                            _typeFilter ==
+                                'propio',
+                        color:
+                            Colors.blue,
+                        onTap: () =>
+                            setState(() {
+                          _typeFilter =
+                              'propio';
+                          _recargar();
+                        }),
+                      ),
+                      const SizedBox(
+                          width: 8),
+                      _FilterChip(
+                        label:
+                            'Visitante',
+                        selected:
+                            _typeFilter ==
+                                'visitante',
+                        color: Colors
+                            .purple,
+                        onTap: () =>
+                            setState(() {
+                          _typeFilter =
+                              'visitante';
+                          _recargar();
+                        }),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(
+              height: 1),
+          Expanded(
+            child: BlocBuilder<
+                AdminDashboardBloc,
+                AdminDashboardState>(
+              builder: (context,
+                  state) {
+                if (state
+                    is AccessHistoryLoading) {
+                  return const Center(
+                      child:
+                          CircularProgressIndicator());
                 }
-              }
 
-              // Filtrar por estado
-              if (statusFilter != 'Todos') {
-                final statusMatches = (statusFilter == 'Exitoso' && isSuccessful) ||
-                    (statusFilter == 'Rechazado' && !isSuccessful);
-                if (!statusMatches) return false;
-              }
-
-              // Filtrar por tipo
-              if (typeFilter != 'Todos') {
-                final typeMatches = (typeFilter == 'Propio' && accessType == 'own') ||
-                    (typeFilter == 'Visitante' && accessType == 'visitor');
-                if (!typeMatches) return false;
-              }
-
-              return true;
-            }).toList();
-
-            return RefreshIndicator(
-              onRefresh: () async {
-                context.read<AdminDashboardBloc>().add(const RefreshAdminMetrics());
-              },
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  // Filtros
-                  _buildFilters(),
-                  const SizedBox(height: 16),
-
-                  // Búsqueda
-                  TextField(
-                    onChanged: (value) => setState(() => searchQuery = value),
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.search),
-                      hintText: 'Buscar por nombre o identificación',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Historial de accesos
-                  Text(
-                    'Últimos Accesos (${filteredActivity.length} de ${recentActivity.length})',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 12),
-
-                  if (filteredActivity.isEmpty)
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: Text(
-                          recentActivity.isEmpty 
-                            ? 'No hay accesos registrados'
-                            : 'No hay accesos que coincidan con los filtros',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                if (state
+                    is AccessHistoryError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment:
+                          MainAxisAlignment
+                              .center,
+                      children: [
+                        Icon(
+                          Icons
+                              .error_outline,
+                          size: 48,
+                          color: theme
+                              .colorScheme
+                              .error,
                         ),
-                      ),
-                    )
-                  else
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: filteredActivity.length,
-                      separatorBuilder: (_, __) => const Divider(height: 12),
-                      itemBuilder: (context, index) {
-                        final activity = filteredActivity[index] as Map<String, dynamic>;
-                        final personName = activity['person_name'] as String? ?? '—';
-                        final accessType = activity['access_type'] as String? ?? 'own';
-                        final timestamp = activity['timestamp'] as String? ?? '';
-                        final isSuccessful = activity['is_successful'] as bool? ?? true;
-                        final entryPoint = activity['entry_point'] as String? ?? '—';
+                        const SizedBox(
+                            height:
+                                16),
+                        Text(
+                            state
+                                .message,
+                            textAlign:
+                                TextAlign
+                                    .center),
+                        const SizedBox(
+                            height:
+                                16),
+                        ElevatedButton
+                            .icon(
+                          onPressed:
+                              _recargar,
+                          icon: const Icon(
+                              Icons
+                                  .refresh),
+                          label: const Text(
+                              'Reintentar'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
 
-                        return ListTile(
-                          leading: Icon(
-                            isSuccessful ? Icons.check_circle : Icons.cancel,
-                            color: isSuccessful ? Colors.green : Colors.red,
+                if (state
+                    is AccessHistoryLoaded) {
+                  final accesos = state
+                              .accessHistory[
+                          'data']
+                          as List<
+                                  dynamic>? ??
+                      [];
+
+                  if (accesos
+                      .isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment:
+                            MainAxisAlignment
+                                .center,
+                        children: [
+                          Icon(
+                            Icons
+                                .history,
+                            size: 64,
+                            color: Colors
+                                .grey
+                                .shade400,
                           ),
-                          title: Text(personName),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '$entryPoint • ${_formatTime(timestamp)}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                              Text(
-                                accessType == 'own' ? 'Acceso propio' : 'Visitante',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(fontStyle: FontStyle.italic),
-                              ),
-                            ],
+                          const SizedBox(
+                              height:
+                                  16),
+                          const Text(
+                            'No hay accesos registrados',
+                            style: TextStyle(
+                                color: Colors
+                                    .grey),
                           ),
-                          trailing: Chip(
-                            label: Text(isSuccessful ? 'Exitoso' : 'Rechazado'),
-                            backgroundColor: isSuccessful ? Colors.green.shade100 : Colors.red.shade100,
-                            labelStyle: TextStyle(
-                              color: isSuccessful ? Colors.green.shade900 : Colors.red.shade900,
-                              fontSize: 12,
+                          const SizedBox(
+                              height:
+                                  4),
+                          Text(
+                            _statusFilter != 'all' || _typeFilter != 'all'
+                                ? 'Prueba cambiando los filtros'
+                                : '',
+                            style: TextStyle(
+                                color: Colors
+                                    .grey
+                                    .shade500,
+                                fontSize:
+                                    13),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () async =>
+                        _recargar(),
+                    child: ListView
+                        .builder(
+                      padding:
+                          const EdgeInsets.all(16),
+                      itemCount:
+                          accesos.length,
+                      itemBuilder: (context,
+                          index) {
+                        final acceso = accesos[
+                                index]
+                            as Map<String,
+                                dynamic>;
+                        final nombre = acceso['nombre']
+                                    ?.toString() ??
+                                acceso['nombres']
+                                    ?.toString() ??
+                                '—';
+                        final tipo = acceso['tipo']
+                                    ?.toString() ??
+                                acceso['tipo_ingreso']
+                                    ?.toString() ??
+                                '';
+                        final resultado =
+                            acceso['resultado']
+                                    ?.toString() ??
+                                '';
+                        final fecha = acceso['fecha']
+                                    ?.toString() ??
+                                acceso['fecha_acceso']
+                                    ?.toString() ??
+                                '';
+                        final hora = acceso['hora']
+                                    ?.toString() ??
+                                '';
+
+                        return Card(
+                          margin: const EdgeInsets
+                              .only(
+                              bottom:
+                                  12),
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius
+                                      .circular(16)),
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding:
+                                      const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: _statusColor(resultado).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    _statusIcon(resultado),
+                                    color: _statusColor(resultado),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(nombre,
+                                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(_typeIcon(tipo), size: 14, color: Colors.grey),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            tipo == 'propio' ? 'Acceso propio' : 'Visitante',
+                                            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: _statusColor(resultado).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        resultado == 'exitoso'
+                                            ? 'Exitoso'
+                                            : resultado == 'rechazado'
+                                                ? 'Rechazado'
+                                                : resultado,
+                                        style: TextStyle(
+                                          color: _statusColor(resultado),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(fecha,
+                                        style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                                    if (hora.isNotEmpty)
+                                      Text(hora,
+                                          style: TextStyle(color: Colors.grey.shade400, fontSize: 11)),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         );
                       },
                     ),
-                ],
-              ),
-            );
-          }
+                  );
+                }
 
-          return const SizedBox.shrink();
-        },
+                return const SizedBox
+                    .shrink();
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildFilters() {
-    return Row(
-      children: [
-        Expanded(
-          child: DropdownButton<String>(
-            value: statusFilter,
-            isExpanded: true,
-            items: const [
-              DropdownMenuItem(value: 'Todos', child: Text('Todos los estados')),
-              DropdownMenuItem(value: 'Exitoso', child: Text('Exitoso')),
-              DropdownMenuItem(value: 'Rechazado', child: Text('Rechazado')),
-            ],
-            onChanged: (value) {
-              if (value != null) setState(() => statusFilter = value);
-            },
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: DropdownButton<String>(
-            value: typeFilter,
-            isExpanded: true,
-            items: const [
-              DropdownMenuItem(value: 'Todos', child: Text('Todos los tipos')),
-              DropdownMenuItem(value: 'Propio', child: Text('Propio')),
-              DropdownMenuItem(value: 'Visitante', child: Text('Visitante')),
-            ],
-            onChanged: (value) {
-              if (value != null) setState(() => typeFilter = value);
-            },
-          ),
-        ),
-      ],
+class _FilterChip
+    extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final Color? color;
+  final VoidCallback onTap;
+
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(
+      BuildContext context) {
+    final chipColor = color ??
+        const Color(0xFF04345C);
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      selectedColor: chipColor,
+      labelStyle: TextStyle(
+        color: selected
+            ? Colors.white
+            : null,
+        fontWeight:
+            FontWeight.w600,
+        fontSize: 13,
+      ),
+      visualDensity:
+          VisualDensity.compact,
     );
-  }
-
-  String _formatTime(String timestamp) {
-    try {
-      final dt = DateTime.parse(timestamp);
-      final now = DateTime.now();
-      final diff = now.difference(dt);
-
-      if (diff.inMinutes < 1) return 'Hace un momento';
-      if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes}m';
-      if (diff.inHours < 24) return 'Hace ${diff.inHours}h';
-      if (diff.inDays < 7) return 'Hace ${diff.inDays}d';
-
-      return '${dt.day}/${dt.month}/${dt.year}';
-    } catch (e) {
-      return timestamp;
-    }
   }
 }
