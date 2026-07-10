@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:no_screenshot/no_screenshot.dart';
 import '../widgets/app_scaffold.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/blocs/qr_display/qr_display_bloc.dart';
@@ -43,12 +44,31 @@ class QrDisplayPage extends StatefulWidget {
 
 class _QrDisplayPageState extends State<QrDisplayPage> {
   final GlobalKey qrBoundaryKey = GlobalKey();
+  final _noScreenshot = NoScreenshot.instance;
 
   @override
   void initState() {
     super.initState();
-    // Inicializar el BLoC
     context.read<QrDisplayBloc>().add(InitializeQrDisplay());
+    _bloquearCapturas();
+  }
+
+  Future<void> _bloquearCapturas() async {
+    try {
+      await _noScreenshot.screenshotOff();
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _desbloquearCapturas();
+    super.dispose();
+  }
+
+  Future<void> _desbloquearCapturas() async {
+    try {
+      await _noScreenshot.screenshotOn();
+    } catch (_) {}
   }
 
   String _fmtShortES(DateTime dt) {
@@ -158,9 +178,10 @@ class _QrDisplayPageState extends State<QrDisplayPage> {
               ]),
             ),
             const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: OutlinedButton.icon(onPressed: _shareQr, icon: const Icon(Icons.share), label: const Text('Compartir'))),
-            ]),
+            if (widget.visitName != null)
+              Row(children: [
+                Expanded(child: OutlinedButton.icon(onPressed: _shareQr, icon: const Icon(Icons.share), label: const Text('Compartir'))),
+              ]),
           ],
         );
       },
