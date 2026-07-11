@@ -5,6 +5,7 @@ import '../../application/blocs/member/member_bloc.dart';
 import '../../application/blocs/member/member_event.dart';
 import '../../application/blocs/member/member_state.dart';
 import '../../application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
+import '../../domain/usecases/solicitar_registro_miembro_usecase.dart';
 import 'miembros/esperar_autorizacion_page.dart';
 import 'member_facial_enrollment_page.dart';
 
@@ -26,6 +27,7 @@ class MemberCreateRegistrationPage extends StatefulWidget {
 class _MemberCreateRegistrationPageState
     extends State<MemberCreateRegistrationPage> {
   final _formKey = GlobalKey<FormState>();
+  bool _isSubmitting = false;
 
   // Controladores de texto
   late TextEditingController _residenteIdController;
@@ -93,7 +95,7 @@ class _MemberCreateRegistrationPageState
     super.dispose();
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -109,26 +111,89 @@ class _MemberCreateRegistrationPageState
 
     // FLUJO MIEMBRO: auto-registro con autorización del titular
     if (widget.requiereAutorizacion) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => EsperarAutorizacionPage(
-            identificacion: _identificacionController.text.trim(),
-            nombres: _nombresController.text.trim(),
-            apellidos: _apellidosController.text.trim(),
-            parentesco: _parentescoController.text.trim(),
-            manzana: _manzanaController.text.trim(),
-            villa: _villaController.text.trim(),
-            fechaNacimiento: _fechaNacimientoController.text.trim(),
-            correo: _correoController.text.trim().isEmpty
-                ? null
-                : _correoController.text.trim(),
-            celular: _celularController.text.trim().isEmpty
-                ? null
-                : _celularController.text.trim(),
-            identificacionResidente: _residenteIdController.text.trim(),
+      setState(() => _isSubmitting = true);
+
+      try {
+        final useCase = GetIt.instance<SolicitarRegistroMiembroUseCase>();
+        final notificacionId = await useCase.execute(
+          identificacionResidente: _residenteIdController.text.trim(),
+          manzana: _manzanaController.text.trim(),
+          villa: _villaController.text.trim(),
+          identificacion: _identificacionController.text.trim(),
+          nombres: _nombresController.text.trim(),
+          apellidos: _apellidosController.text.trim(),
+          fechaNacimiento: _fechaNacimientoController.text.trim(),
+          parentesco: _parentescoController.text.trim(),
+          parentescoOtroDesc: _parentescoOtroDescController.text.trim().isEmpty
+              ? null
+              : _parentescoOtroDescController.text.trim(),
+          correo: _correoController.text.trim().isEmpty
+              ? null
+              : _correoController.text.trim(),
+          celular: _celularController.text.trim().isEmpty
+              ? null
+              : _celularController.text.trim(),
+        );
+
+        if (!mounted) return;
+
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => EsperarAutorizacionPage(
+              identificacion: _identificacionController.text.trim(),
+              nombres: _nombresController.text.trim(),
+              apellidos: _apellidosController.text.trim(),
+              parentesco: _parentescoController.text.trim(),
+              manzana: _manzanaController.text.trim(),
+              villa: _villaController.text.trim(),
+              fechaNacimiento: _fechaNacimientoController.text.trim(),
+              correo: _correoController.text.trim().isEmpty
+                  ? null
+                  : _correoController.text.trim(),
+              celular: _celularController.text.trim().isEmpty
+                  ? null
+                  : _celularController.text.trim(),
+              identificacionResidente: _residenteIdController.text.trim(),
+              notificacionId: notificacionId,
+            ),
           ),
-        ),
-      );
+        );
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isSubmitting = false);
+
+        final mensaje = e.toString().replaceAll('Exception: ', '');
+
+        if (mensaje.contains('409') ||
+            mensaje.contains('solicitud pendiente') ||
+            mensaje.contains('pendiente')) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => EsperarAutorizacionPage(
+                identificacion: _identificacionController.text.trim(),
+                nombres: _nombresController.text.trim(),
+                apellidos: _apellidosController.text.trim(),
+                parentesco: _parentescoController.text.trim(),
+                manzana: _manzanaController.text.trim(),
+                villa: _villaController.text.trim(),
+                fechaNacimiento: _fechaNacimientoController.text.trim(),
+                correo: _correoController.text.trim().isEmpty
+                    ? null
+                    : _correoController.text.trim(),
+                celular: _celularController.text.trim().isEmpty
+                    ? null
+                    : _celularController.text.trim(),
+                identificacionResidente: _residenteIdController.text.trim(),
+                notificacionId: 0,
+              ),
+            ),
+          );
+          return;
+        }
+
+        _showErrorSnackBar(mensaje);
+      }
+
       return;
     }
 
@@ -587,8 +652,8 @@ class _MemberCreateRegistrationPageState
                   const SizedBox(width: 12),
                   Expanded(
                     child: FilledButton(
-                      onPressed: isLoading ? null : _submitForm,
-                      child: isLoading
+                      onPressed: isLoading || _isSubmitting ? null : _submitForm,
+                      child: isLoading || _isSubmitting
                           ? const SizedBox(
                               height: 20,
                               width: 20,

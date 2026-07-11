@@ -230,6 +230,7 @@ class AppRoutes {
             correo: args['correo'],
             celular: args['celular'],
             identificacionResidente: args['identificacionResidente'] ?? '',
+            notificacionId: (args['notificacionId'] as int?) ?? 0,
           ),
           settings: settings,
         );

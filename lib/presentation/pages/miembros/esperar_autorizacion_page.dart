@@ -14,6 +14,7 @@ class EsperarAutorizacionPage extends StatefulWidget {
   final String? correo;
   final String? celular;
   final String identificacionResidente;
+  final int notificacionId;
 
   const EsperarAutorizacionPage({
     super.key,
@@ -27,6 +28,7 @@ class EsperarAutorizacionPage extends StatefulWidget {
     this.correo,
     this.celular,
     required this.identificacionResidente,
+    required this.notificacionId,
   });
 
   @override
@@ -39,23 +41,20 @@ class _EsperarAutorizacionPageState
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          sl<AutorizacionMiembroBloc>()
-            ..add(SolicitudEnviada(
-              identificacionResidente: widget
-                  .identificacionResidente,
-              manzana: widget.manzana,
-              villa: widget.villa,
-              identificacion:
-                  widget.identificacion,
-              nombres: widget.nombres,
-              apellidos: widget.apellidos,
-              fechaNacimiento:
-                  widget.fechaNacimiento,
-              parentesco: widget.parentesco,
-              correo: widget.correo,
-              celular: widget.celular,
-            )),
+      create: (_) {
+        final bloc = sl<AutorizacionMiembroBloc>();
+        if (widget.notificacionId > 0) {
+          bloc.add(IniciarPollingConNotificacionId(
+            notificacionId: widget.notificacionId,
+            identificacion: widget.identificacion,
+          ));
+        } else {
+          bloc.add(IniciarPollingConIdentificacion(
+            identificacion: widget.identificacion,
+          ));
+        }
+        return bloc;
+      },
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
@@ -104,6 +103,15 @@ class _EsperarAutorizacionPageState
                           'Volver al inicio'),
                     ),
                   ],
+                ),
+              );
+            } else if (state is AutorizacionMiembroError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.mensaje
+                      .replaceAll('Error al enviar solicitud: ', '')),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
                 ),
               );
             }

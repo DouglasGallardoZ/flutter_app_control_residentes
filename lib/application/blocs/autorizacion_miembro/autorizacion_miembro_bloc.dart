@@ -27,9 +27,10 @@ class AutorizacionMiembroBloc extends Bloc<
         _consultarEstado = consultarEstado,
         super(AutorizacionMiembroInicial()) {
     on<SolicitudEnviada>(_onSolicitudEnviada);
-    on<EstadoSolicitudConsultada>(
-        _onConsultarEstado);
+    on<EstadoSolicitudConsultada>(_onConsultarEstado);
     on<SolicitudCancelada>(_onCancelar);
+    on<IniciarPollingConNotificacionId>(_onIniciarPollingConId);
+    on<IniciarPollingConIdentificacion>(_onIniciarPollingConIdentificacion);
   }
 
   Future<void> _onSolicitudEnviada(
@@ -125,6 +126,33 @@ class AutorizacionMiembroBloc extends Bloc<
   ) {
     _pollingTimer?.cancel();
     emit(AutorizacionMiembroInicial());
+  }
+
+  Future<void> _onIniciarPollingConId(
+    IniciarPollingConNotificacionId event,
+    Emitter<AutorizacionMiembroState> emit,
+  ) async {
+    _identificacion = event.identificacion;
+    emit(EsperandoAutorizacion(
+      mensaje:
+          'Solicitud enviada. Esperando autorización del titular...',
+      notificacionId:
+          event.notificacionId,
+    ));
+    _iniciarPolling();
+  }
+
+  Future<void> _onIniciarPollingConIdentificacion(
+    IniciarPollingConIdentificacion event,
+    Emitter<AutorizacionMiembroState> emit,
+  ) async {
+    _identificacion = event.identificacion;
+    emit(EsperandoAutorizacion(
+      mensaje:
+          'Ya tienes una solicitud pendiente. Esperando autorización...',
+      notificacionId: 0,
+    ));
+    _iniciarPolling();
   }
 
   void _iniciarPolling() {

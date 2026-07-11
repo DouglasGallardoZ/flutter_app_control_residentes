@@ -1,6 +1,8 @@
 part of 'autorizacion_miembro_bloc.dart';
 
-abstract class AutorizacionMiembroEvent {}
+abstract class AutorizacionMiembroEvent {
+  const AutorizacionMiembroEvent();
+}
 
 class SolicitudEnviada
     extends AutorizacionMiembroEvent {
@@ -36,3 +38,23 @@ class EstadoSolicitudConsultada
 
 class SolicitudCancelada
     extends AutorizacionMiembroEvent {}
+
+class IniciarPollingConNotificacionId
+    extends AutorizacionMiembroEvent {
+  final int notificacionId;
+  final String identificacion;
+
+  const IniciarPollingConNotificacionId({
+    required this.notificacionId,
+    required this.identificacion,
+  });
+}
+
+class IniciarPollingConIdentificacion
+    extends AutorizacionMiembroEvent {
+  final String identificacion;
+
+  const IniciarPollingConIdentificacion({
+    required this.identificacion,
+  });
+}

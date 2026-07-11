@@ -19,28 +19,32 @@ class SolicitudMiembroApiProvider {
     String? correo,
     String? celular,
   }) async {
-    final body = {
-      'identificacion_residente':
-          identificacionResidente,
-      'manzana': manzana,
-      'villa': villa,
-      'identificacion': identificacion,
-      'nombres': nombres,
-      'apellidos': apellidos,
-      'fecha_nacimiento': fechaNacimiento,
-      'parentesco': parentesco,
-      if (parentescoOtroDesc != null)
-        'parentesco_otro_desc':
-            parentescoOtroDesc,
-      if (correo != null) 'correo': correo,
-      if (celular != null) 'celular': celular,
-    };
+    try {
+      final body = {
+        'identificacion_residente':
+            identificacionResidente,
+        'manzana': manzana,
+        'villa': villa,
+        'identificacion': identificacion,
+        'nombres': nombres,
+        'apellidos': apellidos,
+        'fecha_nacimiento': fechaNacimiento,
+        'parentesco': parentesco,
+        if (parentescoOtroDesc != null)
+          'parentesco_otro_desc':
+              parentescoOtroDesc,
+        if (correo != null) 'correo': correo,
+        if (celular != null) 'celular': celular,
+      };
 
-    final respuesta = await _cliente.dio.post(
-      '/miembros/solicitar',
-      data: body,
-    );
-    return respuesta.data;
+      final respuesta = await _cliente.dio.post(
+        '/miembros/solicitar',
+        data: body,
+      );
+      return respuesta.data;
+    } on DioException catch (e) {
+      throw Exception(_manejarError(e));
+    }
   }
 
   Future<Map<String, dynamic>> consultarEstado(
@@ -101,6 +105,7 @@ class SolicitudMiembroApiProvider {
     final mensaje =
         e.response?.data?['mensaje'] ??
             e.response?.data?['error'] ??
+            e.response?.data?['detail'] ??
             e.message ??
             'Error desconocido';
     return '[$statusCode] $mensaje';
