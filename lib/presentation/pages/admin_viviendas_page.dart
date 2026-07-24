@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/blocs/vivienda/vivienda_bloc.dart';
-import '../../domain/entities/vivienda_entity.dart';
+import '../../application/blocs/owner/owner_bloc.dart';
 import '../widgets/admin_scaffold.dart';
+import 'admin_manzana_villas_page.dart';
 
-class AdminViviendasPage
-    extends StatefulWidget {
+class AdminViviendasPage extends StatefulWidget {
   final int personaId;
   final String identificacion;
 
@@ -16,89 +17,48 @@ class AdminViviendasPage
   });
 
   @override
-  State<AdminViviendasPage>
-  createState() =>
+  State<AdminViviendasPage> createState() =>
       _AdminViviendasPageState();
 }
 
 class _AdminViviendasPageState
     extends State<AdminViviendasPage> {
-  final _manzanaCtrl =
+  final _busquedaCtrl =
       TextEditingController();
-  final _scrollController =
-      ScrollController();
+  String _busqueda = '';
 
   @override
   void initState() {
     super.initState();
-    _scrollController
-        .addListener(_onScroll);
     WidgetsBinding.instance
         .addPostFrameCallback((_) {
       context
           .read<ViviendaBloc>()
-          .add(const LoadViviendas());
+          .add(const LoadManzanas());
     });
-  }
-
-  void _onScroll() {
-    if (_scrollController
-                .position.pixels >=
-            _scrollController
-                    .position
-                    .maxScrollExtent -
-                200) {
-      final state = context
-          .read<ViviendaBloc>()
-          .state;
-      if (state is ViviendaLoaded &&
-          state.hasNext) {
-        context
-            .read<ViviendaBloc>()
-            .add(const LoadMoreViviendas());
-      }
-    }
   }
 
   @override
   void dispose() {
-    _manzanaCtrl.dispose();
-    _scrollController.dispose();
+    _busquedaCtrl.dispose();
     super.dispose();
   }
 
-  void _buscar() {
-    context
-        .read<ViviendaBloc>()
-        .add(LoadViviendas(
-      manzana: _manzanaCtrl
-                  .text
-                  .trim()
-                  .isEmpty
-              ? null
-              : _manzanaCtrl.text
-                  .trim(),
-    ));
+  List<ManzanaResumen> _filtrar(
+      List<ManzanaResumen> lista) {
+    if (_busqueda.isEmpty) return lista;
+    return lista
+        .where((m) => m.manzana
+            .toLowerCase()
+            .contains(
+                _busqueda.toLowerCase()))
+        .toList();
   }
 
-  void _recargar() {
-    context
-        .read<ViviendaBloc>()
-        .add(LoadViviendas(
-      manzana: _manzanaCtrl
-                  .text
-                  .trim()
-                  .isEmpty
-              ? null
-              : _manzanaCtrl.text
-                  .trim(),
-    ));
-  }
-
-  Future<void> _mostrarDialogoCrear() async {
+  Future<void> _mostrarDialogoCrearManzana() async {
     final mzCtrl =
         TextEditingController();
-    final vlCtrl =
+    final cantCtrl =
         TextEditingController();
     final formKey =
         GlobalKey<FormState>();
@@ -108,7 +68,7 @@ class _AdminViviendasPageState
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text(
-            'Nueva Vivienda'),
+            'Crear Manzana'),
         content: Form(
           key: formKey,
           child: Column(
@@ -120,14 +80,11 @@ class _AdminViviendasPageState
                 decoration:
                     const InputDecoration(
                   labelText:
-                      'Manzana',
-                  hintText: 'Ej: 23',
+                      'Número de Manzana',
+                  hintText: 'Ej: 25',
                   border:
                       OutlineInputBorder(),
                 ),
-                textCapitalization:
-                    TextCapitalization
-                        .characters,
                 validator: (v) =>
                     (v == null ||
                             v.trim()
@@ -138,23 +95,41 @@ class _AdminViviendasPageState
               const SizedBox(
                   height: 16),
               TextFormField(
-                controller: vlCtrl,
+                controller:
+                    cantCtrl,
+                keyboardType:
+                    TextInputType
+                        .number,
+                inputFormatters: [
+                  FilteringTextInputFormatter
+                      .digitsOnly,
+                ],
                 decoration:
                     const InputDecoration(
-                  labelText: 'Villa',
-                  hintText: 'Ej: 11',
+                  labelText:
+                      'Número de villas',
+                  hintText: 'Ej: 20',
+                  helperText:
+                      'Se crearán villas del 1 al N',
                   border:
                       OutlineInputBorder(),
                 ),
-                textCapitalization:
-                    TextCapitalization
-                        .characters,
-                validator: (v) =>
-                    (v == null ||
-                            v.trim()
-                                .isEmpty)
-                        ? 'Requerido'
-                        : null,
+                validator: (v) {
+                  if (v == null ||
+                      v.isEmpty) {
+                    return 'Requerido';
+                  }
+                  final n =
+                      int.tryParse(v);
+                  if (n == null ||
+                      n < 1) {
+                    return 'Mínimo 1';
+                  }
+                  if (n > 50) {
+                    return 'Máximo 50';
+                  }
+                  return null;
+                },
               ),
             ],
           ),
@@ -170,9 +145,9 @@ class _AdminViviendasPageState
           FilledButton(
             onPressed: () {
               if (formKey
-                          .currentState
-                          ?.validate() ==
-                      true) {
+                      .currentState
+                      ?.validate() ==
+                  true) {
                 Navigator.pop(
                     ctx, true);
               }
@@ -183,7 +158,7 @@ class _AdminViviendasPageState
                         const Color(
                             0xFF04345C)),
             child: const Text(
-                'Crear'),
+                'Crear Manzana'),
           ),
         ],
       ),
@@ -191,205 +166,22 @@ class _AdminViviendasPageState
 
     if (result == true &&
         context.mounted) {
+      final manzana = mzCtrl.text
+          .trim()
+          .toUpperCase();
+      final cantidad =
+          int.tryParse(
+                  cantCtrl.text) ??
+              1;
       context
           .read<ViviendaBloc>()
-          .add(CreateVivienda(
-        manzana: mzCtrl.text
-            .trim()
-            .toUpperCase(),
-        villa: vlCtrl.text
-            .trim()
-            .toUpperCase(),
-      ));
+          .add(CreateBulkViviendas(
+            manzana: manzana,
+            cantidad: cantidad,
+          ));
     }
-  }
-
-  Future<void> _mostrarDialogoEditar(
-      ViviendaEntity vivienda) async {
-    final mzCtrl = TextEditingController(
-        text: vivienda.manzana);
-    final vlCtrl = TextEditingController(
-        text: vivienda.villa);
-
-    final result =
-        await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text(
-            'Editar Vivienda'),
-        content: Column(
-          mainAxisSize:
-              MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: mzCtrl,
-              decoration:
-                  const InputDecoration(
-                labelText: 'Manzana',
-                border:
-                    OutlineInputBorder(),
-              ),
-              textCapitalization:
-                  TextCapitalization
-                      .characters,
-            ),
-            const SizedBox(
-                height: 16),
-            TextFormField(
-              controller: vlCtrl,
-              decoration:
-                  const InputDecoration(
-                labelText: 'Villa',
-                border:
-                    OutlineInputBorder(),
-              ),
-              textCapitalization:
-                  TextCapitalization
-                      .characters,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, false),
-            child: const Text(
-                'Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, true),
-            style: FilledButton
-                .styleFrom(
-                    backgroundColor:
-                        const Color(
-                            0xFF04345C)),
-            child: const Text(
-                'Guardar'),
-          ),
-        ],
-      ),
-    );
-
-    if (result == true &&
-        context.mounted) {
-      context
-          .read<ViviendaBloc>()
-          .add(UpdateVivienda(
-        viviendaId:
-            vivienda.viviendaId,
-        manzana: mzCtrl.text
-            .trim()
-            .toUpperCase(),
-        villa: vlCtrl.text
-            .trim()
-            .toUpperCase(),
-      ));
-    }
-  }
-
-  Future<void> _confirmarToggle(
-      ViviendaEntity vivienda) async {
-    final activar =
-        !vivienda.isActivo;
-    final motivoCtrl =
-        TextEditingController();
-
-    final result =
-        await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(activar
-            ? 'Activar Vivienda'
-            : 'Desactivar Vivienda'),
-        content: Column(
-          mainAxisSize:
-              MainAxisSize.min,
-          children: [
-            Text(activar
-                ? '¿Activar Mz ${vivienda.manzana}, V ${vivienda.villa}?'
-                : '¿Desactivar Mz ${vivienda.manzana}, V ${vivienda.villa}?'),
-            const SizedBox(
-                height: 16),
-            TextField(
-              controller:
-                  motivoCtrl,
-              decoration:
-                  const InputDecoration(
-                labelText:
-                    'Motivo (opcional)',
-                border:
-                    OutlineInputBorder(),
-              ),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, false),
-            child: const Text(
-                'Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, true),
-            style: FilledButton
-                .styleFrom(
-              backgroundColor: activar
-                  ? Colors.green
-                  : Colors.orange,
-            ),
-            child: Text(activar
-                ? 'Activar'
-                : 'Desactivar'),
-          ),
-        ],
-      ),
-    );
-
-    if (result == true &&
-        context.mounted) {
-      context
-          .read<ViviendaBloc>()
-          .add(ToggleViviendaEstado(
-        viviendaId:
-            vivienda.viviendaId,
-        estado: activar
-            ? 'activo'
-            : 'inactivo',
-        motivo: motivoCtrl
-                    .text
-                    .trim()
-                    .isEmpty
-                ? null
-                : motivoCtrl.text
-                    .trim(),
-      ));
-    }
-  }
-
-  void _verDetalle(
-      ViviendaEntity vivienda) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) =>
-            _ViviendaDetailPage(
-          vivienda: vivienda,
-          onEditar: () =>
-              _mostrarDialogoEditar(
-                  vivienda),
-          onToggleEstado: () =>
-              _confirmarToggle(
-                  vivienda),
-        ),
-      ),
-    );
+    mzCtrl.dispose();
+    cantCtrl.dispose();
   }
 
   @override
@@ -397,8 +189,7 @@ class _AdminViviendasPageState
     final theme = Theme.of(context);
 
     return AdminScaffold(
-      title:
-          'Gestión de Viviendas',
+      title: 'Gestión de Viviendas',
       routeName:
           '/adminViviendas',
       showBackButton: true,
@@ -414,15 +205,16 @@ class _AdminViviendasPageState
         },
       ),
       onTabSelected: (i) {
-        if (i == 2) return;
+        if (i == 5) return;
         WidgetsBinding.instance
             .addPostFrameCallback((_) {
           final routes = [
             '/adminDashboard',
             '/adminAccessHistory',
-            null,
+            '/adminUsers',
             '/adminProfile',
             '/adminNotificaciones',
+            null,
           ];
           if (routes[i] != null) {
             Navigator.of(context)
@@ -441,53 +233,36 @@ class _AdminViviendasPageState
       actions: [
         TextButton.icon(
           onPressed:
-              _mostrarDialogoCrear,
+              _mostrarDialogoCrearManzana,
           icon: const Icon(
               Icons.add_home),
-          label: const Text('Nueva'),
+          label: const Text(
+              'Crear Manzana'),
         ),
       ],
       body: BlocListener<ViviendaBloc,
           ViviendaState>(
         listener: (context,
             state) {
-          if (state is ViviendaCreated) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text(
-                      'Vivienda creada exitosamente'),
-                  backgroundColor:
-                      Colors.green),
-            );
-          } else if (state
-              is ViviendaUpdated) {
-            ScaffoldMessenger.of(
-                    context)
-                .showSnackBar(
-              const SnackBar(
-                  content: Text(
-                      'Vivienda actualizada'),
-                  backgroundColor:
-                      Colors.blue),
-            );
-          } else if (state
-              is ViviendaEstadoChanged) {
+          if (state
+              is ViviendasBulkCreated) {
+            final omitidas = state
+                    .omitidas
+                    .isNotEmpty
+                ? '. Omitidas: ${state.omitidas.join(', ')}'
+                : '';
             ScaffoldMessenger.of(
                     context)
                 .showSnackBar(
               SnackBar(
                 content: Text(
-                    state.mensaje),
+                    'Manzana ${state.manzana}: ${state.creadas} villas creadas$omitidas'),
                 backgroundColor: state
-                            .nuevoEstado ==
-                        'activo'
+                        .omitidas
+                        .isEmpty
                     ? Colors.green
                     : Colors.orange,
               ),
-            );
-          } else if (state is ViviendaError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.mensaje), backgroundColor: Colors.red),
             );
           }
         },
@@ -495,55 +270,35 @@ class _AdminViviendasPageState
           children: [
             Padding(
               padding:
-                  const EdgeInsets.all(
-                      16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller:
-                          _manzanaCtrl,
-                      decoration: InputDecoration(
-                        hintText:
-                            'Buscar por manzana',
-                        prefixIcon: const Icon(
-                            Icons
-                                .search),
-                        border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius
-                                    .circular(
-                                        12)),
-                        contentPadding: const EdgeInsets
-                            .symmetric(
-                            horizontal:
-                                16,
-                            vertical: 12),
-                      ),
-                      onSubmitted:
-                          (_) =>
-                              _buscar(),
-                    ),
+                  const EdgeInsets
+                      .all(16),
+              child: TextField(
+                controller:
+                    _busquedaCtrl,
+                onChanged: (v) =>
+                    setState(() =>
+                        _busqueda =
+                            v),
+                decoration:
+                    InputDecoration(
+                  hintText:
+                      'Buscar manzana...',
+                  prefixIcon: const Icon(
+                      Icons.search),
+                  border:
+                      OutlineInputBorder(
+                    borderRadius:
+                        BorderRadius
+                            .circular(
+                                12),
                   ),
-                  const SizedBox(
-                      width: 12),
-                  FilledButton(
-                    onPressed: _buscar,
-                    style: FilledButton
-                        .styleFrom(
-                      backgroundColor:
-                          const Color(
-                              0xFF04345C),
-                      padding: const EdgeInsets
+                  contentPadding:
+                      const EdgeInsets
                           .symmetric(
-                          horizontal:
-                              20,
-                          vertical: 14),
-                    ),
-                    child: const Text(
-                        'Buscar'),
+                    horizontal: 16,
+                    vertical: 12,
                   ),
-                ],
+                ),
               ),
             ),
             const Divider(
@@ -555,13 +310,35 @@ class _AdminViviendasPageState
                 builder: (context,
                     state) {
                   if (state
-                      is ViviendaLoading) {
+                      is ManzanasLoading) {
                     return const Center(
                         child:
                             CircularProgressIndicator());
                   }
 
                   if (state is ViviendaError) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+                          const SizedBox(height: 16),
+                          Text(state.mensaje,
+                              style: TextStyle(color: Colors.red[700], fontSize: 16)),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              context.read<ViviendaBloc>().add(const LoadManzanas());
+                            },
+                            child: const Text('Reintentar'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (state
+                      is ManzanasError) {
                     return Center(
                       child: Column(
                         mainAxisAlignment:
@@ -579,19 +356,18 @@ class _AdminViviendasPageState
                           const SizedBox(
                               height:
                                   16),
-                          Text(
-                              state
-                                  .mensaje,
-                              textAlign:
-                                  TextAlign
-                                      .center),
+                          Text(state
+                              .message),
                           const SizedBox(
                               height:
                                   16),
                           ElevatedButton
                               .icon(
                             onPressed:
-                                _recargar,
+                                () => context
+                                    .read<
+                                        ViviendaBloc>()
+                                    .add(const LoadManzanas()),
                             icon: const Icon(
                                 Icons
                                     .refresh),
@@ -604,42 +380,12 @@ class _AdminViviendasPageState
                   }
 
                   if (state
-                      is ViviendaInitial) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment:
-                            MainAxisAlignment
-                                .center,
-                        children: [
-                          Icon(
-                            Icons
-                                .home_work,
-                            size: 64,
-                            color: Colors
-                                .grey
-                                .shade400,
-                          ),
-                          const SizedBox(
-                              height:
-                                  16),
-                          Text(
-                            'Busca o lista las viviendas',
-                            style: theme
-                                .textTheme
-                                .bodyLarge
-                                ?.copyWith(
-                                    color: Colors
-                                        .grey),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
+                      is ManzanasLoaded) {
+                    final filtradas =
+                        _filtrar(state
+                            .manzanas);
 
-                  if (state
-                      is ViviendaLoaded) {
-                    if (state
-                        .viviendas
+                    if (filtradas
                         .isEmpty) {
                       return Center(
                         child: Column(
@@ -659,7 +405,7 @@ class _AdminViviendasPageState
                                 height:
                                     16),
                             const Text(
-                              'No se encontraron viviendas',
+                              'No se encontraron manzanas',
                               style: TextStyle(
                                   color: Colors
                                       .grey),
@@ -671,21 +417,20 @@ class _AdminViviendasPageState
 
                     return RefreshIndicator(
                       onRefresh: () async =>
-                          _recargar(),
+                          context
+                              .read<ViviendaBloc>()
+                              .add(const LoadManzanas()),
                       child: ListView
                           .builder(
-                        controller:
-                            _scrollController,
                         padding:
                             const EdgeInsets.all(16),
-                        itemCount: state
-                            .viviendas
-                            .length,
+                        itemCount:
+                            filtradas.length,
                         itemBuilder: (context,
                             index) {
-                          final v = state
-                              .viviendas[
-                              index];
+                          final m =
+                              filtradas[
+                                  index];
                           return Card(
                             margin: const EdgeInsets
                                 .only(
@@ -694,65 +439,84 @@ class _AdminViviendasPageState
                             elevation: 2,
                             shape: RoundedRectangleBorder(
                                 borderRadius:
-                                    BorderRadius
-                                        .circular(16)),
-                            child:
-                                ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal:
-                                      16,
-                                  vertical:
-                                      8),
-                              leading: CircleAvatar(
-                                backgroundColor: v.isActivo
-                                    ? Colors
-                                        .teal
-                                        .withOpacity(0.15)
-                                    : Colors
-                                        .orange
-                                        .withOpacity(0.15),
-                                child: Icon(
-                                  Icons
-                                      .home,
-                                  color: v.isActivo
-                                      ? Colors
-                                          .teal
-                                      : Colors
-                                          .orange,
-                                ),
-                              ),
-                              title: Text(
-                                'Mz ${v.manzana}, Villa ${v.villa}',
-                                style: const TextStyle(
-                                    fontWeight:
-                                        FontWeight.w600),
-                              ),
-                              subtitle: Text(
-                                '${v.totalResidentes} residentes · ${v.totalMiembros} miembros',
-                                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                              ),
-                              trailing: Row(
-                                mainAxisSize:
-                                    MainAxisSize.min,
-                                children: [
-                                  if (!v.isActivo)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.orange.withOpacity(0.15),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Text(
-                                        'Inactiva',
-                                        style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+                                    BorderRadius.circular(16)),
+                            child: InkWell(
+                              borderRadius:
+                                  BorderRadius.circular(16),
+                              onTap: () async {
+                                final viviendaBloc =
+                                    context.read<ViviendaBloc>();
+                                final ownerBloc =
+                                    context.read<OwnerBloc>();
+                                await Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => BlocProvider.value(
+                                      value: viviendaBloc,
+                                      child: BlocProvider.value(
+                                        value: ownerBloc,
+                                        child: AdminManzanaVillasPage(
+                                          manzana: m.manzana,
+                                          personaId: widget.personaId,
+                                          identificacion: widget.identificacion,
+                                        ),
                                       ),
                                     ),
-                                  const SizedBox(width: 8),
-                                  const Icon(Icons.chevron_right),
-                                ],
+                                  ),
+                                );
+                                if (!mounted) return;
+                                viviendaBloc.add(const LoadManzanas());
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color: Colors.teal.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: const Icon(Icons.apartment, color: Colors.teal, size: 28),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Manzana ${m.manzana}',
+                                                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                '${m.totalVillas} villas',
+                                                style: TextStyle(color: Colors.grey.shade600),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const Icon(Icons.chevron_right, color: Colors.grey),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      children: [
+                                        _statChip(Icons.check_circle, Colors.green, '${m.villasActivas} activas'),
+                                        const SizedBox(width: 8),
+                                        _statChip(Icons.block, Colors.orange, '${m.villasInactivas} inactivas'),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '👤 ${m.totalPropietarios} propietarios · 👥 ${m.totalResidentes} residentes · 👨‍👩‍👧 ${m.totalMiembros} miembros',
+                                      style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              onTap: () =>
-                                  _verDetalle(v),
                             ),
                           );
                         },
@@ -770,308 +534,36 @@ class _AdminViviendasPageState
       ),
     );
   }
-}
 
-class _ViviendaDetailPage
-    extends StatelessWidget {
-  final ViviendaEntity vivienda;
-  final VoidCallback onEditar;
-  final VoidCallback onToggleEstado;
-
-  const _ViviendaDetailPage({
-    required this.vivienda,
-    required this.onEditar,
-    required this.onToggleEstado,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-            'Detalle de Vivienda'),
-        actions: [
-          PopupMenuButton(
-            itemBuilder: (_) => [
-              const PopupMenuItem(
-                value: 'edit',
-                child: ListTile(
-                  leading: Icon(
-                      Icons.edit,
-                      color:
-                          Colors.blue),
-                  title:
-                      Text('Editar'),
-                  contentPadding:
-                      EdgeInsets.zero,
-                ),
-              ),
-              PopupMenuItem(
-                value: 'toggle',
-                child: ListTile(
-                  leading: Icon(
-                    vivienda.isActivo
-                        ? Icons.block
-                        : Icons
-                            .check_circle,
-                    color: vivienda
-                            .isActivo
-                        ? Colors.orange
-                        : Colors.green,
-                  ),
-                  title: Text(vivienda
-                          .isActivo
-                      ? 'Desactivar'
-                      : 'Activar'),
-                  contentPadding:
-                      EdgeInsets.zero,
-                ),
-              ),
-            ],
-            onSelected: (action) {
-              switch (action) {
-                case 'edit':
-                  onEditar();
-                case 'toggle':
-                  onToggleEstado();
-              }
-            },
-          ),
-        ],
-      ),
-      body: ListView(
-        padding:
-            const EdgeInsets.all(24),
-        children: [
-          Center(
-            child:
-                Column(children: [
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors
-                    .teal
-                    .withOpacity(0.15),
-                child: const Icon(
-                    Icons.home,
-                    size: 36,
-                    color:
-                        Colors.teal),
-              ),
-              const SizedBox(
-                  height: 12),
-              Text(
-                'Mz ${vivienda.manzana}, Villa ${vivienda.villa}',
-                style: theme
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(
-                        fontWeight:
-                            FontWeight
-                                .bold),
-              ),
-              const SizedBox(
-                  height: 4),
-              Container(
-                padding:
-                    const EdgeInsets
-                        .symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration:
-                    BoxDecoration(
-                  color: vivienda
-                          .isActivo
-                      ? Colors.green
-                          .withOpacity(
-                              0.15)
-                      : Colors.orange
-                          .withOpacity(
-                              0.15),
-                  borderRadius:
-                      BorderRadius
-                          .circular(12),
-                ),
-                child: Text(
-                  vivienda.isActivo
-                      ? 'Activa'
-                      : 'Inactiva',
-                  style: TextStyle(
-                    color: vivienda
-                            .isActivo
-                        ? Colors.green
-                        : Colors.orange,
-                    fontWeight:
-                        FontWeight
-                            .bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ]),
-          ),
-          const SizedBox(height: 32),
-          _sectionTitle(context,
-              'Información'),
-          const SizedBox(height: 12),
-          _detailCard(context, [
-            _DetailField('Manzana',
-                vivienda.manzana),
-            _DetailField('Villa',
-                vivienda.villa),
-            _DetailField(
-              'Estado',
-              vivienda.isActivo
-                  ? 'Activa'
-                  : 'Inactiva',
-            ),
-            _DetailField(
-              'Residentes',
-              '${vivienda.totalResidentes}',
-            ),
-            _DetailField(
-              'Miembros',
-              '${vivienda.totalMiembros}',
-            ),
-            _DetailField(
-              'Creada',
-              vivienda
-                      .fechaCreado !=
-                  null
-                  ? '${vivienda.fechaCreado!.day}/${vivienda.fechaCreado!.month}/${vivienda.fechaCreado!.year}'
-                  : '—',
-            ),
-          ]),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed:
-                  onToggleEstado,
-              icon: Icon(
-                vivienda.isActivo
-                    ? Icons.block
-                    : Icons
-                        .check_circle,
-                color: vivienda
-                        .isActivo
-                    ? Colors.orange
-                    : Colors.green,
-              ),
-              label: Text(
-                vivienda.isActivo
-                    ? 'Desactivar vivienda'
-                    : 'Activar vivienda',
-                style: TextStyle(
-                    color: vivienda
-                            .isActivo
-                        ? Colors.orange
-                        : Colors.green),
-              ),
-              style: OutlinedButton
-                  .styleFrom(
-                side: BorderSide(
-                    color: vivienda
-                            .isActivo
-                        ? Colors.orange
-                        : Colors.green),
-                padding:
-                    const EdgeInsets
-                        .symmetric(
-                        vertical:
-                            16),
-                shape:
-                    RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius
-                          .circular(
-                              12),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _sectionTitle(
-    BuildContext context,
-    String title,
-  ) {
-    return Text(
-      title,
-      style: Theme.of(context)
-          .textTheme
-          .titleMedium
-          ?.copyWith(
-              fontWeight:
-                  FontWeight.bold),
-    );
-  }
-
-  Widget _detailCard(
-    BuildContext context,
-    List<_DetailField> fields,
-  ) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
+  Widget _statChip(IconData icon,
+      Color color, String label) {
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(
+              horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color:
+            color.withOpacity(0.1),
         borderRadius:
-            BorderRadius.circular(16),
+            BorderRadius.circular(8),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: fields
-              .map((f) => Padding(
-                    padding:
-                        const EdgeInsets
-                            .symmetric(
-                            vertical: 8),
-                    child: Row(
-                      crossAxisAlignment:
-                          CrossAxisAlignment
-                              .start,
-                      children: [
-                        SizedBox(
-                          width: 110,
-                          child: Text(
-                            f.label,
-                            style: TextStyle(
-                              color: Colors
-                                  .grey
-                                  .shade600,
-                              fontWeight:
-                                  FontWeight
-                                      .w500,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            f.value,
-                            style: const TextStyle(
-                                fontWeight:
-                                    FontWeight
-                                        .w500),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ))
-              .toList(),
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon,
+              size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+              fontWeight:
+                  FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
-}
-
-class _DetailField {
-  final String label;
-  final String value;
-  const _DetailField(
-      this.label, this.value);
 }

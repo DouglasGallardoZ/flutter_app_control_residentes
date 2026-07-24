@@ -63,3 +63,37 @@ class ToggleViviendaEstado
   List<Object?> get props =>
       [viviendaId, estado, motivo];
 }
+
+class CreateBulkViviendas extends ViviendaEvent {
+  final String manzana;
+  final int cantidad;
+  const CreateBulkViviendas({required this.manzana, required this.cantidad});
+  @override
+  List<Object?> get props => [manzana, cantidad];
+}
+
+class LoadManzanas extends ViviendaEvent {
+  const LoadManzanas();
+}
+
+class CambiarPropietario extends ViviendaEvent {
+  final int viviendaId;
+  final int nuevoPropietarioId;
+  final String tipo;
+  final String motivo;
+  const CambiarPropietario({
+    required this.viviendaId,
+    required this.nuevoPropietarioId,
+    required this.tipo,
+    required this.motivo,
+  });
+  @override
+  List<Object?> get props => [viviendaId, nuevoPropietarioId, tipo, motivo];
+}
+
+class LoadVillaDetalle extends ViviendaEvent {
+  final int viviendaId;
+  const LoadVillaDetalle({required this.viviendaId});
+  @override
+  List<Object?> get props => [viviendaId];
+}

@@ -46,6 +46,7 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
     on<CreateSpouseEvent>(_onCreateSpouse);
     on<DeleteSpouseEvent>(_onDeleteSpouse);
     on<BlockSpouseEvent>(_onBlockSpouse);
+    on<LoadActiveOwners>(_onLoadActiveOwners);
   }
 
   Future<void> _onLoadOwnersByLocation(
@@ -242,6 +243,27 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
     } catch (e) {
       emit(SpouseError(
           'Error al ${event.block ? 'bloquear' : 'desbloquear'} cónyuge: $e'));
+    }
+  }
+
+  Future<void> _onLoadActiveOwners(
+    LoadActiveOwners event,
+    Emitter<OwnerState> emit,
+  ) async {
+    emit(const OwnersLoading());
+    try {
+      final owners = await loadOwnersByLocationUseCase(
+        manzana: '', villa: '', page: 1, pageSize: 200);
+      emit(OwnersLoaded(owners
+          .map((o) => {
+                'personaId': o.id,
+                'nombres': o.nombre,
+                'apellidos': o.apellido,
+                'identificacion': o.identificacion,
+              })
+          .toList()));
+    } catch (e) {
+      emit(OwnerError(e.toString()));
     }
   }
 }

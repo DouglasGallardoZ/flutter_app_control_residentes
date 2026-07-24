@@ -30,6 +30,8 @@ class _CredentialsResidentePageState extends State<CredentialsResidentePage> {
   final formKey = GlobalKey<FormState>();
   bool showPassword = false;
   bool isCreating = false;
+  double _passwordStrength = 0;
+  final _confirmKey = GlobalKey<FormFieldState>();
 
   late final bool _isEmailReadOnly;
 
@@ -198,6 +200,7 @@ class _CredentialsResidentePageState extends State<CredentialsResidentePage> {
                           TextFormField(
                             controller: passwordCtrl,
                             obscureText: !showPassword,
+                            onChanged: (v) => setState(() => _passwordStrength = _calcularFortaleza(v)),
                             decoration: InputDecoration(
                               labelText: 'Contraseña',
                               hintText: 'Ingrese una contraseña segura',
@@ -222,10 +225,30 @@ class _CredentialsResidentePageState extends State<CredentialsResidentePage> {
                               return null;
                             },
                           ),
+                          if (_passwordStrength > 0) ...[
+                            const SizedBox(height: 8),
+                            LinearProgressIndicator(
+                              value: _passwordStrength,
+                              backgroundColor: Colors.grey.shade300,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                _colorFortaleza(_passwordStrength),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _textoFortaleza(_passwordStrength),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _colorFortaleza(_passwordStrength),
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 16),
                           TextFormField(
+                            key: _confirmKey,
                             controller: confirmPasswordCtrl,
                             obscureText: !showPassword,
+                            onChanged: (_) => _confirmKey.currentState?.validate(),
                             decoration: const InputDecoration(
                               labelText: 'Confirmar Contraseña',
                               hintText: 'Confirme su contraseña',
@@ -277,5 +300,36 @@ class _CredentialsResidentePageState extends State<CredentialsResidentePage> {
         ),
       ),
     );
+  }
+
+  double _calcularFortaleza(String password) {
+    if (password.isEmpty) return 0;
+    if (password.length < 6) return 0.1;
+    final hasLetters = RegExp(r'[a-zA-Z]').hasMatch(password);
+    final hasNumbers = RegExp(r'[0-9]').hasMatch(password);
+    final hasUpper = RegExp(r'[A-Z]').hasMatch(password);
+    final hasLower = RegExp(r'[a-z]').hasMatch(password);
+    final hasSymbols = RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password);
+    if (password.length >= 10 && hasUpper && hasLower && hasNumbers && hasSymbols) return 1.0;
+    if (password.length >= 8 && hasUpper && hasLower && hasNumbers) return 0.75;
+    if (password.length >= 8 && hasLetters && hasNumbers) return 0.5;
+    if (password.length >= 6 && (hasLetters || hasNumbers)) return 0.25;
+    return 0.1;
+  }
+
+  Color _colorFortaleza(double strength) {
+    if (strength <= 0.1) return Colors.red;
+    if (strength <= 0.25) return Colors.orange;
+    if (strength <= 0.5) return Colors.amber;
+    if (strength <= 0.75) return Colors.lightGreen;
+    return Colors.green;
+  }
+
+  String _textoFortaleza(double strength) {
+    if (strength <= 0.1) return 'Muy débil';
+    if (strength <= 0.25) return 'Débil';
+    if (strength <= 0.5) return 'Moderada';
+    if (strength <= 0.75) return 'Fuerte';
+    return 'Muy fuerte';
   }
 }

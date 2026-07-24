@@ -7,6 +7,10 @@ import '../../application/blocs/account/account_state.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_state.dart';
 import '../../domain/entities/account.dart';
+import '../../application/blocs/member/member_bloc.dart';
+import '../../application/blocs/member/member_event.dart';
+import '../../application/blocs/member/member_state.dart';
+import '../../injection.dart';
 
 class MembersPage extends StatefulWidget {
   final int personaId;
@@ -22,6 +26,72 @@ class _MembersPageState extends State<MembersPage> {
   @override
   void dispose() {
     super.dispose();
+  }
+
+  Future<void> _mostrarDialogoBloqueo(BuildContext context, Account miembro) async {
+    final motivoCtrl = TextEditingController();
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Bloquear a ${miembro.nombres} ${miembro.apellidos}'.trim()),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('¿Está seguro de bloquear a este miembro?'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: motivoCtrl,
+              decoration: const InputDecoration(labelText: 'Motivo', border: OutlineInputBorder()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Bloquear'),
+          ),
+        ],
+      ),
+    );
+    if (confirmado == true && motivoCtrl.text.isNotEmpty && context.mounted) {
+      context.read<MemberBloc>().add(DeactivateMemberEvent(memberId: miembro.personaId, reason: motivoCtrl.text.trim()));
+    }
+    motivoCtrl.dispose();
+  }
+
+  Future<void> _mostrarDialogoDesbloqueo(BuildContext context, Account miembro) async {
+    final motivoCtrl = TextEditingController();
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Desbloquear a ${miembro.nombres} ${miembro.apellidos}'.trim()),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('¿Está seguro de desbloquear a este miembro?'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: motivoCtrl,
+              decoration: const InputDecoration(labelText: 'Motivo', border: OutlineInputBorder()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Desbloquear'),
+          ),
+        ],
+      ),
+    );
+    if (confirmado == true && motivoCtrl.text.isNotEmpty && context.mounted) {
+      context.read<MemberBloc>().add(ReactivateMemberEvent(memberId: miembro.personaId, reason: motivoCtrl.text.trim()));
+    }
+    motivoCtrl.dispose();
   }
 
   bool _requested = false;
@@ -87,7 +157,19 @@ class _MembersPageState extends State<MembersPage> {
           }
         });
       },
-        body: Padding(
+        body: BlocProvider<MemberBloc>(
+          create: (_) => sl<MemberBloc>(),
+          child: BlocListener<MemberBloc, MemberState>(
+            listener: (context, state) {
+              if (state is MemberDeactivated) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.orange));
+                setState(() => _requested = false);
+              } else if (state is MemberReactivated) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.green));
+                setState(() => _requested = false);
+              }
+            },
+            child: Padding(
           padding: const EdgeInsets.all(16),
           child: Builder(builder: (ctx) {
             // Resolver vivienda_id desde route args o auth state
@@ -190,6 +272,18 @@ class _MembersPageState extends State<MembersPage> {
                                       ],
                                     ),
                                   ),
+                                  PopupMenuButton<String>(
+                                    onSelected: (opcion) {
+                                      if (opcion == 'bloquear') _mostrarDialogoBloqueo(context, m);
+                                      if (opcion == 'desbloquear') _mostrarDialogoDesbloqueo(context, m);
+                                    },
+                                    itemBuilder: (_) => [
+                                      if (m.estado == 'activo')
+                                        const PopupMenuItem(value: 'bloquear', child: Text('Bloquear')),
+                                      if (m.estado == 'inactivo')
+                                        const PopupMenuItem(value: 'desbloquear', child: Text('Desbloquear')),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
@@ -213,6 +307,8 @@ class _MembersPageState extends State<MembersPage> {
             });
           }),
         ),
+      ),
+    ),
     );
   }
 }

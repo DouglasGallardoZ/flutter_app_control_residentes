@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/blocs/auth/auth_bloc.dart';
+import '../../application/blocs/auth/auth_event.dart';
 import '../../application/blocs/auth/auth_state.dart';
 
 class AppScaffold extends StatelessWidget {
@@ -71,21 +72,36 @@ class AppScaffold extends StatelessWidget {
 
   void _protegerRuta(BuildContext context, String currentRoute) {
     if (_esRutaPublica(currentRoute)) {
-      debugPrint(
-          'AppScaffold: Ruta pública $currentRoute — sin protección');
       return;
     }
 
     final authState = context.read<AuthBloc>().state;
     if (authState is! AuthSuccess) {
-      debugPrint(
-          'AppScaffold: Sin sesión en ruta protegida $currentRoute — redirigiendo a /login');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
           Navigator.of(context).pushNamedAndRemoveUntil(
               '/login', (route) => false);
         }
       });
+      return;
+    }
+
+    final estado = authState.user['estado'] as String? ?? 'activo';
+    if (estado != 'activo') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: cuenta bloqueada'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      context.read<AuthBloc>().add(LogoutRequested());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+              '/login', (route) => false);
+        }
+      });
+      return;
     }
   }
 

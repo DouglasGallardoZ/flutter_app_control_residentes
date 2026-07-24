@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../domain/usecases/validar_prospecto_miembro_usecase.dart';
 import '../../domain/entities/prospecto_residente.dart';
+import '../../core/validations/format_rules.dart';
 import '../../injection.dart';
 import 'member_create_registration_page.dart';
 import 'member_facial_enrollment_page.dart';
@@ -331,12 +332,11 @@ class _ProspectoMiembroPageState
                             ),
                           ),
                           validator: (v) =>
-                              (v == null ||
-                                      v.trim()
-                                              .length <
-                                          10)
-                                  ? 'Ingresa una cédula válida'
-                                  : null,
+                              (v == null || v.trim().isEmpty)
+                                  ? 'Ingresa una cédula'
+                                  : (!FormatRules.isValidId(v.trim())
+                                      ? 'Cédula inválida (10 dígitos)'
+                                      : null),
                         ),
                         const SizedBox(
                             height: 24),

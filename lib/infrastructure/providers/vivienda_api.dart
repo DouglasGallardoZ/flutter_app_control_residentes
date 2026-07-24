@@ -65,6 +65,8 @@ class ViviendaApi {
           'estado': 'activo',
           'usuario_creado':
               'api_system',
+          'fecha_creado': DateTime.now()
+              .toIso8601String(),
         },
       );
       return response.data
@@ -88,6 +90,9 @@ class ViviendaApi {
           <String, dynamic>{
         'usuario_actualizado':
             'api_system',
+        'fecha_actualizado': DateTime
+            .now()
+            .toIso8601String(),
       };
       if (manzana != null) {
         data['manzana'] = manzana;
@@ -134,6 +139,40 @@ class ViviendaApi {
           ?.toString();
       throw Exception(
           detail ?? 'Error al cambiar estado');
+    }
+  }
+
+  Future<Map<String, dynamic>> getVillaDetalle(int viviendaId) async {
+    try {
+      final response = await dio.get('/viviendas/$viviendaId/detalle');
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final detail = e.response?.data?['detail']?.toString();
+      throw Exception(detail ?? 'Error al obtener detalle de villa');
+    }
+  }
+
+  Future<void> cambiarPropietario({
+    required int viviendaId,
+    required int nuevoPropietarioId,
+    required String tipo,
+    required String motivo,
+  }) async {
+    try {
+      await dio.post(
+        '/viviendas/cambio-propietario',
+        data: {
+          'vivienda_id': viviendaId,
+          'nuevo_propietario_id': nuevoPropietarioId,
+          'tipo': tipo,
+          'motivo': motivo,
+          'usuario_actualizado': 'api_system',
+          'fecha_actualizado': DateTime.now().toIso8601String(),
+        },
+      );
+    } on DioException catch (e) {
+      final detail = e.response?.data?['detail']?.toString();
+      throw Exception(detail ?? 'Error al cambiar propietario');
     }
   }
 }

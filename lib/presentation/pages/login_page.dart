@@ -5,6 +5,7 @@ import '../../application/blocs/auth/auth_bloc.dart';
 import '../../application/blocs/auth/auth_event.dart';
 import '../../application/blocs/auth/auth_state.dart';
 import '../../application/blocs/security_session/security_session_bloc.dart';
+import '../../core/validations/format_rules.dart';
 import '../../application/blocs/security_session/security_session_event.dart';
 import '../../application/blocs/security_session/security_session_state.dart';
 import '../../domain/entities/prospecto_residente.dart';
@@ -242,8 +243,8 @@ class _LoginPageState extends State<LoginPage> {
                               if (v == null || v.isEmpty) {
                                 return 'Ingrese su correo';
                               }
-                              if (!v.contains('@')) {
-                                return 'Correo inválido';
+                              if (!FormatRules.isValidEmail(v)) {
+                                return 'Formato de correo inválido';
                               }
                               return null;
                             },

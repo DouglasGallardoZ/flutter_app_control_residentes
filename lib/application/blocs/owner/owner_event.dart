@@ -180,3 +180,7 @@ class BlockSpouseEvent extends OwnerEvent {
   @override
   List<Object?> get props => [spouseId, block];
 }
+
+class LoadActiveOwners extends OwnerEvent {
+  const LoadActiveOwners();
+}

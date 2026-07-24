@@ -1,4 +1,5 @@
 import '../entities/vivienda_entity.dart';
+import '../entities/villa_detalle_entity.dart';
 
 abstract class ViviendaRepositoryPort {
   Future<List<ViviendaEntity>> listar({
@@ -46,4 +47,13 @@ abstract class ViviendaRepositoryPort {
     String usuarioActualizado =
         'api_system',
   });
+
+  Future<void> cambiarPropietario({
+    required int viviendaId,
+    required int nuevoPropietarioId,
+    required String tipo,
+    required String motivo,
+  });
+
+  Future<VillaDetalleEntity> getVillaDetalle(int viviendaId);
 }

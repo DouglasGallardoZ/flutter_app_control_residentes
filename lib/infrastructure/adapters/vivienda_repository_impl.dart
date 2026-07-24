@@ -1,4 +1,5 @@
 import '../../domain/entities/vivienda_entity.dart';
+import '../../domain/entities/villa_detalle_entity.dart';
 import '../../domain/ports/vivienda_repository_port.dart';
 import '../providers/vivienda_api.dart';
 
@@ -122,6 +123,27 @@ class ViviendaRepositoryImpl
     await _api.cambiarEstado(
       viviendaId: viviendaId,
       estado: estado,
+      motivo: motivo,
+    );
+  }
+
+  @override
+  Future<VillaDetalleEntity> getVillaDetalle(int viviendaId) async {
+    final json = await _api.getVillaDetalle(viviendaId);
+    return VillaDetalleEntity.fromJson(json);
+  }
+
+  @override
+  Future<void> cambiarPropietario({
+    required int viviendaId,
+    required int nuevoPropietarioId,
+    required String tipo,
+    required String motivo,
+  }) async {
+    await _api.cambiarPropietario(
+      viviendaId: viviendaId,
+      nuevoPropietarioId: nuevoPropietarioId,
+      tipo: tipo,
       motivo: motivo,
     );
   }

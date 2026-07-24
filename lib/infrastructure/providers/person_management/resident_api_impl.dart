@@ -110,6 +110,7 @@ class ResidentApiImpl implements ResidentApiPort {
         data: {
           'motivo': reason,
           'usuario_actualizado': usuarioActualizado,
+          'fecha_actualizado': DateTime.now().toIso8601String(),
         },
       );
       return response.data ?? {};
@@ -130,6 +131,7 @@ class ResidentApiImpl implements ResidentApiPort {
         data: {
           'motivo': reason,
           'usuario_actualizado': usuarioActualizado,
+          'fecha_actualizado': DateTime.now().toIso8601String(),
         },
       );
       return response.data ?? {};

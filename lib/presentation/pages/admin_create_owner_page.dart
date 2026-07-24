@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/blocs/owner/owner_bloc.dart';
 import '../../application/blocs/owner/owner_event.dart';
 import '../../application/blocs/owner/owner_state.dart';
+import '../../core/validations/format_rules.dart';
 import '../widgets/admin_scaffold.dart';
 
 class AdminCreateOwnerPage extends StatefulWidget {
@@ -220,6 +222,9 @@ class _AdminCreateOwnerPageState extends State<AdminCreateOwnerPage> {
                                   if (value?.isEmpty ?? true) {
                                     return 'La identificación es requerida';
                                   }
+                                  if (!FormatRules.isValidId(value!)) {
+                                    return 'Cédula inválida (10 dígitos)';
+                                  }
                                   return null;
                                 },
                               ),
@@ -290,6 +295,13 @@ class _AdminCreateOwnerPageState extends State<AdminCreateOwnerPage> {
                                   if (value?.isEmpty ?? true) {
                                     return 'La fecha de nacimiento es requerida';
                                   }
+                                  final fecha = DateTime.tryParse(value!);
+                                  if (fecha == null) return 'Formato de fecha inválido';
+                                  final hoy = DateTime.now();
+                                  final edad = hoy.year - fecha.year -
+                                      (hoy.month < fecha.month || (hoy.month == fecha.month && hoy.day < fecha.day) ? 1 : 0);
+                                  if (fecha.isAfter(hoy)) return 'La fecha no puede ser futura';
+                                  if (edad < 18) return 'Debe ser mayor de 18 años';
                                   return null;
                                 },
                               ),
@@ -323,8 +335,8 @@ class _AdminCreateOwnerPageState extends State<AdminCreateOwnerPage> {
                                   if (value?.isEmpty ?? true) {
                                     return 'El correo es requerido';
                                   }
-                                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value!)) {
-                                    return 'El correo no es válido';
+                                  if (!FormatRules.isValidEmail(value!)) {
+                                    return 'Formato de correo inválido';
                                   }
                                   return null;
                                 },
@@ -342,9 +354,16 @@ class _AdminCreateOwnerPageState extends State<AdminCreateOwnerPage> {
                                   ),
                                 ),
                                 keyboardType: TextInputType.phone,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(10),
+                                ],
                                 validator: (value) {
                                   if (value?.isEmpty ?? true) {
                                     return 'El celular es requerido';
+                                  }
+                                  if (!FormatRules.isValidPhone(value!)) {
+                                    return 'Formato inválido: 09XXXXXXXX';
                                   }
                                   return null;
                                 },

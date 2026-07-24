@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/blocs/prospecto_validation/prospecto_validation_bloc.dart';
 import '../../application/blocs/prospecto_validation/prospecto_validation_event.dart';
 import '../../application/blocs/prospecto_validation/prospecto_validation_state.dart';
+import '../../core/validations/format_rules.dart';
 
 class ProspectoResidentePage extends StatefulWidget {
   const ProspectoResidentePage({super.key});
@@ -97,8 +98,8 @@ class _ProspectoResidentePageState extends State<ProspectoResidentePage> {
                                 if (v == null || v.isEmpty) {
                                   return 'Ingrese su número de cédula';
                                 }
-                                if (v.length < 10) {
-                                  return 'La cédula debe tener al menos 10 dígitos';
+                                if (!FormatRules.isValidId(v)) {
+                                  return 'Cédula inválida (10 dígitos)';
                                 }
                                 return null;
                               },

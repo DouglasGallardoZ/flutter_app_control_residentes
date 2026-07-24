@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import '../../application/blocs/member/member_bloc.dart';
 import '../../application/blocs/member/member_event.dart';
 import '../../application/blocs/member/member_state.dart';
 import '../../application/blocs/facial_enrollment/facial_enrollment_bloc.dart';
+import '../../core/validations/format_rules.dart';
 import '../../domain/usecases/solicitar_registro_miembro_usecase.dart';
 import 'miembros/esperar_autorizacion_page.dart';
 import 'member_facial_enrollment_page.dart';
@@ -328,7 +330,17 @@ class _MemberCreateRegistrationPageState
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                validator: (value) => value?.isEmpty ?? true ? 'Campo requerido' : null,
+                validator: (value) {
+                  if (value?.isEmpty ?? true) return 'Campo requerido';
+                  final fecha = DateTime.tryParse(value!);
+                  if (fecha == null) return 'Formato de fecha inválido';
+                  final hoy = DateTime.now();
+                  final edad = hoy.year - fecha.year -
+                      (hoy.month < fecha.month || (hoy.month == fecha.month && hoy.day < fecha.day) ? 1 : 0);
+                  if (fecha.isAfter(hoy)) return 'La fecha no puede ser futura';
+                  if (edad < 18) return 'Debe ser mayor de 18 años';
+                  return null;
+                },
               ),
               const SizedBox(height: 24),
 
@@ -538,6 +550,11 @@ class _MemberCreateRegistrationPageState
               // Celular (Opcional)
               TextFormField(
                 controller: _celularController,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10),
+                ],
                 decoration: InputDecoration(
                   hintText: 'Celular (Opcional)',
                   prefixIcon: const Icon(Icons.phone),
@@ -545,6 +562,14 @@ class _MemberCreateRegistrationPageState
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                validator: (value) {
+                  if (value != null && value.isNotEmpty) {
+                    if (!FormatRules.isValidPhone(value)) {
+                      return 'Formato inválido: 09XXXXXXXX';
+                    }
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 12),
 

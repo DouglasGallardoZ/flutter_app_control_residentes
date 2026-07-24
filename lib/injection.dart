@@ -159,6 +159,7 @@ import 'domain/usecases/listar_viviendas_usecase.dart';
 import 'domain/usecases/crear_vivienda_usecase.dart';
 import 'domain/usecases/actualizar_vivienda_usecase.dart';
 import 'domain/usecases/cambiar_estado_vivienda_usecase.dart';
+import 'domain/usecases/cambiar_propietario_vivienda_usecase.dart';
 
 import 'application/blocs/vivienda/vivienda_bloc.dart';
 
@@ -905,6 +906,9 @@ Future<void> inject() async {
   sl.registerLazySingleton<CambiarEstadoViviendaUseCase>(
     () => CambiarEstadoViviendaUseCase(sl<ViviendaRepositoryPort>()),
   );
+  sl.registerLazySingleton<CambiarPropietarioViviendaUseCase>(
+    () => CambiarPropietarioViviendaUseCase(sl<ViviendaRepositoryPort>()),
+  );
 
   // BLoCs - Viviendas
   sl.registerFactory<ViviendaBloc>(
@@ -913,6 +917,7 @@ Future<void> inject() async {
       crearUseCase: sl<CrearViviendaUseCase>(),
       actualizarUseCase: sl<ActualizarViviendaUseCase>(),
       cambiarEstadoUseCase: sl<CambiarEstadoViviendaUseCase>(),
+      cambiarPropietarioUseCase: sl<CambiarPropietarioViviendaUseCase>(),
     ),
   );
 }

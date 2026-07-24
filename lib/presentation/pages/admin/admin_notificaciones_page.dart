@@ -32,6 +32,7 @@ class _AdminNotificacionesPageState
   String? _manzanaFiltro;
   String? _villaFiltro;
   bool _enviarATodos = false;
+  String _tipoDestinatario = 'todos';
 
   @override
   void initState() {
@@ -75,6 +76,7 @@ class _AdminNotificacionesPageState
       _manzanaFiltro = null;
       _villaFiltro = null;
       _enviarATodos = false;
+      _tipoDestinatario = 'todos';
     });
   }
 
@@ -255,7 +257,32 @@ class _AdminNotificacionesPageState
                                 const SizedBox(height: 8),
                                 Text('${state.seleccionados} de ${state.destinatarios.length} seleccionados',
                                     style: TextStyle(color: Colors.grey.shade600)),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 12),
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: [
+                                      _FilterChip(
+                                        label: 'Todos',
+                                        selected: _tipoDestinatario == 'todos',
+                                        onTap: () => setState(() => _tipoDestinatario = 'todos'),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      _FilterChip(
+                                        label: 'Residentes',
+                                        selected: _tipoDestinatario == 'residente',
+                                        onTap: () => setState(() => _tipoDestinatario = 'residente'),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      _FilterChip(
+                                        label: 'Propietarios',
+                                        selected: _tipoDestinatario == 'propietario',
+                                        onTap: () => setState(() => _tipoDestinatario = 'propietario'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
                                 SwitchListTile(
                                   value: _enviarATodos,
                                   onChanged: (v) {
@@ -350,7 +377,9 @@ class _AdminNotificacionesPageState
                                     ],
                                   ),
                                   const SizedBox(height: 8),
-                                  ...state.destinatarios.map((d) => CheckboxListTile(
+                                  ...state.destinatarios
+                                      .where((d) => _tipoDestinatario == 'todos' || d.tipo == _tipoDestinatario)
+                                      .map((d) => CheckboxListTile(
                                         value: d.seleccionado,
                                         onChanged: (_) {
                                           context.read<AdminNotificacionesBloc>().add(
@@ -605,6 +634,29 @@ class _AdminNotificacionesPageState
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _FilterChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      selectedColor: const Color(0xFF04345C),
+      labelStyle: TextStyle(
+        color: selected ? Colors.white : null,
+        fontWeight: FontWeight.w600,
+        fontSize: 13,
       ),
     );
   }

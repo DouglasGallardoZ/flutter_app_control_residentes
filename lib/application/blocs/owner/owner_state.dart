@@ -138,7 +138,17 @@ class SpouseBlocked extends OwnerState {
 
 class SpouseError extends OwnerState {
   final String message;
-
   const SpouseError(this.message);
+  @override
   List<Object?> get props => [message];
 }
+
+class OwnersLoading extends OwnerState {
+  const OwnersLoading();
+}
+
+class OwnersLoaded extends OwnerState {
+  final List<Map<String, dynamic>> owners;
+  const OwnersLoaded(this.owners);
+}
+

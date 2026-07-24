@@ -74,6 +74,7 @@ class SolicitudMiembroApiProvider {
         '/miembros/solicitudes/$solicitudId/aprobar',
         data: {
           'usuario_actualizado': 'api_system',
+          'fecha_actualizado': DateTime.now().toIso8601String(),
         },
       );
       return response.data
@@ -91,6 +92,7 @@ class SolicitudMiembroApiProvider {
         '/miembros/solicitudes/$solicitudId/rechazar',
         data: {
           'usuario_actualizado': 'api_system',
+          'fecha_actualizado': DateTime.now().toIso8601String(),
           if (motivo != null) 'motivo': motivo,
         },
       );
