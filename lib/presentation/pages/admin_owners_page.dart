@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/blocs/owner/owner_bloc.dart';
 import '../../application/blocs/owner/owner_event.dart';
 import '../../application/blocs/owner/owner_state.dart';
+import '../../core/validations/format_rules.dart';
 import '../../domain/entities/owner_entity.dart';
+import '../../domain/entities/conyuge_entity.dart';
 import '../widgets/admin_scaffold.dart';
+import 'create_spouse_dialog.dart';
 
 String capitalizeTipoPropietario(
     String? tipo) {
@@ -219,18 +223,157 @@ class _AdminOwnersPageState
     }
   }
 
-  void _verDetalle(
+  Future<void> _mostrarDialogoEdicion(
+    BuildContext context,
+    OwnerEntity owner,
+  ) async {
+    final nombre =
+        '${owner.nombre} ${owner.apellido}'.trim();
+    final correoCtrl = TextEditingController(text: owner.correo);
+    final celularCtrl = TextEditingController(text: owner.celular);
+    final formKey = GlobalKey<FormState>();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Editar Propietario'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  title: Text(nombre,
+                      style:
+                          const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(owner.identificacion),
+                  leading: const Icon(Icons.person),
+                ),
+                ListTile(
+                  title: Text(
+                      'Mz ${owner.manzana} - Villa ${owner.villa}'),
+                  leading: const Icon(Icons.home),
+                ),
+                const Divider(),
+                TextFormField(
+                  controller: correoCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Correo electrónico',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (v) {
+                    if (v != null &&
+                        v.isNotEmpty &&
+                        !FormatRules.isValidEmail(v)) {
+                      return 'Formato de correo inválido';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: celularCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Celular',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  validator: (v) {
+                    if (v != null &&
+                        v.isNotEmpty &&
+                        !FormatRules.isValidPhone(v)) {
+                      return 'Formato 09XXXXXXXX';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Solo se permite actualizar correo y celular.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() == true) {
+                Navigator.pop(ctx, true);
+              }
+            },
+            style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF04345C)),
+            child: const Text('Guardar Cambios'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && mounted) {
+      context.read<OwnerBloc>().add(UpdateOwnerEvent(
+            ownerId: owner.id,
+            correo: correoCtrl.text.trim().isNotEmpty
+                ? correoCtrl.text.trim()
+                : null,
+            celular: celularCtrl.text.trim().isNotEmpty
+                ? celularCtrl.text.trim()
+                : null,
+          ));
+    }
+    correoCtrl.dispose();
+    celularCtrl.dispose();
+  }
+
+  Future<void> _verDetalle(
     OwnerEntity owner,
     String manzana,
     String villa,
-  ) {
-    Navigator.of(context).push(
+  ) async {
+    context
+        .read<OwnerBloc>()
+        .add(LoadOwnerWithSpousesEvent(owner.id));
+
+    List<ConyugeEntity> conyuges = [];
+    try {
+      final bloc = context.read<OwnerBloc>();
+      final result = await bloc.stream
+          .firstWhere(
+              (s) => s is OwnerWithSpousesLoaded || s is OwnerError)
+          .timeout(const Duration(seconds: 3),
+              onTimeout: () => const OwnerInitial());
+      if (result is OwnerWithSpousesLoaded) {
+        conyuges = result.owner.conyuges;
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+
+    final ownerConyuge =
+        owner.copyWith(manzana: manzana, villa: villa);
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) =>
-            _OwnerDetailPage(
+            BlocProvider.value(
+          value: context.read<OwnerBloc>(),
+          child: _OwnerDetailPage(
           owner: owner,
           manzana: manzana,
           villa: villa,
+          conyuges: conyuges,
+          onEditar: () =>
+              _mostrarDialogoEdicion(context, owner),
           onBloquear: () =>
               _confirmarBloqueo(context,
                   owner, true),
@@ -240,9 +383,35 @@ class _AdminOwnersPageState
           onEliminar: () =>
               _confirmarEliminar(
                   context, owner),
+          onAgregarConyuge: () {
+            final ownerConyuge =
+                owner.copyWith(manzana: manzana, villa: villa);
+            Navigator.of(context)
+                .push(
+              MaterialPageRoute(
+                builder: (_) => BlocProvider.value(
+                  value: context.read<OwnerBloc>(),
+                  child: CreateSpousePage(
+                    personaId: widget.personaId,
+                    identificacion: widget.identificacion,
+                    owner: ownerConyuge,
+                  ),
+                ),
+              ),
+            )
+                .then((result) {
+              if (result == true) {
+                Navigator.of(context).pop();
+                if (mounted) _recargar();
+              }
+            });
+          },
+          ),
         ),
       ),
     );
+    if (!mounted) return;
+    _recargar();
   }
 
   @override
@@ -274,6 +443,7 @@ class _AdminOwnersPageState
             null,
             '/adminProfile',
             '/adminNotificaciones',
+            '/adminViviendas',
           ];
           if (routes[i] != null) {
             Navigator.of(context)
@@ -325,6 +495,17 @@ class _AdminOwnersPageState
               backgroundColor: Colors.red,
             ));
             _recargar();
+          } else if (state is OwnerUpdated) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(state.mensaje),
+              backgroundColor: Colors.green,
+            ));
+            _recargar();
+          } else if (state is OwnerError) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+            ));
           }
         },
         child: Column(
@@ -666,6 +847,9 @@ class _OwnerDetailPage
   final VoidCallback onBloquear;
   final VoidCallback onDesbloquear;
   final VoidCallback onEliminar;
+  final VoidCallback onEditar;
+  final VoidCallback onAgregarConyuge;
+  final List<ConyugeEntity>? conyuges;
 
   const _OwnerDetailPage({
     required this.owner,
@@ -674,6 +858,9 @@ class _OwnerDetailPage
     required this.onBloquear,
     required this.onDesbloquear,
     required this.onEliminar,
+    required this.onEditar,
+    required this.onAgregarConyuge,
+    this.conyuges,
   });
 
   @override
@@ -695,6 +882,14 @@ class _OwnerDetailPage
         actions: [
           PopupMenuButton(
             itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'edit',
+                child: ListTile(
+                  leading: Icon(Icons.edit, color: Color(0xFF04345C)),
+                  title: Text('Editar'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
               if (activo)
                 const PopupMenuItem(
                   value: 'block',
@@ -738,6 +933,8 @@ class _OwnerDetailPage
             ],
             onSelected: (action) {
               switch (action) {
+                case 'edit':
+                  onEditar();
                 case 'block':
                   onBloquear();
                 case 'unblock':
@@ -864,6 +1061,76 @@ class _OwnerDetailPage
             ]),
           ),
           const SizedBox(height: 32),
+
+          // ── Sección Cónyuge ──
+          if (owner.tipoPropietario != 'conyuge')
+            BlocBuilder<OwnerBloc, OwnerState>(
+              builder: (context, state) {
+                final spouses = state is OwnerWithSpousesLoaded
+                    ? state.owner.conyuges
+                    : (conyuges ?? <ConyugeEntity>[]);
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          const SizedBox(width: 8),
+                          const Text('Cónyuge',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold)),
+                          const Spacer(),
+                          if (spouses.isEmpty)
+                            FilledButton.icon(
+                              onPressed: onAgregarConyuge,
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('Agregar Cónyuge'),
+                              style: FilledButton.styleFrom(
+                                  backgroundColor: Colors.pink),
+                            ),
+                        ]),
+                        if (spouses.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          ...spouses.map((c) => ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                leading: CircleAvatar(
+                                  backgroundColor:
+                                      Colors.pink.withOpacity(0.1),
+                                  child: Text(
+                                    c.nombreCompleto.isNotEmpty
+                                        ? c.nombreCompleto[0].toUpperCase()
+                                        : 'C',
+                                    style: const TextStyle(
+                                        color: Colors.pink,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                title: Text(c.nombreCompleto,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600)),
+                                subtitle: Text(c.identificacion),
+                                trailing:
+                                    const Icon(Icons.chevron_right),
+                              )),
+                        ] else ...[
+                          const SizedBox(height: 8),
+                          Text('No se ha registrado un cónyuge',
+                              style: TextStyle(
+                                  color: Colors.grey.shade500)),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+
           _sectionTitle(context,
               'Información Personal'),
           const SizedBox(height: 12),

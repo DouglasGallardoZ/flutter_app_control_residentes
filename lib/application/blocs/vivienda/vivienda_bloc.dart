@@ -256,7 +256,7 @@ class ViviendaBloc
           totalVillas: villas.length,
           villasActivas: activas,
           villasInactivas: villas.length - activas,
-          totalPropietarios: 0,
+          totalPropietarios: villas.fold(0, (s, v) => s + v.propietarios.length),
           totalResidentes: villas.fold(0, (s, v) => s + v.totalResidentes),
           totalMiembros: villas.fold(0, (s, v) => s + v.totalMiembros),
         );

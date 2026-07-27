@@ -33,7 +33,8 @@ extension AdminApiSpouseExtension on AdminApi {
   /// Obtener propietario con sus cónyuges
   Future<Map<String, dynamic>> getOwnerWithSpouses(int ownerId) async {
     try {
-      final response = await dio.get('/api/owners/$ownerId/with-spouses');
+      final response = await dio.get(
+        '/propietarios/$ownerId/conyuge');
       return response.data ?? {};
     } catch (e) {
       throw Exception(_extractSpouseErrorMessage(e));
@@ -80,7 +81,8 @@ extension AdminApiSpouseExtension on AdminApi {
   /// Obtener cónyuges de un propietario
   Future<List<dynamic>> getSpousesByOwner(int ownerId) async {
     try {
-      final response = await dio.get('/api/owners/$ownerId/spouses');
+      final response = await dio.get(
+        '/propietarios/$ownerId/conyuge');
       return response.data is List ? response.data : [];
     } catch (e) {
       throw Exception(_extractSpouseErrorMessage(e));
@@ -90,7 +92,7 @@ extension AdminApiSpouseExtension on AdminApi {
   /// Eliminar cónyuge
   Future<void> deleteSpouse(int spouseId) async {
     try {
-      await dio.delete('/api/spouses/$spouseId');
+      await dio.delete('/conyuges/$spouseId');
     } catch (e) {
       throw Exception(_extractSpouseErrorMessage(e));
     }
@@ -99,10 +101,11 @@ extension AdminApiSpouseExtension on AdminApi {
   /// Bloquear o desbloquear cónyuge
   Future<void> blockSpouse(int spouseId, bool block) async {
     try {
-      await dio.patch(
-        '/api/spouses/$spouseId/status',
+      await dio.put(
+        '/conyuges/$spouseId',
         data: {
           'estado': block ? 'bloqueado' : 'activo',
+          'usuario_actualizado': 'admin_system',
         },
       );
     } catch (e) {

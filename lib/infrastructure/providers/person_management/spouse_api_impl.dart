@@ -10,7 +10,11 @@ class SpouseApiImpl implements SpouseApiPort {
   Future<Map<String, dynamic>?> getSpouseByOwnerId(int propietarioId) async {
     try {
       final response = await dio.get('/propietarios/$propietarioId/conyuge');
-      return response.data;
+      final data = response.data;
+      if (data is Map && data.containsKey('conyuge') && data['conyuge'] != null) {
+        return data['conyuge'] as Map<String, dynamic>;
+      }
+      return null;
     } catch (e) {
       throw Exception(_extractErrorMessage(e));
     }
@@ -23,25 +27,36 @@ class SpouseApiImpl implements SpouseApiPort {
     required String nombres,
     required String apellidos,
     required String fechaNacimiento,
+    String? tipoIdentificacion,
+    String? nacionalidad,
     String? correo,
     String? celular,
+    String? direccionAlternativa,
     String? usuarioCreado,
   }) async {
     try {
-      final spouseData = {
+      final body = <String, dynamic>{
         'identificacion': identificacion,
+        'tipo_identificacion': tipoIdentificacion ?? 'cedula',
         'nombres': nombres,
         'apellidos': apellidos,
         'fecha_nacimiento': fechaNacimiento,
-        if (correo != null) 'correo': correo,
-        if (celular != null) 'celular': celular,
-        if (usuarioCreado != null) 'usuario_creado': usuarioCreado,
+        'nacionalidad': nacionalidad ?? 'Ecuador',
+        'correo': correo ?? '',
+        'celular': celular ?? '',
+        if (direccionAlternativa != null && direccionAlternativa!.isNotEmpty)
+          'direccion_alternativa': direccionAlternativa,
+        'usuario_creado': usuarioCreado ?? 'flutter_app',
       };
       final response = await dio.post(
         '/propietarios/$propietarioId/conyuge',
-        data: spouseData,
+        data: body,
       );
-      return response.data;
+      final data = response.data;
+      if (data is Map && data.containsKey('conyuge')) {
+        return data['conyuge'] as Map<String, dynamic>;
+      }
+      return data ?? {};
     } catch (e) {
       throw Exception(_extractErrorMessage(e));
     }

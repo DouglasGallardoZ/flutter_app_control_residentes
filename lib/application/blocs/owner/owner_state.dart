@@ -152,3 +152,10 @@ class OwnersLoaded extends OwnerState {
   const OwnersLoaded(this.owners);
 }
 
+class OwnerUpdated extends OwnerState {
+  final String mensaje;
+  const OwnerUpdated(this.mensaje);
+  @override
+  List<Object?> get props => [mensaje];
+}
+

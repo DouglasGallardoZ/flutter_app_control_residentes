@@ -1,5 +1,11 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../application/blocs/visitor/visitor_bloc.dart';
 import '../../application/blocs/visitor/visitor_event.dart';
@@ -114,6 +120,60 @@ class _QrVisitPageState extends State<QrVisitPage> {
 
   void _error(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating));
+  }
+
+  Future<Uint8List?> _capturarQR() async {
+    try {
+      final boundary = qrBoundaryKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (boundary == null) return null;
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      return byteData?.buffer.asUint8List();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _compartirQR() async {
+    final pngBytes = await _capturarQR();
+    if (pngBytes == null) {
+      _error('Error al generar la imagen del QR');
+      return;
+    }
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/qr_guardin.png');
+      await file.writeAsBytes(pngBytes);
+      await Share.shareXFiles([XFile(file.path)],
+          text: 'Código QR de acceso - Guardin');
+    } catch (e) {
+      _error('Error al compartir: $e');
+    }
+  }
+
+  Future<void> _descargarQR() async {
+    final pngBytes = await _capturarQR();
+    if (pngBytes == null) {
+      _error('Error al generar la imagen del QR');
+      return;
+    }
+    try {
+      final downloadsDir = await getApplicationDocumentsDirectory();
+      final fileName =
+          'QR_Guardin_${DateTime.now().millisecondsSinceEpoch}.png';
+      final file = File('${downloadsDir.path}/$fileName');
+      await file.writeAsBytes(pngBytes);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('QR guardado como $fileName'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } catch (e) {
+      _error('Error al descargar: $e');
+    }
   }
 
   Future<void> _pickDate() async {
@@ -800,9 +860,9 @@ class _QrVisitPageState extends State<QrVisitPage> {
 
                     // Acciones
                     Row(children: [
-                      Expanded(child: OutlinedButton.icon(onPressed: () => _error('Compartir disponible al integrar captura'), icon: const Icon(Icons.share), label: const Text('Compartir'))),
+                      Expanded(child: OutlinedButton.icon(onPressed: _compartirQR, icon: const Icon(Icons.share), label: const Text('Compartir'))),
                       const SizedBox(width: 8),
-                      Expanded(child: OutlinedButton.icon(onPressed: () => _error('Descargar disponible al integrar captura'), icon: const Icon(Icons.download), label: const Text('Descargar'))),
+                      Expanded(child: OutlinedButton.icon(onPressed: _descargarQR, icon: const Icon(Icons.download), label: const Text('Descargar'))),
                     ]),
                     const SizedBox(height: 8),
                     Align(

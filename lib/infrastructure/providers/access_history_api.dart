@@ -19,7 +19,7 @@ class AccessHistoryApi {
         if (filtro != null) 'filtro': filtro,
       };
       final response = await dio.get(
-        '/acceso/historial',
+        '/accesos/historial',
         queryParameters: queryParams,
       );
       return response.data;
@@ -31,7 +31,7 @@ class AccessHistoryApi {
   /// Obtener detalles de un acceso específico
   Future<Map<String, dynamic>> obtenerAcceso(int accesoId) async {
     try {
-      final response = await dio.get('/acceso/$accesoId');
+      final response = await dio.get('/accesos/$accesoId');
       return response.data;
     } catch (e) {
       rethrow;
@@ -44,7 +44,7 @@ class AccessHistoryApi {
     String? metodoBiometrico, // facial, huella
   }) async {
     try {
-      final response = await dio.post('/acceso/validar-qr', data: {
+      final response = await dio.post('/accesos/validar-qr', data: {
         'qr_token': qrToken,
         if (metodoBiometrico != null) 'metodo_biometrico': metodoBiometrico,
         'usuario_creado': 'flutter_app',

@@ -9,6 +9,8 @@ import '../../../domain/usecases/get_owner_with_spouses_usecase.dart';
 import '../../../domain/usecases/create_spouse_usecase.dart';
 import '../../../domain/usecases/delete_spouse_usecase.dart';
 import '../../../domain/usecases/block_spouse_usecase.dart';
+import '../../../domain/ports/owner_repository.dart';
+import '../../../injection.dart';
 import 'owner_event.dart';
 import 'owner_state.dart';
 
@@ -47,6 +49,7 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
     on<DeleteSpouseEvent>(_onDeleteSpouse);
     on<BlockSpouseEvent>(_onBlockSpouse);
     on<LoadActiveOwners>(_onLoadActiveOwners);
+    on<UpdateOwnerEvent>(_onUpdateOwner);
   }
 
   Future<void> _onLoadOwnersByLocation(
@@ -262,6 +265,33 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
                 'identificacion': o.identificacion,
               })
           .toList()));
+    } catch (e) {
+      emit(OwnerError(e.toString()));
+    }
+  }
+
+  Future<void> _onUpdateOwner(
+    UpdateOwnerEvent event,
+    Emitter<OwnerState> emit,
+  ) async {
+    emit(const OwnerLoading());
+    try {
+      final repo = sl<OwnerRepository>();
+      await repo.updateOwner(
+        ownerId: event.ownerId,
+        correo: event.correo,
+        celular: event.celular,
+      );
+      emit(const OwnerUpdated(
+          'Datos del propietario actualizados correctamente'));
+      if (state is OwnersByLocationLoaded) {
+        final current = state as OwnersByLocationLoaded;
+        add(LoadOwnersByLocationEvent(
+          manzana: current.manzana,
+          villa: current.villa,
+          page: current.currentPage,
+        ));
+      }
     } catch (e) {
       emit(OwnerError(e.toString()));
     }

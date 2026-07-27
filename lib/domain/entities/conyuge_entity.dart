@@ -1,5 +1,6 @@
 class ConyugeEntity {
   final int id;
+  final int personaId;
   final int propietarioId;
   final String nombre;
   final String apellido;
@@ -11,6 +12,7 @@ class ConyugeEntity {
 
   ConyugeEntity({
     required this.id,
+    required this.personaId,
     required this.propietarioId,
     required this.nombre,
     required this.apellido,
@@ -25,11 +27,13 @@ class ConyugeEntity {
   bool get isBlocked => estado != 'activo';
 
   factory ConyugeEntity.fromJson(Map<String, dynamic> json) {
+    final id = json['conyuge_id'] ?? json['id'] ?? 0;
     return ConyugeEntity(
-      id: json['id'] ?? 0,
+      id: id,
+      personaId: json['persona_id'] ?? id,
       propietarioId: json['propietario_id'] ?? json['propietarioId'] ?? 0,
-      nombre: json['nombre'] ?? '',
-      apellido: json['apellido'] ?? '',
+      nombre: json['nombres'] ?? json['nombre'] ?? '',
+      apellido: json['apellidos'] ?? json['apellido'] ?? '',
       identificacion: json['identificacion'] ?? '',
       correo: json['correo'] ?? json['email'] ?? '',
       celular: json['celular'] ?? json['telefono'] ?? '',
@@ -43,6 +47,7 @@ class ConyugeEntity {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'persona_id': personaId,
       'propietario_id': propietarioId,
       'nombre': nombre,
       'apellido': apellido,
@@ -56,6 +61,7 @@ class ConyugeEntity {
 
   ConyugeEntity copyWith({
     int? id,
+    int? personaId,
     int? propietarioId,
     String? nombre,
     String? apellido,
@@ -67,6 +73,7 @@ class ConyugeEntity {
   }) {
     return ConyugeEntity(
       id: id ?? this.id,
+      personaId: personaId ?? this.personaId,
       propietarioId: propietarioId ?? this.propietarioId,
       nombre: nombre ?? this.nombre,
       apellido: apellido ?? this.apellido,

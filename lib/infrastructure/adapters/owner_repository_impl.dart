@@ -100,6 +100,24 @@ class OwnerRepositoryImpl implements OwnerRepository {
   }
 
   @override
+  Future<void> updateOwner({
+    required int ownerId,
+    String? correo,
+    String? celular,
+  }) async {
+    try {
+      await ownerApi.updateOwner(
+        ownerId: ownerId,
+        correo: correo,
+        celular: celular,
+        usuarioActualizado: 'admin_system',
+      );
+    } catch (e) {
+      throw Exception('Error al actualizar propietario: $e');
+    }
+  }
+
+  @override
   Future<List<Map<String, dynamic>>> getOwnerProperties(int ownerId) async {
     try {
       // Obtener usuarios/viviendas del propietario - por ahora retorna lista vacía
@@ -151,12 +169,31 @@ class OwnerRepositoryImpl implements OwnerRepository {
   @override
   Future<OwnerWithSpousesEntity> getOwnerWithSpouses(int ownerId) async {
     try {
-      // Nota: Este método requiere implementación específica
-      // Por ahora mantener compatibilidad
-      throw UnimplementedError(
-          'getOwnerWithSpouses requiere implementación específica');
+      if (spouseApi == null) {
+        return OwnerWithSpousesEntity(
+          id: ownerId,
+          nombre: '', apellido: '', identificacion: '',
+          manzana: '', villa: '', correo: '', celular: '',
+          estado: 'activo', conyuges: [],
+        );
+      }
+      final spouseData = await spouseApi!.getSpouseByOwnerId(ownerId);
+      final conyuges = spouseData != null
+          ? [ConyugeEntity.fromJson(spouseData)]
+          : <ConyugeEntity>[];
+      return OwnerWithSpousesEntity(
+        id: ownerId,
+        nombre: '', apellido: '', identificacion: '',
+        manzana: '', villa: '', correo: '', celular: '',
+        estado: 'activo', conyuges: conyuges,
+      );
     } catch (e) {
-      throw Exception('Error al cargar propietario con cónyuges: $e');
+      return OwnerWithSpousesEntity(
+        id: ownerId,
+        nombre: '', apellido: '', identificacion: '',
+        manzana: '', villa: '', correo: '', celular: '',
+        estado: 'activo', conyuges: [],
+      );
     }
   }
 
@@ -185,8 +222,11 @@ class OwnerRepositoryImpl implements OwnerRepository {
         nombres: nombre,
         apellidos: apellido,
         fechaNacimiento: fechaNacimiento,
+        tipoIdentificacion: tipoIdentificacion,
+        nacionalidad: nacionalidad,
         correo: correo,
         celular: celular,
+        direccionAlternativa: direccionAlternativa,
         usuarioCreado: usuarioCreado,
       );
       return ConyugeEntity.fromJson(response);
@@ -228,10 +268,13 @@ class OwnerRepositoryImpl implements OwnerRepository {
   @override
   Future<void> blockSpouse(int spouseId, bool block) async {
     try {
-      // Nota: blockSpouse no está en SpouseApiPort
-      // Por ahora mantener compatibilidad
-      throw UnimplementedError(
-          'blockSpouse requiere implementación específica');
+      if (spouseApi == null) {
+        throw Exception('SpouseApi no está disponible');
+      }
+      await spouseApi!.updateSpouse(
+        spouseId,
+        {'estado': block ? 'bloqueado' : 'activo'},
+      );
     } catch (e) {
       throw Exception(
           'Error al ${block ? 'bloquear' : 'desbloquear'} cónyuge: $e');

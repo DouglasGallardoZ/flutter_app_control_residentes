@@ -23,8 +23,11 @@ abstract class SpouseApiPort {
     required String nombres,
     required String apellidos,
     required String fechaNacimiento,
+    String? tipoIdentificacion,
+    String? nacionalidad,
     String? correo,
     String? celular,
+    String? direccionAlternativa,
     String? usuarioCreado,
   });
 

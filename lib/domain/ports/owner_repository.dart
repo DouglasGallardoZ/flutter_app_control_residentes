@@ -26,6 +26,13 @@ abstract class OwnerRepository {
   /// Eliminar un propietario
   Future<void> deleteOwner(int ownerId);
 
+  /// Actualizar datos de un propietario (correo, celular)
+  Future<void> updateOwner({
+    required int ownerId,
+    String? correo,
+    String? celular,
+  });
+
   /// Obtener propiedades de un propietario
   Future<List<Map<String, dynamic>>> getOwnerProperties(int ownerId);
 

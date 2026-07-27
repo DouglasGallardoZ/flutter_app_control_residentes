@@ -260,55 +260,133 @@ class _AdminAccountsPageState
     final nombre =
         '${account['nombres'] ?? ''} ${account['apellidos'] ?? ''}'
             .trim();
-    final confirmado =
-        await showDialog<bool>(
+    final identificacion =
+        account['identificacion']?.toString() ?? '';
+    final correo =
+        account['correo']?.toString() ?? account['email']?.toString() ?? '';
+    final motivoCtrl = TextEditingController();
+    var confirmado = false;
+
+    final result = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        icon: const Icon(
-            Icons.warning_amber,
-            color: Colors.red,
-            size: 48),
-        title: const Text(
-            'Eliminar Cuenta'),
-        content: Text(
-            '¿Eliminar permanentemente la cuenta de $nombre? Esta acción no se puede deshacer.'),
-        actions: [
-          TextButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, false),
-            child: const Text(
-                'Cancelar'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Row(children: [
+            const Icon(Icons.warning_amber,
+                color: Colors.red, size: 28),
+            const SizedBox(width: 8),
+            const Text('Eliminar Cuenta'),
+          ]),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(nombre,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold)),
+                      if (identificacion.isNotEmpty)
+                        Text(identificacion,
+                            style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 13)),
+                      if (correo.isNotEmpty)
+                        Text(correo,
+                            style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 13)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: const Row(children: [
+                    Icon(Icons.warning, color: Colors.red, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Esta acción es definitiva e irreversible. '
+                        'La cuenta no podrá ser recuperada.',
+                        style: TextStyle(
+                            color: Colors.red, fontSize: 13),
+                      ),
+                    ),
+                  ]),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: motivoCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Motivo de eliminación *',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                  onChanged: (_) =>
+                      setDialogState(() {}),
+                ),
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  value: confirmado,
+                  onChanged: (v) {
+                    setDialogState(
+                        () => confirmado = v ?? false);
+                  },
+                  title: const Text(
+                    'Confirmo que deseo eliminar esta cuenta permanentemente',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  controlAffinity:
+                      ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: Colors.red,
+                ),
+              ],
+            ),
           ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, true),
-            style: FilledButton
-                .styleFrom(
-                    backgroundColor:
-                        Colors.red),
-            child: const Text(
-                'Eliminar'),
-          ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(ctx, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: (motivoCtrl.text.trim().isNotEmpty &&
+                      confirmado)
+                  ? () => Navigator.pop(ctx, true)
+                  : null,
+              style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red),
+              child: const Text('Eliminar Permanentemente'),
+            ),
+          ],
+        ),
       ),
     );
-    if (confirmado == true &&
-        context.mounted) {
-      final accountId =
-          account['usuario_id'] ?? 0;
-      context
-          .read<AdminAccountBloc>()
-          .add(DeleteAccountEvent(
-        accountId: accountId
-                is int
-            ? accountId
-            : int.tryParse(accountId
-                    .toString()) ??
-                0,
-      ));
+
+    if (result == true && mounted) {
+      final accountId = account['usuario_id'] ?? 0;
+      context.read<AdminAccountBloc>().add(DeleteAccountEvent(
+            accountId: accountId is int
+                ? accountId
+                : int.tryParse(accountId.toString()) ?? 0,
+          ));
     }
+    motivoCtrl.dispose();
   }
 
   Future<void> _resetPassword(
@@ -459,6 +537,7 @@ class _AdminAccountsPageState
             null,
             '/adminProfile',
             '/adminNotificaciones',
+            '/adminViviendas',
           ];
           if (routes[i] != null) {
             Navigator.of(context)

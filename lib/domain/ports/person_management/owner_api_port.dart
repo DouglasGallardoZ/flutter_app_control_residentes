@@ -103,4 +103,11 @@ abstract class OwnerApiPort {
     String usuarioActualizado = 'admin_system',
     String reason = 'Solicitud de eliminación de datos',
   });
+
+  Future<Map<String, dynamic>> updateOwner({
+    required int ownerId,
+    String? correo,
+    String? celular,
+    String usuarioActualizado = 'admin_system',
+  });
 }

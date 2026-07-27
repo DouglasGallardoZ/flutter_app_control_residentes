@@ -184,3 +184,18 @@ class BlockSpouseEvent extends OwnerEvent {
 class LoadActiveOwners extends OwnerEvent {
   const LoadActiveOwners();
 }
+
+class UpdateOwnerEvent extends OwnerEvent {
+  final int ownerId;
+  final String? correo;
+  final String? celular;
+
+  const UpdateOwnerEvent({
+    required this.ownerId,
+    this.correo,
+    this.celular,
+  });
+
+  @override
+  List<Object?> get props => [ownerId, correo, celular];
+}

@@ -42,7 +42,7 @@ class ViviendaApi {
       obtenerPorId(int viviendaId) async {
     try {
       final response = await dio
-          .get('/viviendas/$viviendaId');
+          .get('/viviendas/$viviendaId/detalle');
       return response.data
           as Map<String, dynamic>;
     } on DioException catch (e) {

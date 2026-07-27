@@ -112,6 +112,7 @@ class _AdminAccessHistoryPageState
             '/adminUsers',
             '/adminProfile',
             '/adminNotificaciones',
+            '/adminViviendas',
           ];
           if (routes[i] != null) {
             Navigator.of(context)

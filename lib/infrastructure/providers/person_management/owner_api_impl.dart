@@ -174,6 +174,28 @@ class OwnerApiImpl implements OwnerApiPort {
     }
   }
 
+  @override
+  Future<Map<String, dynamic>> updateOwner({
+    required int ownerId,
+    String? correo,
+    String? celular,
+    String usuarioActualizado = 'admin_system',
+  }) async {
+    try {
+      final response = await dio.put(
+        '/propietarios/$ownerId',
+        data: {
+          if (correo != null) 'correo': correo,
+          if (celular != null) 'celular': celular,
+          'usuario_actualizado': usuarioActualizado,
+        },
+      );
+      return response.data ?? {};
+    } catch (e) {
+      throw Exception(_extractErrorMessage(e));
+    }
+  }
+
   /// Método auxiliar para extraer errores detallados de la respuesta API
   String _extractErrorMessage(dynamic error) {
     if (error is DioException && error.response != null) {

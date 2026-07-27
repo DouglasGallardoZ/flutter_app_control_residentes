@@ -108,6 +108,7 @@ class _AdminNotificacionesPageState
             '/adminUsers',
             '/adminProfile',
             null,
+            '/adminViviendas',
           ];
           if (routes[i] != null) {
             Navigator.of(context)

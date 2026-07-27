@@ -164,19 +164,16 @@ class _CreateSpousePageState
           OwnerState>(
         listener: (context, state) {
           if (state is SpouseCreated) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(
-              const SnackBar(
-                content: Text(
-                    'Cónyuge registrado exitosamente'),
-                behavior: SnackBarBehavior
-                    .floating,
-              ),
-            );
-
             if (mounted) {
-              Navigator.of(context)
-                  .pop(true);
+              Navigator.of(context).pushReplacementNamed(
+                '/adminFacialEnrollment',
+                arguments: {
+                  'personaId': state.spouse.personaId,
+                  'nombres': state.spouse.nombre,
+                  'apellidos': state.spouse.apellido,
+                  'type': 'spouse',
+                },
+              );
             }
           } else if (state
               is SpouseError) {

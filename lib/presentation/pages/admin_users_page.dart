@@ -30,6 +30,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
             null,
             '/adminProfile',
             '/adminNotificaciones',
+            '/adminViviendas',
           ];
           if (routes[index] != null) {
             Navigator.of(context).pushReplacementNamed(
