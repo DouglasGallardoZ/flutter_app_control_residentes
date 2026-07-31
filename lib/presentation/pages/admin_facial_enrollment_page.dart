@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:camera/camera.dart';
@@ -9,6 +10,7 @@ import '../widgets/admin_scaffold.dart';
 import '../widgets/facial_capture/facial_capture_view.dart';
 import '../widgets/responsive_layout.dart';
 import '../../domain/ports/face_detection_port.dart';
+import '../../infrastructure/camera/camera_factory.dart';
 import '../../injection.dart';
 
 class AdminFacialEnrollmentPage extends StatefulWidget {
@@ -32,6 +34,7 @@ class AdminFacialEnrollmentPage extends StatefulWidget {
 
 class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
   CameraController? _cameraController;
+  WebCameraHelper? _webCamera;
   bool _isCameraInitialized = false;
   bool _cameraDisposeInProgress = false;
 
@@ -45,6 +48,8 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
     if (_cameraDisposeInProgress) return;
     _cameraDisposeInProgress = true;
     try {
+      _webCamera?.dispose();
+      _webCamera = null;
       if (_cameraController != null && _cameraController!.value.isInitialized) {
         await _cameraController!.dispose();
       }
@@ -58,6 +63,19 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
 
   Future<void> _initializeCamera() async {
     try {
+      if (kIsWeb) {
+        _webCamera = WebCameraHelper();
+        await _webCamera!.initialize();
+        if (mounted) {
+          setState(() => _isCameraInitialized = true);
+          context.read<FacialEnrollmentBloc>().add(
+                EnrollmentStarted(
+                    personaId: widget.personaId.toString()),
+              );
+        }
+        return;
+      }
+
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
         if (mounted) {
@@ -106,6 +124,87 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
     context.read<FacialEnrollmentBloc>().add(
           FaceCaptured(bytes: bytes, angle: angle),
         );
+  }
+
+  Widget _buildWebCameraPreview() {
+    final blocState = context.read<FacialEnrollmentBloc>().state;
+    final esEnProceso = blocState is FacialEnrollmentInProgress;
+    final angulo = esEnProceso ? blocState.poseActual : FaceAngle.front;
+    final instruccion = esEnProceso ? blocState.instruccion : 'MIRE AL FRENTE';
+    final capturadas = esEnProceso ? blocState.fotosCapturadas : 0;
+
+    return Stack(
+      children: [
+        _webCamera!.buildPreview(),
+        Positioned(
+          top: 16,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: Colors.cyanAccent.withValues(alpha: 0.6),
+                    width: 1.5),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(instruccion,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text('$capturadas/3 capturas',
+                      style: TextStyle(
+                          color: Colors.cyanAccent.withValues(alpha: 0.9),
+                          fontSize: 12)),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 32,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: FloatingActionButton.extended(
+              heroTag: 'capture_web',
+              backgroundColor: const Color(0xFF04345C),
+              icon: const Icon(Icons.camera_alt, color: Colors.white),
+              label: const Text('Capturar'),
+              onPressed: _capturarFotoWeb,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _capturarFotoWeb() async {
+    try {
+      final blocState = context.read<FacialEnrollmentBloc>().state;
+      final angulo = blocState is FacialEnrollmentInProgress
+          ? blocState.poseActual
+          : FaceAngle.front;
+      debugPrint('[FacialEnroll] Web capturando: $angulo');
+      final bytes = await _webCamera!.captureFrame();
+      if (mounted) {
+        _onFaceCaptured(bytes, angulo);
+      }
+    } catch (e) {
+      debugPrint('[FacialEnroll] Error web: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -261,11 +360,13 @@ class _AdminFacialEnrollmentPageState extends State<AdminFacialEnrollmentPage> {
         imagenes.values.where((i) => i != null).length;
     final hayError = state is FacialEnrollmentError;
 
-    final cameraView = FacialCaptureView(
-      controller: _cameraController!,
-      faceDetection: sl<FaceDetectionPort>(),
-      onFaceCaptured: _onFaceCaptured,
-    );
+    final cameraView = kIsWeb && _webCamera != null
+        ? _buildWebCameraPreview()
+        : FacialCaptureView(
+            controller: _cameraController!,
+            faceDetection: sl<FaceDetectionPort>(),
+            onFaceCaptured: _onFaceCaptured,
+          );
 
     final panelDeControl = _EnrollmentSidePanel(
       imagenes: imagenes,

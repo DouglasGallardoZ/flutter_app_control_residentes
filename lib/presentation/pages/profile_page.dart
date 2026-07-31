@@ -548,15 +548,15 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
         ),
-        IconButton(
-          icon: const Icon(Icons.edit),
-          onPressed: () => setState(() {
-            isEditing = true;
-            editedEmail = email != '—' ? email : '';
-            _emailCtrl?.text = editedEmail;
-            error = '';
-          }),
-        ),
+        // IconButton(
+        //   icon: const Icon(Icons.edit),
+        //   onPressed: () => setState(() {
+        //     isEditing = true;
+        //     editedEmail = email != '—' ? email : '';
+        //     _emailCtrl?.text = editedEmail;
+        //     error = '';
+        //   }),
+        // ),
       ],
     );
   }

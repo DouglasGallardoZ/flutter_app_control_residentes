@@ -221,30 +221,51 @@ class _AdminResidentsPageState
     }
   }
 
-  void _verDetalle(
+  Future<void> _verDetalle(
       Map<String, dynamic> resident,
       String manzana,
-      String villa) {
-    Navigator.of(context).push(
+      String villa) async {
+    final residentBloc =
+        context.read<ResidentBloc>();
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) =>
-            _ResidentDetailPage(
-          resident: resident,
-          manzana: manzana,
-          villa: villa,
-          onBloquear: () =>
-              _confirmarBloqueo(
-                  context,
-                  resident,
-                  true),
-          onReactivar: () =>
-              _confirmarBloqueo(
-                  context,
-                  resident,
-                  false),
-          onEliminar: () =>
-              _confirmarEliminar(
-                  context, resident),
+            BlocProvider.value(
+          value: residentBloc,
+          child: BlocListener<
+              ResidentBloc,
+              ResidentState>(
+            listener: (context,
+                state) {
+              if (state
+                      is ResidentDeactivated ||
+                  state
+                      is ResidentReactivated ||
+                  state
+                      is ResidentDeleted) {
+                Navigator.of(context)
+                    .pop();
+              }
+            },
+            child: _ResidentDetailPage(
+              resident: resident,
+              manzana: manzana,
+              villa: villa,
+              onBloquear: () =>
+                  _confirmarBloqueo(
+                      context,
+                      resident,
+                      true),
+              onReactivar: () =>
+                  _confirmarBloqueo(
+                      context,
+                      resident,
+                      false),
+              onEliminar: () =>
+                  _confirmarEliminar(
+                      context, resident),
+            ),
+          ),
         ),
       ),
     );

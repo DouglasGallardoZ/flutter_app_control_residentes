@@ -304,7 +304,7 @@ class _LoginPageState extends State<LoginPage> {
                             child: OutlinedButton.icon(
                               onPressed: () {
                                       Navigator.of(context)
-                                          .pushReplacementNamed('/registerOption');
+                                          .pushNamed('/registerOption');
                                     },
                               icon: const Icon(Icons.person_add),
                               label: const Text('Crear Cuenta'),

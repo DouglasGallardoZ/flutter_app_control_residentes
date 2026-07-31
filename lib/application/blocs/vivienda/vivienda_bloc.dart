@@ -229,7 +229,7 @@ class ViviendaBloc
         }
       }
       emit(ViviendasBulkCreated(creadas: creadas, omitidas: omitidas, manzana: event.manzana));
-      add(LoadViviendas(manzana: _ultimaManzana));
+      add(const LoadManzanas());
     } catch (e) {
       emit(ViviendaError(mensaje: e.toString().replaceAll('Exception: ', '')));
     }

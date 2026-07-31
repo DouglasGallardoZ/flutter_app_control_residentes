@@ -355,7 +355,7 @@ class _AdminCreateMemberPageState extends State<AdminCreateMemberPage> {
                             items: _parentescoOptions.map((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,
-                                child: Text(value),
+                                child: Text(value.toUpperCase()),
                               );
                             }).toList(),
                             onChanged: (String? newValue) {

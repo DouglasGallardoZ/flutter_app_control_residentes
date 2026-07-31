@@ -181,7 +181,7 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage> {
           // Métricas - Solo Accesos Hoy (sin Miembros para familia)
           SizedBox(
             width: 175,
-            child: MetricCard(label: 'Accesos Hoy', value: '2', icon: Icons.today),
+            child: MetricCard(label: 'Accesos Hoy', value: '0', icon: Icons.today),
           ),
           const SizedBox(height: 16),
           Divider(color: separatorColor),
@@ -219,12 +219,7 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage> {
           // Actividad reciente
           Text('Actividad Reciente', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
-          const ActivityItem(
-            title: 'Acceso propio',
-            subtitle: 'Entrada Principal · 14 dic, 17:17',
-            time: 'Exitoso',
-            success: true,
-          ),
+          Text('No hay accesos registrados hoy', style: theme.textTheme.bodyMedium)
         ],
       ),
     );

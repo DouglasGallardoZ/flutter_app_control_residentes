@@ -98,6 +98,18 @@ abstract class FamilyMemberApiPort {
     String usuarioActualizado = 'admin_system',
   });
 
+  /// Bloquear un miembro de familia (desde rol residente)
+  Future<Map<String, dynamic>> bloquearMiembro(
+    int miembroId,
+    String reason,
+  );
+
+  /// Desbloquear un miembro de familia (desde rol residente)
+  Future<Map<String, dynamic>> desbloquearMiembro(
+    int miembroId,
+    String reason,
+  );
+
   /// Eliminar un miembro de familia (soft delete)
   ///
   /// @param miembroId ID del miembro

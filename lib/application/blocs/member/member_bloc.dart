@@ -27,6 +27,8 @@ class MemberBloc extends Bloc<MemberEvent, MemberState> {
     on<LoadMembersByLocationEvent>(_onLoadMembersByLocation);
     on<DeactivateMemberEvent>(_onDeactivateMember);
     on<ReactivateMemberEvent>(_onReactivateMember);
+    on<BloquearMiembroEvent>(_onBloquearMiembro);
+    on<DesbloquearMiembroEvent>(_onDesbloquearMiembro);
     on<DeleteMemberEvent>(_onDeleteMember);
     on<CreateMemberEvent>(_onCreateMember);
   }
@@ -97,6 +99,52 @@ class MemberBloc extends Bloc<MemberEvent, MemberState> {
       }
     } catch (e) {
       emit(MemberError(message: 'Error al reactivar miembro: $e'));
+    }
+  }
+
+  Future<void> _onBloquearMiembro(
+    BloquearMiembroEvent event,
+    Emitter<MemberState> emit,
+  ) async {
+    try {
+      await memberRepository.bloquearMiembro(
+          memberId: event.memberId, reason: event.reason);
+      emit(MemberDeactivated(
+        message: 'Miembro bloqueado correctamente',
+        reason: event.reason,
+      ));
+      if (state is MembersByLocationLoaded) {
+        final currentState = state as MembersByLocationLoaded;
+        add(LoadMembersByLocationEvent(
+          manzana: currentState.manzana,
+          villa: currentState.villa,
+        ));
+      }
+    } catch (e) {
+      emit(MemberError(message: 'Error al bloquear miembro: $e'));
+    }
+  }
+
+  Future<void> _onDesbloquearMiembro(
+    DesbloquearMiembroEvent event,
+    Emitter<MemberState> emit,
+  ) async {
+    try {
+      await memberRepository.desbloquearMiembro(
+          memberId: event.memberId, reason: event.reason);
+      emit(MemberReactivated(
+        message: 'Miembro desbloqueado correctamente',
+        reason: event.reason,
+      ));
+      if (state is MembersByLocationLoaded) {
+        final currentState = state as MembersByLocationLoaded;
+        add(LoadMembersByLocationEvent(
+          manzana: currentState.manzana,
+          villa: currentState.villa,
+        ));
+      }
+    } catch (e) {
+      emit(MemberError(message: 'Error al desbloquear miembro: $e'));
     }
   }
 

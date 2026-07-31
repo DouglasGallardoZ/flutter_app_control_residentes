@@ -180,8 +180,6 @@ class _AdminViviendasPageState
             cantidad: cantidad,
           ));
     }
-    mzCtrl.dispose();
-    cantCtrl.dispose();
   }
 
   @override

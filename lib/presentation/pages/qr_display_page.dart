@@ -50,7 +50,7 @@ class _QrDisplayPageState extends State<QrDisplayPage> {
   void initState() {
     super.initState();
     context.read<QrDisplayBloc>().add(InitializeQrDisplay());
-    _bloquearCapturas();
+    // _bloquearCapturas();
   }
 
   Future<void> _bloquearCapturas() async {
@@ -61,7 +61,7 @@ class _QrDisplayPageState extends State<QrDisplayPage> {
 
   @override
   void dispose() {
-    _desbloquearCapturas();
+    // _desbloquearCapturas();
     super.dispose();
   }
 

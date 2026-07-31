@@ -7,7 +7,7 @@ import 'security_session_state.dart';
 class SecuritySessionBloc
     extends Bloc<SecuritySessionEvent, SecuritySessionState> {
   Timer? _ttlTimer;
-  static const _ttlDuration = Duration(minutes: 1);
+  static const _ttlDuration = Duration(minutes: 5);
 
   SecuritySessionBloc() : super(SecuritySessionInitial()) {
     on<LockSessionRequested>(_onLock);

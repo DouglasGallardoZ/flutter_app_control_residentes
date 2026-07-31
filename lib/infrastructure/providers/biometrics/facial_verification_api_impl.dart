@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import '../../../domain/ports/biometrics/facial_verification_api_port.dart';
+import '../../../core/api_error_handler.dart';
 
 class FacialVerificationApiImpl implements FacialVerificationApiPort {
   final Dio dio;
@@ -34,30 +35,9 @@ class FacialVerificationApiImpl implements FacialVerificationApiPort {
         'personaId': response.data['persona_id'],
       };
     } catch (e) {
-      throw Exception(_extraerMensajeError(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
-  String _extraerMensajeError(dynamic error) {
-    if (error is DioException && error.response != null) {
-      final data = error.response?.data;
-      if (data is Map) {
-        if (data.containsKey('detail')) {
-          final detail = data['detail'];
-          if (detail is String) return detail;
-          if (detail is List && detail.isNotEmpty) {
-            final firstItem = detail.first;
-            if (firstItem is Map && firstItem.containsKey('msg')) {
-              return firstItem['msg'];
-            }
-          }
-        }
-        if (data.containsKey('message')) {
-          return data['message'] ?? 'Error desconocido';
-        }
-      }
-      return error.message ?? 'Error en la solicitud';
-    }
-    return error.toString();
-  }
+
 }

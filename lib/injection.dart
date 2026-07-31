@@ -190,12 +190,12 @@ Future<void> inject() async {
   final String apiBaseUrl = kIsWeb 
     ? 'http://localhost:8080/api/v1' 
     // : 'http://10.0.2.2:8080/api/v1';
-    : 'http://192.168.1.18:8080/api/v1';
+    : 'http://192.168.1.5:8080/api/v1';
 
   final String biometryBaseUrl = kIsWeb 
       ? 'http://localhost:8000/api/v1' 
       // : 'http://10.0.2.2:8000/api/v1';
-      : 'http://192.168.1.18:8000/api/v1';
+      : 'http://192.168.1.5:8000/api/v1';
 
   // Firebase
   final firebaseAuth = FirebaseAuth.instance;

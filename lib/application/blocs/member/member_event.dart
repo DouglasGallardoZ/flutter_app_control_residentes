@@ -49,6 +49,34 @@ class ReactivateMemberEvent extends MemberEvent {
   List<Object?> get props => [memberId, reason];
 }
 
+/// Bloquear un miembro (desde rol residente)
+class BloquearMiembroEvent extends MemberEvent {
+  final int memberId;
+  final String reason;
+
+  const BloquearMiembroEvent({
+    required this.memberId,
+    required this.reason,
+  });
+
+  @override
+  List<Object?> get props => [memberId, reason];
+}
+
+/// Desbloquear un miembro (desde rol residente)
+class DesbloquearMiembroEvent extends MemberEvent {
+  final int memberId;
+  final String reason;
+
+  const DesbloquearMiembroEvent({
+    required this.memberId,
+    required this.reason,
+  });
+
+  @override
+  List<Object?> get props => [memberId, reason];
+}
+
 /// Eliminar un miembro
 class DeleteMemberEvent extends MemberEvent {
   final int memberId;

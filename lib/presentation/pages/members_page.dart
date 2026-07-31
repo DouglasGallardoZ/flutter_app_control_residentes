@@ -34,16 +34,18 @@ class _MembersPageState extends State<MembersPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Bloquear a ${miembro.nombres} ${miembro.apellidos}'.trim()),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('¿Está seguro de bloquear a este miembro?'),
-            const SizedBox(height: 12),
-            TextField(
-              controller: motivoCtrl,
-              decoration: const InputDecoration(labelText: 'Motivo', border: OutlineInputBorder()),
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('¿Está seguro de bloquear a este miembro?'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: motivoCtrl,
+                decoration: const InputDecoration(labelText: 'Motivo', border: OutlineInputBorder()),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
@@ -56,9 +58,8 @@ class _MembersPageState extends State<MembersPage> {
       ),
     );
     if (confirmado == true && motivoCtrl.text.isNotEmpty && context.mounted) {
-      context.read<MemberBloc>().add(DeactivateMemberEvent(memberId: miembro.personaId, reason: motivoCtrl.text.trim()));
+      context.read<MemberBloc>().add(BloquearMiembroEvent(memberId: miembro.personaId, reason: motivoCtrl.text.trim()));
     }
-    motivoCtrl.dispose();
   }
 
   Future<void> _mostrarDialogoDesbloqueo(BuildContext context, Account miembro) async {
@@ -67,16 +68,18 @@ class _MembersPageState extends State<MembersPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Desbloquear a ${miembro.nombres} ${miembro.apellidos}'.trim()),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('¿Está seguro de desbloquear a este miembro?'),
-            const SizedBox(height: 12),
-            TextField(
-              controller: motivoCtrl,
-              decoration: const InputDecoration(labelText: 'Motivo', border: OutlineInputBorder()),
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('¿Está seguro de desbloquear a este miembro?'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: motivoCtrl,
+                decoration: const InputDecoration(labelText: 'Motivo', border: OutlineInputBorder()),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
@@ -89,9 +92,8 @@ class _MembersPageState extends State<MembersPage> {
       ),
     );
     if (confirmado == true && motivoCtrl.text.isNotEmpty && context.mounted) {
-      context.read<MemberBloc>().add(ReactivateMemberEvent(memberId: miembro.personaId, reason: motivoCtrl.text.trim()));
+      context.read<MemberBloc>().add(DesbloquearMiembroEvent(memberId: miembro.personaId, reason: motivoCtrl.text.trim()));
     }
-    motivoCtrl.dispose();
   }
 
   bool _requested = false;
@@ -266,9 +268,26 @@ class _MembersPageState extends State<MembersPage> {
                                         const SizedBox(height: 6),
                                         Row(children: [Icon(Icons.badge_outlined, size: 16, color: Theme.of(context).hintColor), const SizedBox(width: 6), Text(identification, style: Theme.of(context).textTheme.bodyMedium)]),
                                           if (relationship != null && relationship.isNotEmpty) const SizedBox(height: 6),
-                                          if (relationship != null && relationship.isNotEmpty) Row(children: [Icon(Icons.family_restroom, size: 16, color: Theme.of(context).hintColor), const SizedBox(width: 6), Text(relationship, style: Theme.of(context).textTheme.bodyMedium)]),
+                                          if (relationship != null && relationship.isNotEmpty) Row(children: [Icon(Icons.family_restroom, size: 16, color: Theme.of(context).hintColor), const SizedBox(width: 6), Text(relationship.toUpperCase(), style: Theme.of(context).textTheme.bodyMedium)]),
+                                          const SizedBox(height: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: m.estado == 'activo' ? Colors.green.shade50 : Colors.red.shade50,
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(color: m.estado == 'activo' ? Colors.green : Colors.red),
+                                            ),
+                                            child: Text(
+                                              m.estado == 'activo' ? 'Activo' : 'Inactivo',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: m.estado == 'activo' ? Colors.green : Colors.red,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
                                           if (email != null && email.isNotEmpty) const SizedBox(height: 6),
-                                          if (email != null && email.isNotEmpty) Row(children: [Icon(Icons.email_outlined, size: 16, color: Theme.of(context).hintColor), const SizedBox(width: 6), Text(email, style: Theme.of(context).textTheme.bodyMedium)]),
+                                          if (email != null && email.isNotEmpty) Row(children: [Icon(Icons.email_outlined, size: 16, color: Theme.of(context).hintColor), const SizedBox(width: 6), Expanded(child: Text(email, style: Theme.of(context).textTheme.bodyMedium, overflow: TextOverflow.ellipsis))]),
                                       ],
                                     ),
                                   ),
@@ -279,9 +298,23 @@ class _MembersPageState extends State<MembersPage> {
                                     },
                                     itemBuilder: (_) => [
                                       if (m.estado == 'activo')
-                                        const PopupMenuItem(value: 'bloquear', child: Text('Bloquear')),
+                                        const PopupMenuItem(
+                                          value: 'bloquear',
+                                          child: Row(children: [
+                                            Icon(Icons.block, color: Colors.orange, size: 20),
+                                            SizedBox(width: 8),
+                                            Text('Bloquear'),
+                                          ]),
+                                        ),
                                       if (m.estado == 'inactivo')
-                                        const PopupMenuItem(value: 'desbloquear', child: Text('Desbloquear')),
+                                        const PopupMenuItem(
+                                          value: 'desbloquear',
+                                          child: Row(children: [
+                                            Icon(Icons.check_circle, color: Colors.green, size: 20),
+                                            SizedBox(width: 8),
+                                            Text('Desbloquear'),
+                                          ]),
+                                        ),
                                     ],
                                   ),
                                 ],

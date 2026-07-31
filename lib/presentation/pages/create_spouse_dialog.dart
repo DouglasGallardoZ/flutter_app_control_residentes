@@ -584,6 +584,15 @@ class _CreateSpousePageState
                                   LengthLimitingTextInputFormatter(
                                       10),
                                 ],
+                                decoration: InputDecoration(
+                                  labelText: 'Celular *',
+                                  hintText: '09XXXXXXXX',
+                                  prefixIcon: const Icon(
+                                      Icons.phone),
+                                  border: OutlineInputBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(12)),
+                                ),
                                 validator:
                                     (value) {
                                   if (value

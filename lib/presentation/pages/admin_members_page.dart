@@ -274,27 +274,48 @@ class _AdminMembersPageState
     }
   }
 
-  void _verDetalle(
+  Future<void> _verDetalle(
     Map<String, dynamic> member,
     String manzana,
     String villa,
-  ) {
-    Navigator.of(context).push(
+  ) async {
+    final memberBloc =
+        context.read<MemberBloc>();
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) =>
-            _MemberDetailPage(
-          member: member,
-          manzana: manzana,
-          villa: villa,
-          onDesactivar: () =>
-              _confirmarDesactivar(
-                  context, member),
-          onReactivar: () =>
-              _confirmarReactivar(
-                  context, member),
-          onEliminar: () =>
-              _confirmarEliminar(
-                  context, member),
+            BlocProvider.value(
+          value: memberBloc,
+          child: BlocListener<
+              MemberBloc,
+              MemberState>(
+            listener: (context,
+                state) {
+              if (state
+                      is MemberDeactivated ||
+                  state
+                      is MemberReactivated ||
+                  state
+                      is MemberDeleted) {
+                Navigator.of(context)
+                    .pop();
+              }
+            },
+            child: _MemberDetailPage(
+              member: member,
+              manzana: manzana,
+              villa: villa,
+              onDesactivar: () =>
+                  _confirmarDesactivar(
+                      context, member),
+              onReactivar: () =>
+                  _confirmarReactivar(
+                      context, member),
+              onEliminar: () =>
+                  _confirmarEliminar(
+                      context, member),
+            ),
+          ),
         ),
       ),
     );

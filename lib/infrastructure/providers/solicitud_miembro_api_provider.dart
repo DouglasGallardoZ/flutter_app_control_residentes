@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../providers/http_client.dart';
+import '../../core/api_error_handler.dart';
 
 class SolicitudMiembroApiProvider {
   final ApiHttpClient _cliente;
@@ -43,7 +44,7 @@ class SolicitudMiembroApiProvider {
       );
       return respuesta.data;
     } on DioException catch (e) {
-      throw Exception(_manejarError(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -63,7 +64,7 @@ class SolicitudMiembroApiProvider {
       return List<Map<String, dynamic>>.from(
           data['solicitudes'] ?? []);
     } on DioException catch (e) {
-      throw Exception(_manejarError(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -80,7 +81,7 @@ class SolicitudMiembroApiProvider {
       return response.data
           as Map<String, dynamic>;
     } on DioException catch (e) {
-      throw Exception(_manejarError(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -97,19 +98,9 @@ class SolicitudMiembroApiProvider {
         },
       );
     } on DioException catch (e) {
-      throw Exception(_manejarError(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
-  String _manejarError(DioException e) {
-    final statusCode =
-        e.response?.statusCode ?? 0;
-    final mensaje =
-        e.response?.data?['mensaje'] ??
-            e.response?.data?['error'] ??
-            e.response?.data?['detail'] ??
-            e.message ??
-            'Error desconocido';
-    return '[$statusCode] $mensaje';
-  }
+
 }

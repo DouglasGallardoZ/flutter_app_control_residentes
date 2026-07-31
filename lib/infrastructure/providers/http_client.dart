@@ -6,6 +6,7 @@ class ApiHttpClient {
   final Dio dio;
   final FirebaseAuth firebaseAuth;
   String? _jwtToken;
+  bool _isRetrying = false;
 
   ApiHttpClient({
     required String baseUrl,
@@ -32,10 +33,27 @@ class ApiHttpClient {
           }
           return handler.next(options);
         },
-        onError: (error, handler) {
-          if (error.response?.statusCode == 401) {
-            print('Token expirado o no autorizado');
+        onError: (error, handler) async {
+          if (error.response?.statusCode == 401 && !_isRetrying) {
+            _isRetrying = true;
+            try {
+              final user = firebaseAuth.currentUser;
+              if (user != null) {
+                final newToken = await user.getIdToken(true);
+                error.requestOptions
+                    .headers['Authorization'] = 'Bearer $newToken';
+                final response =
+                    await dio.fetch(error.requestOptions);
+                _isRetrying = false;
+                handler.resolve(response);
+                return;
+              }
+            } catch (_) {
+              _isRetrying = false;
+              await firebaseAuth.signOut();
+            }
           }
+          _isRetrying = false;
           return handler.next(error);
         },
       ),

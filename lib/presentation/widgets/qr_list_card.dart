@@ -76,7 +76,12 @@ class QrListCard extends StatelessWidget {
                 context.read<QrListBloc>().add(
                       AnularQr(qrId: qr.qrPk),
                     );
-              } catch (_) {}
+              } catch (e) {
+                ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                  content: Text('Error al anular QR: $e'),
+                  backgroundColor: Colors.red,
+                ));
+              }
             },
             style: FilledButton.styleFrom(
                 backgroundColor: Colors.red),

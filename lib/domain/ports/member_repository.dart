@@ -11,6 +11,12 @@ abstract class MemberRepository {
   /// Reactivar un miembro
   Future<void> reactivateMember({required int memberId, required String reason});
 
+  /// Bloquear un miembro (desde rol residente)
+  Future<void> bloquearMiembro({required int memberId, required String reason});
+
+  /// Desbloquear un miembro (desde rol residente)
+  Future<void> desbloquearMiembro({required int memberId, required String reason});
+
   /// Eliminar un miembro
   Future<void> deleteMember(int memberId);
 

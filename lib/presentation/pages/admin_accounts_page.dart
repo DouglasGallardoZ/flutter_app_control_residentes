@@ -156,33 +156,32 @@ class _AdminAccountsPageState
                 ),
                 maxLines: 2,
               ),
-              if (bloquear) ...[
-                const SizedBox(
-                    height: 16),
-                CheckboxListTile(
-                  value: cascada,
-                  onChanged: (v) =>
-                      setDialogState(
-                          () =>
-                              cascada =
-                                  v ??
-                                      false),
-                  title: const Text(
-                      'Bloqueo en cascada'),
-                  subtitle:
-                      const Text(
-                    'También bloquea las cuentas de los miembros de familia asociados a esta cuenta',
-                    style: TextStyle(
-                        fontSize:
-                            12),
-                  ),
-                  controlAffinity:
-                      ListTileControlAffinity
-                          .leading,
-                  contentPadding:
-                      EdgeInsets.zero,
+              const SizedBox(
+                  height: 16),
+              CheckboxListTile(
+                value: cascada,
+                onChanged: (v) =>
+                    setDialogState(
+                        () =>
+                            cascada =
+                                v ??
+                                    false),
+                title: Text(bloquear
+                    ? 'Bloqueo en cascada'
+                    : 'Desbloqueo en cascada'),
+                subtitle: Text(
+                  bloquear
+                      ? 'También bloquea las cuentas de los miembros de familia asociados a esta cuenta'
+                      : 'También desbloquea las cuentas de los miembros de familia asociados a esta cuenta',
+                  style: TextStyle(
+                      fontSize: 12),
                 ),
-              ],
+                controlAffinity:
+                    ListTileControlAffinity
+                        .leading,
+                contentPadding:
+                    EdgeInsets.zero,
+              ),
             ],
           ),
           actions: [
@@ -246,7 +245,7 @@ class _AdminAccountsPageState
           reason: motivoCtrl
               .text
               .trim(),
-          cascada: false,
+          cascada: cascada,
         ));
       }
     }
@@ -484,25 +483,46 @@ class _AdminAccountsPageState
     passwordCtrl.dispose();
   }
 
-  void _verDetalle(
-      Map<String, dynamic> account) {
-    Navigator.of(context).push(
+  Future<void> _verDetalle(
+      Map<String, dynamic> account) async {
+    final accountBloc =
+        context.read<AdminAccountBloc>();
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) =>
-            _AccountDetailPage(
-          account: account,
-          onBloquear: () =>
-              _confirmarBloqueo(context,
-                  account, true),
-          onDesbloquear: () =>
-              _confirmarBloqueo(context,
-                  account, false),
-          onEliminar: () =>
-              _confirmarEliminar(
-                  context, account),
-          onResetPassword: () =>
-              _resetPassword(
-                  context, account),
+            BlocProvider.value(
+          value: accountBloc,
+          child: BlocListener<
+              AdminAccountBloc,
+              AdminAccountState>(
+            listener: (context,
+                state) {
+              if (state
+                      is AccountBlocked ||
+                  state
+                      is AccountUnblocked ||
+                  state
+                      is AccountDeleted) {
+                Navigator.of(context)
+                    .pop();
+              }
+            },
+            child: _AccountDetailPage(
+              account: account,
+              onBloquear: () =>
+                  _confirmarBloqueo(context,
+                      account, true),
+              onDesbloquear: () =>
+                  _confirmarBloqueo(context,
+                      account, false),
+              onEliminar: () =>
+                  _confirmarEliminar(
+                      context, account),
+              onResetPassword: () =>
+                  _resetPassword(
+                      context, account),
+            ),
+          ),
         ),
       ),
     );

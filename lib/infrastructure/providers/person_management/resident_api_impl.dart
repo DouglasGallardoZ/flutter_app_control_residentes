@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../domain/ports/person_management/resident_api_port.dart';
+import '../../../core/api_error_handler.dart';
 
 class ResidentApiImpl implements ResidentApiPort {
   final Dio dio;
@@ -26,7 +27,7 @@ class ResidentApiImpl implements ResidentApiPort {
       );
       return response.data ?? [];
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -48,7 +49,7 @@ class ResidentApiImpl implements ResidentApiPort {
       );
       return response.data?['residentes'] ?? [];
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -94,7 +95,7 @@ class ResidentApiImpl implements ResidentApiPort {
       );
       return response.data ?? {};
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -115,7 +116,7 @@ class ResidentApiImpl implements ResidentApiPort {
       );
       return response.data ?? {};
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -136,33 +137,9 @@ class ResidentApiImpl implements ResidentApiPort {
       );
       return response.data ?? {};
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
-  /// Método auxiliar para extraer errores detallados de la respuesta API
-  String _extractErrorMessage(dynamic error) {
-    if (error is DioException && error.response != null) {
-      final data = error.response?.data;
-      if (data is Map) {
-        // Intenta extraer el field 'detail' primero
-        if (data.containsKey('detail')) {
-          final detail = data['detail'];
-          if (detail is String) return detail;
-          if (detail is List && detail.isNotEmpty) {
-            final firstItem = detail.first;
-            if (firstItem is Map && firstItem.containsKey('msg')) {
-              return firstItem['msg'];
-            }
-          }
-        }
-        // Si hay 'message', usa eso
-        if (data.containsKey('message')) {
-          return data['message'] ?? 'Error desconocido';
-        }
-      }
-      return error.message ?? 'Error en la solicitud';
-    }
-    return error.toString();
-  }
+
 }

@@ -71,7 +71,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                 subtitle: 'Administrar propietarios',
                 icon: Icons.business_center,
                 iconColor: Colors.purple,
-                description: 'Ver propiedades, bloquear o eliminar propietarios',
+                description: 'Ver, bloquear o eliminar propietarios',
                 onTap: () {
                   Navigator.of(context).pushNamed(
                     '/adminOwners',
@@ -109,7 +109,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                 subtitle: 'Administrar cuentas de usuario',
                 icon: Icons.account_circle,
                 iconColor: Colors.orange,
-                description: 'Resetear contraseñas, bloquear o eliminar cuentas',
+                description: 'Gestionar cuentas de usuario',
                 onTap: () {
                   Navigator.of(context).pushNamed(
                     '/adminAccounts',

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../domain/ports/person_management/spouse_api_port.dart';
+import '../../../core/api_error_handler.dart';
 
 class SpouseApiImpl implements SpouseApiPort {
   final Dio dio;
@@ -16,7 +17,7 @@ class SpouseApiImpl implements SpouseApiPort {
       }
       return null;
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -58,7 +59,7 @@ class SpouseApiImpl implements SpouseApiPort {
       }
       return data ?? {};
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -76,7 +77,7 @@ class SpouseApiImpl implements SpouseApiPort {
       );
       return response.data;
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -96,33 +97,9 @@ class SpouseApiImpl implements SpouseApiPort {
       );
       return response.data;
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
-  String _extractErrorMessage(dynamic error) {
-    if (error is DioException && error.response != null) {
-      final data = error.response?.data;
-      if (data is Map) {
-        if (data.containsKey('detail')) {
-          final detail = data['detail'];
-          if (detail is String) return detail;
-          if (detail is List && detail.isNotEmpty) {
-            final firstItem = detail.first;
-            if (firstItem is Map && firstItem.containsKey('msg')) {
-              return firstItem['msg'] as String;
-            }
-          }
-        }
-        if (data.containsKey('message')) {
-          return data['message'] as String;
-        }
-        if (data.containsKey('error')) {
-          return data['error'] as String;
-        }
-      }
-      return error.message ?? 'Error desconocido';
-    }
-    return error.toString();
-  }
+
 }

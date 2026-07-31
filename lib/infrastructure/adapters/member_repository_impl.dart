@@ -38,6 +38,18 @@ class MemberRepositoryImpl implements MemberRepository {
   }
 
   @override
+  Future<void> bloquearMiembro(
+      {required int memberId, required String reason}) async {
+    await familyMemberApi.bloquearMiembro(memberId, reason);
+  }
+
+  @override
+  Future<void> desbloquearMiembro(
+      {required int memberId, required String reason}) async {
+    await familyMemberApi.desbloquearMiembro(memberId, reason);
+  }
+
+  @override
   Future<void> deleteMember(int memberId) async {
     if (accountManagementApi == null) {
       throw Exception(

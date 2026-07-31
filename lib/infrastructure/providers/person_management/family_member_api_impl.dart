@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../domain/ports/person_management/family_member_api_port.dart';
+import '../../../core/api_error_handler.dart';
 
 class FamilyMemberApiImpl implements FamilyMemberApiPort {
   final Dio dio;
@@ -25,7 +26,7 @@ class FamilyMemberApiImpl implements FamilyMemberApiPort {
       );
       return response.data ?? [];
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -46,7 +47,7 @@ class FamilyMemberApiImpl implements FamilyMemberApiPort {
       );
       return response.data?['miembros'] ?? [];
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -63,7 +64,7 @@ class FamilyMemberApiImpl implements FamilyMemberApiPort {
       );
       return response.data?['miembros'] ?? [];
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -115,7 +116,7 @@ class FamilyMemberApiImpl implements FamilyMemberApiPort {
       );
       return response.data ?? {};
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -135,7 +136,7 @@ class FamilyMemberApiImpl implements FamilyMemberApiPort {
       );
       return response.data ?? {};
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -155,7 +156,39 @@ class FamilyMemberApiImpl implements FamilyMemberApiPort {
       );
       return response.data ?? {};
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> bloquearMiembro(
+    int miembroId,
+    String reason,
+  ) async {
+    try {
+      final response = await dio.post(
+        '/miembros/$miembroId/bloquear',
+        data: {'motivo': reason},
+      );
+      return response.data ?? {};
+    } catch (e) {
+      throw Exception(ApiErrorHandler.manejar(e));
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> desbloquearMiembro(
+    int miembroId,
+    String reason,
+  ) async {
+    try {
+      final response = await dio.post(
+        '/miembros/$miembroId/desbloquear',
+        data: {'motivo': reason},
+      );
+      return response.data ?? {};
+    } catch (e) {
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -175,33 +208,9 @@ class FamilyMemberApiImpl implements FamilyMemberApiPort {
       );
       return response.data ?? {};
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
-  /// Método auxiliar para extraer errores detallados de la respuesta API
-  String _extractErrorMessage(dynamic error) {
-    if (error is DioException && error.response != null) {
-      final data = error.response?.data;
-      if (data is Map) {
-        // Intenta extraer el field 'detail' primero
-        if (data.containsKey('detail')) {
-          final detail = data['detail'];
-          if (detail is String) return detail;
-          if (detail is List && detail.isNotEmpty) {
-            final firstItem = detail.first;
-            if (firstItem is Map && firstItem.containsKey('msg')) {
-              return firstItem['msg'];
-            }
-          }
-        }
-        // Si hay 'message', usa eso
-        if (data.containsKey('message')) {
-          return data['message'] ?? 'Error desconocido';
-        }
-      }
-      return error.message ?? 'Error en la solicitud';
-    }
-    return error.toString();
-  }
+
 }

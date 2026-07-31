@@ -330,17 +330,6 @@ class _MemberCreateRegistrationPageState
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                validator: (value) {
-                  if (value?.isEmpty ?? true) return 'Campo requerido';
-                  final fecha = DateTime.tryParse(value!);
-                  if (fecha == null) return 'Formato de fecha inválido';
-                  final hoy = DateTime.now();
-                  final edad = hoy.year - fecha.year -
-                      (hoy.month < fecha.month || (hoy.month == fecha.month && hoy.day < fecha.day) ? 1 : 0);
-                  if (fecha.isAfter(hoy)) return 'La fecha no puede ser futura';
-                  if (edad < 18) return 'Debe ser mayor de 18 años';
-                  return null;
-                },
               ),
               const SizedBox(height: 24),
 
@@ -451,8 +440,17 @@ class _MemberCreateRegistrationPageState
                         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
                   }
                 },
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Campo requerido' : null,
+                validator: (value) {
+                  if (value?.isEmpty ?? true) return 'Campo requerido';
+                  final fecha = DateTime.tryParse(value!);
+                  if (fecha == null) return 'Formato de fecha inválido';
+                  final hoy = DateTime.now();
+                  final edad = hoy.year - fecha.year -
+                      (hoy.month < fecha.month || (hoy.month == fecha.month && hoy.day < fecha.day) ? 1 : 0);
+                  if (fecha.isAfter(hoy)) return 'La fecha no puede ser futura';
+                  if (edad < 18) return 'Debe ser mayor de 18 años';
+                  return null;
+                },
               ),
               const SizedBox(height: 12),
 
@@ -471,7 +469,7 @@ class _MemberCreateRegistrationPageState
                 items: _parentescoOptions.map((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
-                    child: Text(value),
+                    child: Text(value.toUpperCase()),
                   );
                 }).toList(),
                 onChanged: (String? newValue) {

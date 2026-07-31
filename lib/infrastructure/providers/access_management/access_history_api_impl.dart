@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../domain/ports/access_management/access_history_api_port.dart';
+import '../../../core/api_error_handler.dart';
 
 class AccessHistoryApiImpl implements AccessHistoryApiPort {
   final Dio dio;
@@ -28,7 +29,7 @@ class AccessHistoryApiImpl implements AccessHistoryApiPort {
 
       return response.data ?? {};
     } catch (e) {
-      throw Exception(_extractErrorMessage(e));
+      throw Exception(ApiErrorHandler.manejar(e));
     }
   }
 
@@ -81,29 +82,5 @@ class AccessHistoryApiImpl implements AccessHistoryApiPort {
     }
   }
 
-  /// Método auxiliar para extraer errores detallados de la respuesta API
-  String _extractErrorMessage(dynamic error) {
-    if (error is DioException && error.response != null) {
-      final data = error.response?.data;
-      if (data is Map) {
-        // Intenta extraer el field 'detail' primero
-        if (data.containsKey('detail')) {
-          final detail = data['detail'];
-          if (detail is String) return detail;
-          if (detail is List && detail.isNotEmpty) {
-            final firstItem = detail.first;
-            if (firstItem is Map && firstItem.containsKey('msg')) {
-              return firstItem['msg'];
-            }
-          }
-        }
-        // Si hay 'message', usa eso
-        if (data.containsKey('message')) {
-          return data['message'] ?? 'Error desconocido';
-        }
-      }
-      return error.message ?? 'Error en la solicitud';
-    }
-    return error.toString();
-  }
+
 }

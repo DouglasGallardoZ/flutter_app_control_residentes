@@ -152,6 +152,7 @@ class _AdminOwnersPageState
         ],
       ),
     );
+    final motivo = motivoCtrl.text.trim();
     if (confirmado == true &&
         context.mounted) {
       if (bloquear) {
@@ -159,18 +160,17 @@ class _AdminOwnersPageState
             .read<OwnerBloc>()
             .add(BlockOwnerEvent(
           owner.id,
-          motivoCtrl.text.trim(),
+          motivo,
         ));
       } else {
         context
             .read<OwnerBloc>()
             .add(UnblockOwnerEvent(
           owner.id,
-          motivoCtrl.text.trim(),
+          motivo,
         ));
       }
     }
-    motivoCtrl.dispose();
   }
 
   Future<void> _confirmarEliminar(
@@ -321,19 +321,19 @@ class _AdminOwnersPageState
       ),
     );
 
+    final nuevoCorreo = correoCtrl.text.trim().isNotEmpty
+        ? correoCtrl.text.trim()
+        : null;
+    final nuevoCelular = celularCtrl.text.trim().isNotEmpty
+        ? celularCtrl.text.trim()
+        : null;
     if (result == true && mounted) {
       context.read<OwnerBloc>().add(UpdateOwnerEvent(
             ownerId: owner.id,
-            correo: correoCtrl.text.trim().isNotEmpty
-                ? correoCtrl.text.trim()
-                : null,
-            celular: celularCtrl.text.trim().isNotEmpty
-                ? celularCtrl.text.trim()
-                : null,
+            correo: nuevoCorreo,
+            celular: nuevoCelular,
           ));
     }
-    correoCtrl.dispose();
-    celularCtrl.dispose();
   }
 
   Future<void> _verDetalle(
@@ -367,7 +367,29 @@ class _AdminOwnersPageState
         builder: (_) =>
             BlocProvider.value(
           value: context.read<OwnerBloc>(),
-          child: _OwnerDetailPage(
+          child: BlocListener<OwnerBloc,
+              OwnerState>(
+            listener: (context,
+                state) {
+              if (state
+                      is OwnerBlocked ||
+                  state
+                      is OwnerUnblocked ||
+                  state
+                      is OwnerUpdated) {
+                context
+                    .read<
+                        OwnerBloc>()
+                    .add(LoadOwnerWithSpousesEvent(
+                        owner.id));
+              }
+              if (state
+                  is OwnerDeleted) {
+                Navigator.of(context)
+                    .pop();
+              }
+            },
+            child: _OwnerDetailPage(
           owner: owner,
           manzana: manzana,
           villa: villa,
@@ -406,6 +428,7 @@ class _AdminOwnersPageState
               }
             });
           },
+          ),
           ),
         ),
       ),
