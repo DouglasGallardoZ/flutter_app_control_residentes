@@ -1,150 +1,191 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../application/blocs/prospecto_validation/prospecto_validation_bloc.dart';
-import '../../application/blocs/prospecto_validation/prospecto_validation_event.dart';
-import '../../application/blocs/prospecto_validation/prospecto_validation_state.dart';
+import '../../domain/usecases/validar_prospecto_residente_usecase.dart';
 import '../../core/validations/format_rules.dart';
+import '../../injection.dart';
 
 class ProspectoResidentePage extends StatefulWidget {
   const ProspectoResidentePage({super.key});
 
   @override
-  State<ProspectoResidentePage> createState() => _ProspectoResidentePageState();
+  State<ProspectoResidentePage> createState() =>
+      _ProspectoResidentePageState();
 }
 
-class _ProspectoResidentePageState extends State<ProspectoResidentePage> {
-  final cedulaCtrl = TextEditingController();
-  final formKey = GlobalKey<FormState>();
+class _ProspectoResidentePageState
+    extends State<ProspectoResidentePage> {
+  final _cedulaCtrl = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _cargando = false;
+  bool _navegando = false;
 
   @override
   void dispose() {
-    cedulaCtrl.dispose();
+    _cedulaCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _validar() async {
+    if (_formKey.currentState?.validate() != true) {
+      return;
+    }
+    if (_navegando) return;
+
+    FocusScope.of(context).unfocus();
+    setState(() => _cargando = true);
+
+    try {
+      final useCase = sl<ValidarProspectoResidenteUseCase>();
+      final prospecto =
+          await useCase.execute(_cedulaCtrl.text.trim());
+
+      if (!mounted || _navegando) return;
+      _navegando = true;
+
+      await Navigator.of(context).pushNamed(
+        '/facialVerification',
+        arguments: prospecto,
+      );
+
+      if (!mounted) return;
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString();
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (!mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _cargando = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _cargando = false);
+        _navegando = false;
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLight =
+        Theme.of(context).brightness == Brightness.light;
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: Theme.of(context).brightness == Brightness.light
-                ? const [Color(0xFFFFFFFF), Color(0xFFDCDBE5)]
-                : const [Color(0xFF1A1A2E), Color(0xFF2D1B3D)],
+            colors: isLight
+                ? const [
+                    Color(0xFFFFFFFF),
+                    Color(0xFFDCDBE5)
+                  ]
+                : const [
+                    Color(0xFF1A1A2E),
+                    Color(0xFF2D1B3D)
+                  ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Card(
-              elevation: 6,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: BlocListener<ProspectoValidationBloc, ProspectoValidationState>(
-                  listener: (context, state) {
-                    if (state is ProspectoResidenteValidado) {
-                      // Navegar a la siguiente página de validación facial
-                      Navigator.of(context).pushNamed(
-                        '/facialVerification',
-                        arguments: state.prospecto,
-                      );
-                    } else if (state is ProspectoValidationError) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(state.message),
-                          backgroundColor: Colors.red,
+            constraints:
+                const BoxConstraints(maxWidth: 420),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Card(
+                elevation: 6,
+                shape: RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.badge_outlined,
+                          size: 48,
+                          color: Color(0xFF04345C),
                         ),
-                      );
-                    }
-                  },
-                  child: BlocBuilder<ProspectoValidationBloc, ProspectoValidationState>(
-                    builder: (context, state) {
-                      final loading = state is ProspectoValidationLoading;
-                      return Form(
-                        key: formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.badge,
-                              size: 48,
-                              color: Color(0xFF04345C),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Validar Identidad',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Ingresa tu número de cédula',
+                        ),
+                        const SizedBox(height: 24),
+                        TextFormField(
+                          controller: _cedulaCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: 'Cédula',
+                            prefixIcon:
+                                const Icon(Icons.credit_card),
+                            border: OutlineInputBorder(
+                              borderRadius:
+                                  BorderRadius.circular(12),
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Validar Identidad',
-                              style: Theme.of(context).textTheme.headlineMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Ingrese su número de cédula para verificar sus datos',
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 32),
-                            TextFormField(
-                              controller: cedulaCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Número de Cédula',
-                                hintText: 'Ej: 1234567890',
-                                prefixIcon: Icon(Icons.credit_card),
+                          ),
+                          validator: (v) => (v == null ||
+                                  v.trim().isEmpty)
+                              ? 'Ingresa una cédula'
+                              : (!FormatRules.isValidId(
+                                      v.trim())
+                                  ? 'Cédula inválida (10 dígitos)'
+                                  : null),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed:
+                                _cargando ? null : _validar,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  const Color(0xFF04345C),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(12),
                               ),
-                              validator: (v) {
-                                if (v == null || v.isEmpty) {
-                                  return 'Ingrese su número de cédula';
-                                }
-                                if (!FormatRules.isValidId(v)) {
-                                  return 'Cédula inválida (10 dígitos)';
-                                }
-                                return null;
-                              },
                             ),
-                            const SizedBox(height: 32),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: loading
-                                    ? null
-                                    : () {
-                                        if (formKey.currentState!.validate()) {
-                                          context
-                                              .read<ProspectoValidationBloc>()
-                                              .add(
-                                                ValidarProspectoResidente(
-                                                  cedulaCtrl.text,
-                                                ),
-                                              );
-                                        }
-                                      },
-                                child: loading
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
+                            child: _cargando
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    'Validar',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight:
+                                              FontWeight.bold,
                                         ),
-                                      )
-                                    : const Text('Validar'),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextButton.icon(
-                              onPressed: loading
-                                  ? null
-                                  : () => Navigator.of(context).pop(),
-                              icon: const Icon(Icons.arrow_back),
-                              label: const Text('Volver'),
-                            ),
-                          ],
+                                  ),
+                          ),
                         ),
-                      );
-                    },
+                      ],
+                    ),
                   ),
                 ),
               ),

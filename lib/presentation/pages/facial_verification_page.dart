@@ -33,8 +33,7 @@ class FacialVerificationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<FacialVerificationBloc>(
-      create: (_) => sl<FacialVerificationBloc>()
-        ..add(IniciarVerificacionLiveness()),
+      create: (_) => sl<FacialVerificationBloc>(),
       child: _FacialVerificationView(prospecto: prospecto, mode: mode),
     );
   }
@@ -82,8 +81,15 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
     super.initState();
     _facialVerificationBloc = context.read<FacialVerificationBloc>();
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<FacialVerificationBloc>().add(IniciarVerificacionLiveness());
+      }
+    });
+
     final authState = context.read<AuthBloc>().state;
-    if (authState is! AuthSuccess) {
+    if (widget.mode == VerificationMode.unlockApp &&
+        authState is! AuthSuccess) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) Navigator.of(context).pop();
       });
@@ -316,9 +322,6 @@ class _FacialVerificationViewState extends State<_FacialVerificationView> {
                 behavior: SnackBarBehavior.floating,
               ),
             );
-            context
-                .read<FacialVerificationBloc>()
-                .add(IniciarVerificacionLiveness());
           }
         }
       },

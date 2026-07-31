@@ -118,7 +118,10 @@ class AppRoutes {
         final prospecto = settings.arguments; // No hacer cast específico
         if (prospecto != null) {
           return MaterialPageRoute(
-            builder: (_) => FacialVerificationPage(prospecto: prospecto),
+            builder: (_) => BlocProvider<RegistroResidenteBloc>(
+              create: (_) => GetIt.instance<RegistroResidenteBloc>(),
+              child: FacialVerificationPage(prospecto: prospecto),
+            ),
           );
         }
         return _errorRoute('Faltan argumentos en FacialVerificationPage');

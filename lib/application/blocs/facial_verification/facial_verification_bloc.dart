@@ -57,12 +57,6 @@ class FacialVerificationBloc
     IniciarVerificacionLiveness event,
     Emitter<FacialVerificationState> emit,
   ) async {
-    if (authProvider.currentUser == null) {
-      emit(FacialVerificationFailure(
-          mensaje: 'Sesión no iniciada.'));
-      return;
-    }
-
     _retos = generarRetos.execute();
     _indiceRetoActual = 0;
 
