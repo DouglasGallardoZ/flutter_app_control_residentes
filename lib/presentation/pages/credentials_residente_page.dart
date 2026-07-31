@@ -78,23 +78,17 @@ class _CredentialsResidentePageState extends State<CredentialsResidentePage> {
             if (state is CuentaCreada) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('¡Cuenta creada exitosamente!'),
+                  content: Text(
+                      'Cuenta creada exitosamente. Inicia sesión para continuar.'),
                   backgroundColor: Colors.green,
                 ),
               );
 
               context.read<AuthBloc>().add(CheckAuthStatus());
 
-              Navigator.of(context).pushReplacementNamed(
-                '/residentDashboard',
-                arguments: {
-                  'personaId': widget.prospecto.personaId,
-                  'identificacion': widget.prospecto.identificacion,
-                  'residenceId':
-                      '${widget.prospecto.vivienda.manzana}-${widget.prospecto.vivienda.villa}',
-                  'userName':
-                      '${widget.prospecto.nombres} ${widget.prospecto.apellidos}',
-                },
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/login',
+                (route) => false,
               );
             } else if (state is RegistroResidenteError) {
               setState(() => isCreating = false);
