@@ -2,7 +2,6 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../domain/ports/firebase_auth_provider_port.dart';
 import '../../../domain/ports/biometrics/facial_enrollment_api_port.dart';
 import 'facial_enrollment_event.dart';
 import 'facial_enrollment_state.dart';
@@ -10,7 +9,6 @@ import 'facial_enrollment_state.dart';
 class FacialEnrollmentBloc
     extends Bloc<FacialEnrollmentEvent, FacialEnrollmentState> {
   final FacialEnrollmentApiPort enrollmentApi;
-  final FirebaseAuthProviderPort authProvider;
 
   String _personaId = '';
   bool _estaCapturando = false;
@@ -18,7 +16,6 @@ class FacialEnrollmentBloc
 
   FacialEnrollmentBloc({
     required this.enrollmentApi,
-    required this.authProvider,
   }) : super(const FacialEnrollmentInitial()) {
     on<EnrollmentStarted>(_onEnrollmentStarted);
     on<FaceCaptured>(_onFaceCaptured);
@@ -63,9 +60,7 @@ class FacialEnrollmentBloc
 
       if (updated.completo) {
         _rutasPendientes = updated.rutasBytes;
-        add(EnrollmentSubmitted(
-          usuarioCreado: authProvider.currentUser?.email,
-        ));
+        add(EnrollmentSubmitted());
       } else {
         emit(updated);
       }
@@ -82,19 +77,18 @@ class FacialEnrollmentBloc
     EnrollmentSubmitted event,
     Emitter<FacialEnrollmentState> emit,
   ) async {
-    await _enviarAlServidor(emit, event.usuarioCreado);
+    await _enviarAlServidor(emit);
   }
 
   Future<void> _onResubmit(
     EnrollmentResubmit event,
     Emitter<FacialEnrollmentState> emit,
   ) async {
-    await _enviarAlServidor(emit, null);
+    await _enviarAlServidor(emit);
   }
 
   Future<void> _enviarAlServidor(
     Emitter<FacialEnrollmentState> emit,
-    String? usuarioCreado,
   ) async {
     emit(const FacialEnrollmentSubmitting());
 
@@ -104,12 +98,9 @@ class FacialEnrollmentBloc
     }
 
     try {
-      final usuario = usuarioCreado ?? 'flutter_app';
-
       final response = await enrollmentApi.enrollFacialData(
         personaId: _personaId,
         imagenesBytes: _rutasPendientes,
-        usuarioCreado: usuario,
       );
 
       final mensaje = response['message'] ?? 'Registro facial exitoso';

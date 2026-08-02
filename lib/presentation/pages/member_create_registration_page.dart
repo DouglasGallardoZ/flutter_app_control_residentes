@@ -229,7 +229,6 @@ class _MemberCreateRegistrationPageState
           parentescoOtroDesc: _parentescoOtroDescController.text.trim().isEmpty
               ? null
               : _parentescoOtroDescController.text.trim(),
-          usuarioCreado: 'flutter_app',
         ),
       );
     } catch (e) {

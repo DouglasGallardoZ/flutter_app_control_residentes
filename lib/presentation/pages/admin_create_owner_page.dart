@@ -103,7 +103,6 @@ class _AdminCreateOwnerPageState extends State<AdminCreateOwnerPage> {
             direccionAlternativa: _direccionAlternativaController.text.trim().isEmpty
                 ? null
                 : _direccionAlternativaController.text.trim(),
-            usuarioCreado: 'admin_${widget.personaId}',
             fromChangeOwner: widget.fromChangeOwner,
           ),
         );

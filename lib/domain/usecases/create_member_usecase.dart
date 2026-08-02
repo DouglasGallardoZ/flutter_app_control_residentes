@@ -22,7 +22,6 @@ class CreateMemberUseCase {
     String? celular,
     String? direccionAlternativa,
     String? parentescoOtroDesc,
-    required String usuarioCreado,
   }) async {
     try {
       final response = await memberRepository.addMember(
@@ -40,7 +39,6 @@ class CreateMemberUseCase {
         celular: celular,
         direccionAlternativa: direccionAlternativa,
         parentescoOtroDesc: parentescoOtroDesc,
-        usuarioCreado: usuarioCreado,
       );
       return response;
     } catch (e) {

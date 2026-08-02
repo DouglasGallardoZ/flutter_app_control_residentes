@@ -63,10 +63,6 @@ class ViviendaApi {
           'manzana': manzana,
           'villa': villa,
           'estado': 'activo',
-          'usuario_creado':
-              'api_system',
-          'fecha_creado': DateTime.now()
-              .toIso8601String(),
         },
       );
       return response.data
@@ -88,18 +84,11 @@ class ViviendaApi {
     try {
       final data =
           <String, dynamic>{
-        'usuario_actualizado':
-            'api_system',
-        'fecha_actualizado': DateTime
-            .now()
-            .toIso8601String(),
+        if (manzana != null)
+          'manzana': manzana,
+        if (villa != null)
+          'villa': villa,
       };
-      if (manzana != null) {
-        data['manzana'] = manzana;
-      }
-      if (villa != null) {
-        data['villa'] = villa;
-      }
 
       final response =
           await dio.put(
@@ -129,8 +118,6 @@ class ViviendaApi {
           'estado': estado,
           if (motivo != null)
             'motivo': motivo,
-          'usuario_actualizado':
-              'api_system',
         },
       );
     } on DioException catch (e) {
@@ -166,8 +153,6 @@ class ViviendaApi {
           'nuevo_propietario_id': nuevoPropietarioId,
           'tipo': tipo,
           'motivo': motivo,
-          'usuario_actualizado': 'api_system',
-          'fecha_actualizado': DateTime.now().toIso8601String(),
         },
       );
     } on DioException catch (e) {

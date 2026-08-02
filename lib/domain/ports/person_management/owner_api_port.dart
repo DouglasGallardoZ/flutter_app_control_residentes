@@ -53,7 +53,6 @@ abstract class OwnerApiPort {
     required String villa,
     String? nacionalidad,
     String? direccionAlternativa,
-    String? usuarioCreado,
     bool fromChangeOwner = false,
   });
 
@@ -61,47 +60,39 @@ abstract class OwnerApiPort {
   ///
   /// @param propietarioId ID del propietario
   /// @param reason Motivo de baja
-  /// @param usuarioActualizado Usuario que realiza la baja
   /// @return Map con resultado de la baja
   Future<Map<String, dynamic>> deactivateOwner(
     int propietarioId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  });
+    String reason,
+  );
 
   /// Bloquear un propietario
   ///
   /// @param propietarioId ID del propietario
   /// @param reason Motivo de bloqueo
-  /// @param usuarioActualizado Usuario que realiza el bloqueo
   /// @return Map con resultado del bloqueo
   Future<Map<String, dynamic>> blockOwner(
     int propietarioId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  });
+    String reason,
+  );
 
   /// Desbloquear un propietario
   ///
   /// @param propietarioId ID del propietario
   /// @param reason Motivo de desbloqueo
-  /// @param usuarioActualizado Usuario que realiza el desbloqueo
   /// @return Map con resultado del desbloqueo
   Future<Map<String, dynamic>> unblockOwner(
     int propietarioId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  });
+    String reason,
+  );
 
   /// Eliminar un propietario (soft delete)
   ///
   /// @param propietarioId ID del propietario
   /// @param reason Motivo de eliminación
-  /// @param usuarioActualizado Usuario que realiza la eliminación
   /// @return Map con resultado de la eliminación
   Future<Map<String, dynamic>> deleteOwner(
     int propietarioId, {
-    String usuarioActualizado = 'admin_system',
     String reason = 'Solicitud de eliminación de datos',
   });
 
@@ -109,6 +100,5 @@ abstract class OwnerApiPort {
     required int ownerId,
     String? correo,
     String? celular,
-    String usuarioActualizado = 'admin_system',
   });
 }

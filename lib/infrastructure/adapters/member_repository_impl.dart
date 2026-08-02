@@ -71,7 +71,6 @@ class MemberRepositoryImpl implements MemberRepository {
     String? celular,
     String? direccionAlternativa,
     String? parentescoOtroDesc,
-    required String usuarioCreado,
   }) async {
     final response = await familyMemberApi.addFamilyMember(
       residenteId: residenteId,
@@ -88,7 +87,6 @@ class MemberRepositoryImpl implements MemberRepository {
       celular: celular,
       direccionAlternativa: direccionAlternativa,
       parentescoOtroDesc: parentescoOtroDesc,
-      usuarioCreado: usuarioCreado,
     );
     return response;
   }

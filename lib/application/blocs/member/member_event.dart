@@ -104,7 +104,6 @@ class CreateMemberEvent extends MemberEvent {
   final String? celular;
   final String? direccionAlternativa;
   final String? parentescoOtroDesc;
-  final String usuarioCreado;
 
   const CreateMemberEvent({
     required this.residenteId,
@@ -121,7 +120,6 @@ class CreateMemberEvent extends MemberEvent {
     this.celular,
     this.direccionAlternativa,
     this.parentescoOtroDesc,
-    required this.usuarioCreado,
   });
 
   @override
@@ -140,6 +138,5 @@ class CreateMemberEvent extends MemberEvent {
     celular,
     direccionAlternativa,
     parentescoOtroDesc,
-    usuarioCreado,
   ];
 }

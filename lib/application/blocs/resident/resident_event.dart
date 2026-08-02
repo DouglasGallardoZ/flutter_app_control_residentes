@@ -21,7 +21,6 @@ class CreateResidentEvent extends ResidentEvent {
   final String? nacionalidad;
   final String? direccionAlternativa;
   final String? docAutorizacionPdf;
-  final String usuarioCreado;
 
   const CreateResidentEvent({
     required this.identificacion,
@@ -36,7 +35,6 @@ class CreateResidentEvent extends ResidentEvent {
     this.nacionalidad,
     this.direccionAlternativa,
     this.docAutorizacionPdf,
-    required this.usuarioCreado,
   });
 
   @override
@@ -53,7 +51,6 @@ class CreateResidentEvent extends ResidentEvent {
     nacionalidad,
     direccionAlternativa,
     docAutorizacionPdf,
-    usuarioCreado,
   ];
 }
 

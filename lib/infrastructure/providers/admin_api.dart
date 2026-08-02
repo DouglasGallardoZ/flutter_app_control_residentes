@@ -351,18 +351,16 @@ class AdminApi {
   }
 
   /// Bloquear una cuenta (Endpoint documentado: POST /cuentas/{cuenta_id}/bloquear)
-  /// Requiere: usuario_actualizado, motivo, cascada (opcional)
+  /// Requiere: motivo, cascada (opcional)
   Future<Map<String, dynamic>> blockAccount(
     int cuentaId,
     String reason, {
-    String usuarioActualizado = 'admin_system',
     bool cascada = true,
   }) async {
     try {
       final response = await dio.post(
         '/cuentas/$cuentaId/bloquear',
         data: {
-          'usuario_actualizado': usuarioActualizado,
           'motivo': reason,
           'cascada': cascada,
         },
@@ -374,18 +372,16 @@ class AdminApi {
   }
 
   /// Desbloquear una cuenta (Endpoint documentado: POST /cuentas/{cuenta_id}/desbloquear)
-  /// Requiere: usuario_actualizado, motivo, cascada (opcional)
+  /// Requiere: motivo, cascada (opcional)
   Future<Map<String, dynamic>> unblockAccount(
     int cuentaId, 
     String reason,{
-    String usuarioActualizado = 'admin_system',
     bool cascada = true,
   }) async {
     try {
       final response = await dio.post(
         '/cuentas/$cuentaId/desbloquear',
         data: {
-          'usuario_actualizado': usuarioActualizado,
           'motivo': reason,
           'cascada': cascada,
         },
@@ -400,7 +396,6 @@ class AdminApi {
   /// Soft delete - marca como eliminada
   Future<Map<String, dynamic>> deleteAccount(
     int cuentaId, {
-    String usuarioActualizado = 'admin_system',
     String reason = 'Solicitud de eliminación de datos',
   }) async {
     try {
@@ -408,7 +403,6 @@ class AdminApi {
         '/cuentas/$cuentaId',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};
@@ -432,15 +426,13 @@ class AdminApi {
   /// Requiere: motivo de desactivación
   Future<Map<String, dynamic>> deactivateResident(
     int residenteId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  }) async {
+    String reason,
+  ) async {
     try {
       final response = await dio.post(
         '/residentes/$residenteId/desactivar',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};
@@ -453,15 +445,13 @@ class AdminApi {
   /// Requiere: motivo de reactivación
   Future<Map<String, dynamic>> reactivateResident(
     int residenteId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  }) async {
+    String reason,
+  ) async {
     try {
       final response = await dio.post(
         '/residentes/$residenteId/reactivar',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};
@@ -486,7 +476,6 @@ class AdminApi {
   ///   "direccion_alternativa": "Carrera 10",
   ///   "manzana": "A",
   ///   "villa": "101",
-  ///   "usuario_creado": "admin_001",
   ///   "doc_autorizacion_pdf": "ruta/documento.pdf"
   /// }
   Future<Map<String, dynamic>> createResident({
@@ -502,7 +491,6 @@ class AdminApi {
     String? nacionalidad,
     String? direccionAlternativa,
     String? docAutorizacionPdf,
-    String? usuarioCreado,
   }) async {
     try {
       final requestBody = {
@@ -520,7 +508,6 @@ class AdminApi {
           'direccion_alternativa': direccionAlternativa,
         if (docAutorizacionPdf != null && docAutorizacionPdf.isNotEmpty)
           'doc_autorizacion_pdf': docAutorizacionPdf,
-        'usuario_creado': usuarioCreado ?? 'admin_system',
       };
 
       final response = await dio.post(
@@ -537,15 +524,13 @@ class AdminApi {
   /// Requiere: motivo de baja
   Future<Map<String, dynamic>> deactivateOwner(
     int propietarioId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  }) async {
+    String reason,
+  ) async {
     try {
       final response = await dio.post(
         '/propietarios/$propietarioId/baja',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};
@@ -558,15 +543,13 @@ class AdminApi {
   /// Requiere: motivo de bloqueo
   Future<Map<String, dynamic>> blockOwner(
     int propietarioId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  }) async {
+    String reason,
+  ) async {
     try {
       final response = await dio.post(
         '/propietarios/$propietarioId/baja',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};
@@ -579,15 +562,13 @@ class AdminApi {
   /// Requiere: motivo de desbloqueo
   Future<Map<String, dynamic>> unblockOwner(
     int propietarioId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  }) async {
+    String reason,
+  ) async {
     try {
       final response = await dio.post(
         '/propietarios/$propietarioId/desbloquear',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};
@@ -600,7 +581,6 @@ class AdminApi {
   /// Soft delete - marca como eliminada
   Future<Map<String, dynamic>> deleteOwner(
     int propietarioId, {
-    String usuarioActualizado = 'admin_system',
     String reason = 'Solicitud de eliminación de datos',
   }) async {
     try {
@@ -608,7 +588,6 @@ class AdminApi {
         '/propietarios/$propietarioId',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};
@@ -621,15 +600,13 @@ class AdminApi {
   /// Requiere: motivo de desactivación
   Future<Map<String, dynamic>> deactivateMember(
     int miembroId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  }) async {
+    String reason,
+  ) async {
     try {
       final response = await dio.post(
         '/miembros/$miembroId/desactivar',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};
@@ -642,15 +619,13 @@ class AdminApi {
   /// Requiere: motivo de reactivación
   Future<Map<String, dynamic>> reactivateMember(
     int miembroId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  }) async {
+    String reason,
+  ) async {
     try {
       final response = await dio.post(
         '/miembros/$miembroId/reactivar',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};
@@ -662,20 +637,16 @@ class AdminApi {
   /// Enroll facial data para residente/miembro
   /// Servicio de biometría en puerto 8090
   /// Endpoint: POST /enroll
-  /// FormData: persona_id, images (lista de archivos), usuario_creado
+  /// FormData: persona_id, images (lista de archivos)
   Future<Map<String, dynamic>> enrollFacialData({
     required String personaId,
     required List<String> imagenesRutas,
-    String? usuarioCreado,
   }) async {
     try {
       final formData = FormData();
       
       // Agregar persona ID como persona_id
       formData.fields.add(MapEntry('persona_id', personaId));
-      
-      // Agregar usuario_creado para auditoría
-      formData.fields.add(MapEntry('usuario_creado', usuarioCreado ?? 'flutter_app'));
       
       // Agregar cada imagen
       for (int i = 0; i < imagenesRutas.length; i++) {
@@ -799,7 +770,6 @@ class AdminApi {
     required String villa,
     String? nacionalidad,
     String? direccionAlternativa,
-    String? usuarioCreado,
   }) async {
     try {
       final requestBody = {
@@ -815,7 +785,6 @@ class AdminApi {
         if (nacionalidad != null && nacionalidad.isNotEmpty) 'nacionalidad': nacionalidad,
         if (direccionAlternativa != null && direccionAlternativa.isNotEmpty)
           'direccion_alternativa': direccionAlternativa,
-        'usuario_creado': usuarioCreado ?? 'admin_system',
       };
 
       final response = await dio.post(
@@ -845,7 +814,6 @@ class AdminApi {
     String? celular,
     String? direccionAlternativa,
     String? parentescoOtroDesc,
-    String? usuarioCreado,
   }) async {
     try {
       final requestBody = {
@@ -865,7 +833,6 @@ class AdminApi {
           'direccion_alternativa': direccionAlternativa,
         if (parentesco == 'otro' && parentescoOtroDesc != null && parentescoOtroDesc.isNotEmpty)
           'parentesco_otro_desc': parentescoOtroDesc,
-        'usuario_creado': usuarioCreado ?? 'admin_system',
       };
 
       final response = await dio.post(

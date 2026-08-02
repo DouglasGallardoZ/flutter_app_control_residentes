@@ -28,7 +28,6 @@ abstract class ViviendaRepositoryPort {
     required String manzana,
     required String villa,
     String estado = 'activo',
-    String usuarioCreado = 'api_system',
   });
 
   Future<ViviendaEntity> actualizar({
@@ -36,16 +35,12 @@ abstract class ViviendaRepositoryPort {
     String? manzana,
     String? villa,
     String? estado,
-    String usuarioActualizado =
-        'api_system',
   });
 
   Future<void> cambiarEstado({
     required int viviendaId,
     required String estado,
     String? motivo,
-    String usuarioActualizado =
-        'api_system',
   });
 
   Future<void> cambiarPropietario({

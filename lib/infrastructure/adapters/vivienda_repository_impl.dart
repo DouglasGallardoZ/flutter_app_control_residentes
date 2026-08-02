@@ -83,8 +83,6 @@ class ViviendaRepositoryImpl
     required String manzana,
     required String villa,
     String estado = 'activo',
-    String usuarioCreado =
-        'api_system',
   }) async {
     final json = await _api.crear(
         manzana: manzana,
@@ -99,8 +97,6 @@ class ViviendaRepositoryImpl
     String? manzana,
     String? villa,
     String? estado,
-    String usuarioActualizado =
-        'api_system',
   }) async {
     final json =
         await _api.actualizar(
@@ -117,8 +113,6 @@ class ViviendaRepositoryImpl
     required int viviendaId,
     required String estado,
     String? motivo,
-    String usuarioActualizado =
-        'api_system',
   }) async {
     await _api.cambiarEstado(
       viviendaId: viviendaId,

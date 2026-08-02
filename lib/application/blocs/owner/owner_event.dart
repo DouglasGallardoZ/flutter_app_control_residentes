@@ -75,7 +75,6 @@ class CreateOwnerEvent extends OwnerEvent {
   final String villa;
   final String? nacionalidad;
   final String? direccionAlternativa;
-  final String usuarioCreado;
   final bool fromChangeOwner;
 
   const CreateOwnerEvent({
@@ -90,7 +89,6 @@ class CreateOwnerEvent extends OwnerEvent {
     required this.villa,
     this.nacionalidad,
     this.direccionAlternativa,
-    required this.usuarioCreado,
     this.fromChangeOwner = false,
   });
 
@@ -107,7 +105,6 @@ class CreateOwnerEvent extends OwnerEvent {
     villa,
     nacionalidad,
     direccionAlternativa,
-    usuarioCreado,
     fromChangeOwner,
   ];
 }
@@ -133,7 +130,6 @@ class CreateSpouseEvent extends OwnerEvent {
   final String correo;
   final String celular;
   final String? direccionAlternativa;
-  final String usuarioCreado;
 
   const CreateSpouseEvent({
     required this.ownerId,
@@ -146,7 +142,6 @@ class CreateSpouseEvent extends OwnerEvent {
     required this.correo,
     required this.celular,
     this.direccionAlternativa,
-    required this.usuarioCreado,
   });
 
   @override
@@ -161,7 +156,6 @@ class CreateSpouseEvent extends OwnerEvent {
     correo,
     celular,
     direccionAlternativa,
-    usuarioCreado,
   ];
 }
 

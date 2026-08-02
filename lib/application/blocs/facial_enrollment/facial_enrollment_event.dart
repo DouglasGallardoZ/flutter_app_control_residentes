@@ -33,12 +33,10 @@ class FaceCaptured extends FacialEnrollmentEvent {
 }
 
 class EnrollmentSubmitted extends FacialEnrollmentEvent {
-  final String? usuarioCreado;
-
-  const EnrollmentSubmitted({this.usuarioCreado});
+  const EnrollmentSubmitted();
 
   @override
-  List<Object?> get props => [usuarioCreado];
+  List<Object?> get props => [];
 }
 
 class EnrollmentRetried extends FacialEnrollmentEvent {

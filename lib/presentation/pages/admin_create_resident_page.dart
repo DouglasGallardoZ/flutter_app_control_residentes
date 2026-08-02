@@ -100,7 +100,6 @@ class _AdminCreateResidentPageState extends State<AdminCreateResidentPage> {
             docAutorizacionPdf: _docAutorizacionController.text.trim().isEmpty
                 ? null
                 : _docAutorizacionController.text.trim(),
-            usuarioCreado: 'admin_${widget.personaId}',
           ),
         );
   }

@@ -53,7 +53,6 @@ extension AdminApiSpouseExtension on AdminApi {
     required String correo,
     required String celular,
     String? direccionAlternativa,
-    required String usuarioCreado,
   }) async {
     try {
       final response = await dio.post(
@@ -69,7 +68,6 @@ extension AdminApiSpouseExtension on AdminApi {
           'celular': celular,
           if (direccionAlternativa?.isNotEmpty ?? false)
             'direccion_alternativa': direccionAlternativa,
-          'usuario_creado': usuarioCreado,
         },
       );
       return response.data ?? {};
@@ -105,7 +103,6 @@ extension AdminApiSpouseExtension on AdminApi {
         '/conyuges/$spouseId',
         data: {
           'estado': block ? 'bloqueado' : 'activo',
-          'usuario_actualizado': 'admin_system',
         },
       );
     } catch (e) {

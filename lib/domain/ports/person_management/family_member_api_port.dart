@@ -54,7 +54,6 @@ abstract class FamilyMemberApiPort {
   /// @param celular Número de celular (opcional)
   /// @param direccionAlternativa Dirección alternativa (opcional)
   /// @param parentescoOtroDesc Descripción si parentesco es "otro" (opcional)
-  /// @param usuarioCreado Usuario que crea el miembro
   /// @return Map con resultado de la creación
   Future<Map<String, dynamic>> addFamilyMember({
     required String residenteId,
@@ -71,32 +70,27 @@ abstract class FamilyMemberApiPort {
     String? celular,
     String? direccionAlternativa,
     String? parentescoOtroDesc,
-    String? usuarioCreado,
   });
 
   /// Desactivar un miembro de familia
   ///
   /// @param miembroId ID del miembro
   /// @param reason Motivo de desactivación
-  /// @param usuarioActualizado Usuario que realiza la desactivación
   /// @return Map con resultado de la desactivación
   Future<Map<String, dynamic>> deactivateMember(
     int miembroId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  });
+    String reason,
+  );
 
   /// Reactivar un miembro de familia
   ///
   /// @param miembroId ID del miembro
   /// @param reason Motivo de reactivación
-  /// @param usuarioActualizado Usuario que realiza la reactivación
   /// @return Map con resultado de la reactivación
   Future<Map<String, dynamic>> reactivateMember(
     int miembroId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  });
+    String reason,
+  );
 
   /// Bloquear un miembro de familia (desde rol residente)
   Future<Map<String, dynamic>> bloquearMiembro(
@@ -114,11 +108,9 @@ abstract class FamilyMemberApiPort {
   ///
   /// @param miembroId ID del miembro
   /// @param reason Motivo de eliminación
-  /// @param usuarioActualizado Usuario que realiza la eliminación
   /// @return Map con resultado de la eliminación
   Future<Map<String, dynamic>> deleteMember(
     int miembroId, {
     String reason = 'Solicitud de eliminación de datos',
-    String usuarioActualizado = 'admin_system',
   });
 }

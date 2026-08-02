@@ -65,7 +65,6 @@ class OwnerApiImpl implements OwnerApiPort {
     required String villa,
     String? nacionalidad,
     String? direccionAlternativa,
-    String? usuarioCreado,
     bool fromChangeOwner = false,
   }) async {
     try {
@@ -84,7 +83,6 @@ class OwnerApiImpl implements OwnerApiPort {
         if (direccionAlternativa != null && direccionAlternativa.isNotEmpty)
           'direccion_alternativa': direccionAlternativa,
         'from_change_owner': fromChangeOwner,
-        'usuario_creado': usuarioCreado ?? 'admin_system',
       };
 
       final response = await dio.post(
@@ -100,15 +98,13 @@ class OwnerApiImpl implements OwnerApiPort {
   @override
   Future<Map<String, dynamic>> deactivateOwner(
     int propietarioId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  }) async {
+    String reason,
+  ) async {
     try {
       final response = await dio.post(
         '/propietarios/$propietarioId/baja',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};
@@ -120,15 +116,13 @@ class OwnerApiImpl implements OwnerApiPort {
   @override
   Future<Map<String, dynamic>> blockOwner(
     int propietarioId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  }) async {
+    String reason,
+  ) async {
     try {
       final response = await dio.post(
         '/propietarios/$propietarioId/baja',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};
@@ -140,15 +134,13 @@ class OwnerApiImpl implements OwnerApiPort {
   @override
   Future<Map<String, dynamic>> unblockOwner(
     int propietarioId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  }) async {
+    String reason,
+  ) async {
     try {
       final response = await dio.post(
         '/propietarios/$propietarioId/desbloquear',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};
@@ -160,7 +152,6 @@ class OwnerApiImpl implements OwnerApiPort {
   @override
   Future<Map<String, dynamic>> deleteOwner(
     int propietarioId, {
-    String usuarioActualizado = 'admin_system',
     String reason = 'Solicitud de eliminación de datos',
   }) async {
     try {
@@ -168,7 +159,6 @@ class OwnerApiImpl implements OwnerApiPort {
         '/propietarios/$propietarioId',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};
@@ -182,7 +172,6 @@ class OwnerApiImpl implements OwnerApiPort {
     required int ownerId,
     String? correo,
     String? celular,
-    String usuarioActualizado = 'admin_system',
   }) async {
     try {
       final response = await dio.put(
@@ -190,7 +179,6 @@ class OwnerApiImpl implements OwnerApiPort {
         data: {
           if (correo != null) 'correo': correo,
           if (celular != null) 'celular': celular,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};

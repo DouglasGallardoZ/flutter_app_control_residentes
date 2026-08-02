@@ -36,6 +36,5 @@ abstract class MemberRepository {
     String? celular,
     String? direccionAlternativa,
     String? parentescoOtroDesc,
-    required String usuarioCreado,
   });
 }

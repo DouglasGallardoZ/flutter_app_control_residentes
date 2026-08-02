@@ -15,7 +15,6 @@ abstract class ResidentRepository {
     String? nacionalidad,
     String? direccionAlternativa,
     String? docAutorizacionPdf,
-    required String usuarioCreado,
   });
 
   /// Obtener lista de residentes

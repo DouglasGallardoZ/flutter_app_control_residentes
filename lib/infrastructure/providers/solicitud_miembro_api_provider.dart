@@ -73,10 +73,7 @@ class SolicitudMiembroApiProvider {
     try {
       final response = await _cliente.dio.put(
         '/miembros/solicitudes/$solicitudId/aprobar',
-        data: {
-          'usuario_actualizado': 'api_system',
-          'fecha_actualizado': DateTime.now().toIso8601String(),
-        },
+        data: {},
       );
       return response.data
           as Map<String, dynamic>;
@@ -92,8 +89,6 @@ class SolicitudMiembroApiProvider {
       await _cliente.dio.put(
         '/miembros/solicitudes/$solicitudId/rechazar',
         data: {
-          'usuario_actualizado': 'api_system',
-          'fecha_actualizado': DateTime.now().toIso8601String(),
           if (motivo != null) 'motivo': motivo,
         },
       );

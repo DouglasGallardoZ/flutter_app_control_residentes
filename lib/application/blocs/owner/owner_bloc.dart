@@ -167,7 +167,6 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
         villa: event.villa,
         nacionalidad: event.nacionalidad,
         direccionAlternativa: event.direccionAlternativa,
-        usuarioCreado: event.usuarioCreado,
         fromChangeOwner: event.fromChangeOwner,
       );
       emit(OwnerCreated(
@@ -211,7 +210,6 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
         correo: event.correo,
         celular: event.celular,
         direccionAlternativa: event.direccionAlternativa,
-        usuarioCreado: event.usuarioCreado,
       );
       emit(SpouseCreated(spouse));
       add(LoadOwnerWithSpousesEvent(event.ownerId));

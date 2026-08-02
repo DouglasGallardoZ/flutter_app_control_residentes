@@ -53,7 +53,6 @@ class AccountApiProvider {
           'persona_id': personaId,
           'firebase_uid': firebaseUid,
           'username': username,
-          'usuario_creado': 'flutter_app',
         },
       );
       return CuentaResponse.fromJson(response.data);
@@ -84,7 +83,6 @@ class AccountApiProvider {
           'persona_id': personaId,
           'firebase_uid': firebaseUid,
           'username': username,
-          'usuario_creado': 'flutter_app',
         },
       );
       return CuentaResponse.fromJson(response.data);

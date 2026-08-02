@@ -52,14 +52,12 @@ class AccountManagementApiImpl implements AccountManagementApiPort {
   Future<Map<String, dynamic>> blockAccount(
     int cuentaId,
     String reason, {
-    String usuarioActualizado = 'admin_system',
     bool cascada = true,
   }) async {
     try {
       final response = await dio.post(
         '/cuentas/$cuentaId/bloquear',
         data: {
-          'usuario_actualizado': usuarioActualizado,
           'motivo': reason,
           'cascada': cascada,
         },
@@ -74,14 +72,12 @@ class AccountManagementApiImpl implements AccountManagementApiPort {
   Future<Map<String, dynamic>> unblockAccount(
     int cuentaId,
     String reason, {
-    String usuarioActualizado = 'admin_system',
     bool cascada = true,
   }) async {
     try {
       final response = await dio.post(
         '/cuentas/$cuentaId/desbloquear',
         data: {
-          'usuario_actualizado': usuarioActualizado,
           'motivo': reason,
           'cascada': cascada,
         },
@@ -95,7 +91,6 @@ class AccountManagementApiImpl implements AccountManagementApiPort {
   @override
   Future<Map<String, dynamic>> deleteAccount(
     int cuentaId, {
-    String usuarioActualizado = 'admin_system',
     String reason = 'Solicitud de eliminación de datos',
   }) async {
     try {
@@ -103,7 +98,6 @@ class AccountManagementApiImpl implements AccountManagementApiPort {
         '/cuentas/$cuentaId',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};

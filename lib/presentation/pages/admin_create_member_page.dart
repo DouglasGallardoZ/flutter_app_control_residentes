@@ -127,7 +127,6 @@ class _AdminCreateMemberPageState extends State<AdminCreateMemberPage> {
             parentescoOtroDesc: _parentescoOtroDescController.text.trim().isEmpty
                 ? null
                 : _parentescoOtroDescController.text.trim(),
-            usuarioCreado: 'admin_${widget.personaId}',
           ),
         );
   }

@@ -26,7 +26,6 @@ class ResidentRepositoryImpl implements ResidentRepository {
     String? nacionalidad,
     String? direccionAlternativa,
     String? docAutorizacionPdf,
-    required String usuarioCreado,
   }) async {
     try {
       final response = await residentApi.createResident(
@@ -42,7 +41,6 @@ class ResidentRepositoryImpl implements ResidentRepository {
         nacionalidad: nacionalidad,
         direccionAlternativa: direccionAlternativa,
         docAutorizacionPdf: docAutorizacionPdf,
-        usuarioCreado: usuarioCreado,
       );
       return response;
     } catch (e) {
@@ -106,7 +104,6 @@ class ResidentRepositoryImpl implements ResidentRepository {
       await residentApi.deleteResident(
         personaId,
         motivo,
-        usuarioActualizado: 'admin_system',
       );
     } catch (e) {
       throw Exception('Error al eliminar residente: $e');

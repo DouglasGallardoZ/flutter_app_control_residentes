@@ -49,7 +49,6 @@ abstract class OwnerRepository {
     required String villa,
     String? nacionalidad,
     String? direccionAlternativa,
-    required String usuarioCreado,
     bool fromChangeOwner = false,
   });
 
@@ -68,7 +67,6 @@ abstract class OwnerRepository {
     required String correo,
     required String celular,
     String? direccionAlternativa,
-    required String usuarioCreado,
   });
 
   /// Obtener cónyuges de un propietario

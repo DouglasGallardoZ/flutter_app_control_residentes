@@ -17,7 +17,6 @@ class QrGenerationApiImpl implements QrGenerationApiPort {
       final data = {
         'duracion_horas': duracionHoras,
         'fecha_acceso': fechaAcceso,
-        'usuario_creado': 'flutter_app',
       };
       // Si horaInicio se proporciona, incluirla; si no, servidor usa hora actual
       if (horaInicio != null) {
@@ -56,7 +55,6 @@ class QrGenerationApiImpl implements QrGenerationApiPort {
         'motivo_visita': motivoVisita,
         'duracion_horas': duracionHoras,
         'fecha_acceso': fechaAcceso,
-        'usuario_creado': 'flutter_app',
       };
       // Si horaInicio se proporciona, incluirla; si no, servidor usa hora actual
       if (horaInicio != null) {

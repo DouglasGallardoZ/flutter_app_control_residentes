@@ -74,7 +74,6 @@ class AccessHistoryApiImpl implements AccessHistoryApiPort {
       final response = await dio.post('/acceso/validar-qr', data: {
         'qr_token': qrToken,
         if (metodoBiometrico != null) 'metodo_biometrico': metodoBiometrico,
-        'usuario_creado': 'flutter_app',
       });
       return response.data;
     } catch (e) {

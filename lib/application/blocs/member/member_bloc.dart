@@ -191,7 +191,6 @@ class MemberBloc extends Bloc<MemberEvent, MemberState> {
         celular: event.celular,
         direccionAlternativa: event.direccionAlternativa,
         parentescoOtroDesc: event.parentescoOtroDesc,
-        usuarioCreado: event.usuarioCreado,
       );
       emit(MemberCreated(
         message: response['mensaje'] ?? 'Miembro de familia agregado exitosamente',

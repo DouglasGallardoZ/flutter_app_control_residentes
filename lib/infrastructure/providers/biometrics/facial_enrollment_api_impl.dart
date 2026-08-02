@@ -12,15 +12,11 @@ class FacialEnrollmentApiImpl implements FacialEnrollmentApiPort {
   Future<Map<String, dynamic>> enrollFacialData({
     required String personaId,
     required List<Uint8List> imagenesBytes,
-    String? usuarioCreado,
   }) async {
     try {
       final formData = FormData();
 
       formData.fields.add(MapEntry('persona_id', personaId));
-
-      formData.fields
-          .add(MapEntry('usuario_creado', usuarioCreado ?? 'flutter_app'));
 
       for (int i = 0; i < imagenesBytes.length; i++) {
         final archivo = MultipartFile.fromBytes(

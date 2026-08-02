@@ -84,7 +84,6 @@ class FamilyMemberApiImpl implements FamilyMemberApiPort {
     String? celular,
     String? direccionAlternativa,
     String? parentescoOtroDesc,
-    String? usuarioCreado,
   }) async {
     try {
       final requestBody = {
@@ -107,7 +106,6 @@ class FamilyMemberApiImpl implements FamilyMemberApiPort {
             parentescoOtroDesc != null &&
             parentescoOtroDesc.isNotEmpty)
           'parentesco_otro_desc': parentescoOtroDesc,
-        'usuario_creado': usuarioCreado ?? 'admin_system',
       };
 
       final response = await dio.post(
@@ -123,15 +121,13 @@ class FamilyMemberApiImpl implements FamilyMemberApiPort {
   @override
   Future<Map<String, dynamic>> deactivateMember(
     int miembroId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  }) async {
+    String reason,
+  ) async {
     try {
       final response = await dio.post(
         '/miembros/$miembroId/desactivar',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};
@@ -143,15 +139,13 @@ class FamilyMemberApiImpl implements FamilyMemberApiPort {
   @override
   Future<Map<String, dynamic>> reactivateMember(
     int miembroId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  }) async {
+    String reason,
+  ) async {
     try {
       final response = await dio.post(
         '/miembros/$miembroId/reactivar',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};
@@ -196,14 +190,12 @@ class FamilyMemberApiImpl implements FamilyMemberApiPort {
   Future<Map<String, dynamic>> deleteMember(
     int miembroId, {
     String reason = 'Solicitud de eliminación de datos',
-    String usuarioActualizado = 'admin_system',
   }) async {
     try {
       final response = await dio.delete(
         '/miembros/$miembroId',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
         },
       );
       return response.data ?? {};

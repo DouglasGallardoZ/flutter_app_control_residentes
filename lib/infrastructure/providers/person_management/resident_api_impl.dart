@@ -67,7 +67,6 @@ class ResidentApiImpl implements ResidentApiPort {
     String? nacionalidad,
     String? direccionAlternativa,
     String? docAutorizacionPdf,
-    String? usuarioCreado,
   }) async {
     try {
       final requestBody = {
@@ -86,7 +85,6 @@ class ResidentApiImpl implements ResidentApiPort {
           'direccion_alternativa': direccionAlternativa,
         if (docAutorizacionPdf != null && docAutorizacionPdf.isNotEmpty)
           'doc_autorizacion_pdf': docAutorizacionPdf,
-        'usuario_creado': usuarioCreado ?? 'admin_system',
       };
 
       final response = await dio.post(
@@ -102,16 +100,13 @@ class ResidentApiImpl implements ResidentApiPort {
   @override
   Future<Map<String, dynamic>> deactivateResident(
     int residenteId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  }) async {
+    String reason,
+  ) async {
     try {
       final response = await dio.post(
         '/residentes/$residenteId/desactivar',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
-          'fecha_actualizado': DateTime.now().toIso8601String(),
         },
       );
       return response.data ?? {};
@@ -123,16 +118,13 @@ class ResidentApiImpl implements ResidentApiPort {
   @override
   Future<Map<String, dynamic>> reactivateResident(
     int residenteId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  }) async {
+    String reason,
+  ) async {
     try {
       final response = await dio.post(
         '/residentes/$residenteId/reactivar',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
-          'fecha_actualizado': DateTime.now().toIso8601String(),
         },
       );
       return response.data ?? {};
@@ -144,16 +136,13 @@ class ResidentApiImpl implements ResidentApiPort {
   @override
   Future<Map<String, dynamic>> deleteResident(
     int residenteId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  }) async {
+    String reason,
+  ) async {
     try {
       final response = await dio.delete(
         '/residentes/$residenteId',
         data: {
           'motivo': reason,
-          'usuario_actualizado': usuarioActualizado,
-          'fecha_actualizado': DateTime.now().toIso8601String(),
         },
       );
       return response.data ?? {};

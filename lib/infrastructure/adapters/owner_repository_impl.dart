@@ -66,7 +66,6 @@ class OwnerRepositoryImpl implements OwnerRepository {
       await ownerApi.blockOwner(
         ownerId,
         reason,
-        usuarioActualizado: 'admin_system',
       );
     } catch (e) {
       throw Exception('Error al bloquear propietario: $e');
@@ -79,7 +78,6 @@ class OwnerRepositoryImpl implements OwnerRepository {
       await ownerApi.unblockOwner(
         ownerId,
         reason,
-        usuarioActualizado: 'admin_system',
       );
     } catch (e) {
       throw Exception('Error al desbloquear propietario: $e');
@@ -91,7 +89,6 @@ class OwnerRepositoryImpl implements OwnerRepository {
     try {
       await ownerApi.deleteOwner(
         ownerId,
-        usuarioActualizado: 'admin_system',
         reason: 'Propietario eliminado por administrador',
       );
     } catch (e) {
@@ -110,7 +107,6 @@ class OwnerRepositoryImpl implements OwnerRepository {
         ownerId: ownerId,
         correo: correo,
         celular: celular,
-        usuarioActualizado: 'admin_system',
       );
     } catch (e) {
       throw Exception('Error al actualizar propietario: $e');
@@ -141,7 +137,6 @@ class OwnerRepositoryImpl implements OwnerRepository {
     required String villa,
     String? nacionalidad,
     String? direccionAlternativa,
-    required String usuarioCreado,
     bool fromChangeOwner = false,
   }) async {
     try {
@@ -157,7 +152,6 @@ class OwnerRepositoryImpl implements OwnerRepository {
         villa: villa,
         nacionalidad: nacionalidad,
         direccionAlternativa: direccionAlternativa,
-        usuarioCreado: usuarioCreado,
         fromChangeOwner: fromChangeOwner,
       );
       return response;
@@ -211,7 +205,6 @@ class OwnerRepositoryImpl implements OwnerRepository {
     required String correo,
     required String celular,
     String? direccionAlternativa,
-    required String usuarioCreado,
   }) async {
     try {
       if (spouseApi == null) {
@@ -229,7 +222,6 @@ class OwnerRepositoryImpl implements OwnerRepository {
         correo: correo,
         celular: celular,
         direccionAlternativa: direccionAlternativa,
-        usuarioCreado: usuarioCreado,
       );
       return ConyugeEntity.fromJson(response);
     } catch (e) {

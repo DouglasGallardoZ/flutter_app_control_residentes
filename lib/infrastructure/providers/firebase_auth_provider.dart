@@ -173,7 +173,6 @@ class ApiAuthProviderImpl implements ApiAuthProviderPort {
         'persona_id': personaId,
         'firebase_uid': firebaseUid,
         'username': email,
-        'usuario_creado': 'flutter_app',
       });
       return response.data;
     } catch (e) {
@@ -192,7 +191,6 @@ class ApiAuthProviderImpl implements ApiAuthProviderPort {
         'persona_id': personaId,
         'firebase_uid': firebaseUid,
         'username': email,
-        'usuario_creado': 'flutter_app',
       });
       return response.data;
     } catch (e) {

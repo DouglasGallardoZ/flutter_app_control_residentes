@@ -20,7 +20,6 @@ class CreateResidentUseCase {
     String? nacionalidad,
     String? direccionAlternativa,
     String? docAutorizacionPdf,
-    required String usuarioCreado,
   }) async {
     try {
       final response = await residentRepository.createResident(
@@ -36,7 +35,6 @@ class CreateResidentUseCase {
         nacionalidad: nacionalidad,
         direccionAlternativa: direccionAlternativa,
         docAutorizacionPdf: docAutorizacionPdf,
-        usuarioCreado: usuarioCreado,
       );
       return response;
     } catch (e) {

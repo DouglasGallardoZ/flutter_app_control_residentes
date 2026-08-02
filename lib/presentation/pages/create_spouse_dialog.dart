@@ -130,8 +130,6 @@ class _CreateSpousePageState
                     : _direccionAlternativaController
                         .text
                         .trim(),
-            usuarioCreado:
-                'admin_${widget.personaId}',
           ),
         );
   }

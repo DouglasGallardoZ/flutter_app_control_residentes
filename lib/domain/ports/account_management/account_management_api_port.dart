@@ -33,13 +33,11 @@ abstract class AccountManagementApiPort {
   ///
   /// @param cuentaId ID de la cuenta
   /// @param reason Motivo de bloqueo
-  /// @param usuarioActualizado Usuario que realiza el bloqueo
   /// @param cascada Si se aplica en cascada a cuentas relacionadas
   /// @return Map con resultado del bloqueo
   Future<Map<String, dynamic>> blockAccount(
     int cuentaId,
     String reason, {
-    String usuarioActualizado = 'admin_system',
     bool cascada = true,
   });
 
@@ -47,13 +45,11 @@ abstract class AccountManagementApiPort {
   ///
   /// @param cuentaId ID de la cuenta
   /// @param reason Motivo de desbloqueo
-  /// @param usuarioActualizado Usuario que realiza el desbloqueo
   /// @param cascada Si se aplica en cascada a cuentas relacionadas
   /// @return Map con resultado del desbloqueo
   Future<Map<String, dynamic>> unblockAccount(
     int cuentaId,
     String reason, {
-    String usuarioActualizado = 'admin_system',
     bool cascada = true,
   });
 
@@ -61,11 +57,9 @@ abstract class AccountManagementApiPort {
   ///
   /// @param cuentaId ID de la cuenta
   /// @param reason Motivo de eliminación
-  /// @param usuarioActualizado Usuario que realiza la eliminación
   /// @return Map con resultado de la eliminación
   Future<Map<String, dynamic>> deleteAccount(
     int cuentaId, {
-    String usuarioActualizado = 'admin_system',
     String reason = 'Solicitud de eliminación de datos',
   });
 

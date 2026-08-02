@@ -111,7 +111,6 @@ class CreateResidentRequestDTO {
   final String? nacionalidad;
   final String? direccionAlternativa;
   final String? docAutorizacionPdf;
-  final String usuarioCreado;
 
   CreateResidentRequestDTO({
     required this.identificacion,
@@ -126,7 +125,6 @@ class CreateResidentRequestDTO {
     this.nacionalidad,
     this.direccionAlternativa,
     this.docAutorizacionPdf,
-    required this.usuarioCreado,
   });
 
   Map<String, dynamic> toJson() {
@@ -143,7 +141,6 @@ class CreateResidentRequestDTO {
       'nacionalidad': nacionalidad,
       'direccion_alternativa': direccionAlternativa,
       'doc_autorizacion_pdf': docAutorizacionPdf,
-      'usuario_creado': usuarioCreado,
     };
   }
 }

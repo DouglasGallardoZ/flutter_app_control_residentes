@@ -42,7 +42,6 @@ abstract class ResidentApiPort {
   /// @param nacionalidad Nacionalidad (opcional)
   /// @param direccionAlternativa Dirección alternativa (opcional)
   /// @param docAutorizacionPdf Documento de autorización PDF (opcional)
-  /// @param usuarioCreado Usuario que crea el residente
   /// @return Map con resultado de la creación
   Future<Map<String, dynamic>> createResident({
     required String identificacion,
@@ -57,42 +56,35 @@ abstract class ResidentApiPort {
     String? nacionalidad,
     String? direccionAlternativa,
     String? docAutorizacionPdf,
-    String? usuarioCreado,
   });
 
   /// Desactivar un residente
   ///
   /// @param residenteId ID del residente
   /// @param reason Motivo de desactivación
-  /// @param usuarioActualizado Usuario que realiza la desactivación
   /// @return Map con resultado de la desactivación
   Future<Map<String, dynamic>> deactivateResident(
     int residenteId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  });
+    String reason,
+  );
 
   /// Reactivar un residente
   ///
   /// @param residenteId ID del residente
   /// @param reason Motivo de reactivación
-  /// @param usuarioActualizado Usuario que realiza la reactivación
   /// @return Map con resultado de la reactivación
   Future<Map<String, dynamic>> reactivateResident(
     int residenteId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  });
+    String reason,
+  );
 
   /// Eliminar un residente
   ///
   /// @param residenteId ID del residente
   /// @param reason Motivo de eliminación
-  /// @param usuarioActualizado Usuario que realiza la eliminación
   /// @return Map con resultado de la eliminación
   Future<Map<String, dynamic>> deleteResident(
     int residenteId,
-    String reason, {
-    String usuarioActualizado = 'admin_system',
-  });
+    String reason,
+  );
 }

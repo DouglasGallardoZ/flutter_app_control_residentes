@@ -55,7 +55,6 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
         nacionalidad: event.nacionalidad,
         direccionAlternativa: event.direccionAlternativa,
         docAutorizacionPdf: event.docAutorizacionPdf,
-        usuarioCreado: event.usuarioCreado,
       );
 
       emit(ResidentCreated(

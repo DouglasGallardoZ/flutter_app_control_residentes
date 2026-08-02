@@ -16,7 +16,6 @@ class CreateSpouseUseCase {
     required String correo,
     required String celular,
     String? direccionAlternativa,
-    required String usuarioCreado,
   }) async {
     return await repository.createSpouse(
       ownerId: ownerId,
@@ -29,7 +28,6 @@ class CreateSpouseUseCase {
       correo: correo,
       celular: celular,
       direccionAlternativa: direccionAlternativa,
-      usuarioCreado: usuarioCreado,
     );
   }
 }
