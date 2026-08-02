@@ -76,6 +76,7 @@ class CreateOwnerEvent extends OwnerEvent {
   final String? nacionalidad;
   final String? direccionAlternativa;
   final String usuarioCreado;
+  final bool fromChangeOwner;
 
   const CreateOwnerEvent({
     required this.identificacion,
@@ -90,6 +91,7 @@ class CreateOwnerEvent extends OwnerEvent {
     this.nacionalidad,
     this.direccionAlternativa,
     required this.usuarioCreado,
+    this.fromChangeOwner = false,
   });
 
   @override
@@ -106,6 +108,7 @@ class CreateOwnerEvent extends OwnerEvent {
     nacionalidad,
     direccionAlternativa,
     usuarioCreado,
+    fromChangeOwner,
   ];
 }
 // ===== EVENTOS PARA CÓNYUGES =====

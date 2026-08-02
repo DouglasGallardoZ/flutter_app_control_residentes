@@ -168,6 +168,7 @@ class OwnerBloc extends Bloc<OwnerEvent, OwnerState> {
         nacionalidad: event.nacionalidad,
         direccionAlternativa: event.direccionAlternativa,
         usuarioCreado: event.usuarioCreado,
+        fromChangeOwner: event.fromChangeOwner,
       );
       emit(OwnerCreated(
         message:

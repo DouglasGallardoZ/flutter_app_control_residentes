@@ -54,6 +54,7 @@ abstract class OwnerApiPort {
     String? nacionalidad,
     String? direccionAlternativa,
     String? usuarioCreado,
+    bool fromChangeOwner = false,
   });
 
   /// Dar de baja a un propietario

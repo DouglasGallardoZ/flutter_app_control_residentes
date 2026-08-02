@@ -142,6 +142,7 @@ class OwnerRepositoryImpl implements OwnerRepository {
     String? nacionalidad,
     String? direccionAlternativa,
     required String usuarioCreado,
+    bool fromChangeOwner = false,
   }) async {
     try {
       final response = await ownerApi.createOwner(
@@ -157,6 +158,7 @@ class OwnerRepositoryImpl implements OwnerRepository {
         nacionalidad: nacionalidad,
         direccionAlternativa: direccionAlternativa,
         usuarioCreado: usuarioCreado,
+        fromChangeOwner: fromChangeOwner,
       );
       return response;
     } catch (e) {

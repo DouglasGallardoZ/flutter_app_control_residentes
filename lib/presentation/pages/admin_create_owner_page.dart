@@ -10,11 +10,19 @@ import '../widgets/admin_scaffold.dart';
 class AdminCreateOwnerPage extends StatefulWidget {
   final int personaId;
   final String identificacion;
+  final String? manzana;
+  final String? villa;
+  final String? cedula;
+  final bool fromChangeOwner;
 
   const AdminCreateOwnerPage({
     super.key,
     required this.personaId,
     required this.identificacion,
+    this.manzana,
+    this.villa,
+    this.cedula,
+    this.fromChangeOwner = false,
   });
 
   @override
@@ -42,7 +50,8 @@ class _AdminCreateOwnerPageState extends State<AdminCreateOwnerPage> {
   void initState() {
     super.initState();
     
-    _identificacionController = TextEditingController();
+    _identificacionController =
+        TextEditingController(text: widget.cedula ?? '');
     _tipoIdentificacionController = TextEditingController(text: 'Cedula');
     _nombresController = TextEditingController();
     _apellidosController = TextEditingController();
@@ -51,8 +60,8 @@ class _AdminCreateOwnerPageState extends State<AdminCreateOwnerPage> {
     _correoController = TextEditingController();
     _celularController = TextEditingController();
     _direccionAlternativaController = TextEditingController();
-    _manzanaController = TextEditingController();
-    _villaController = TextEditingController();
+    _manzanaController = TextEditingController(text: widget.manzana ?? '');
+    _villaController = TextEditingController(text: widget.villa ?? '');
   }
 
   @override
@@ -95,6 +104,7 @@ class _AdminCreateOwnerPageState extends State<AdminCreateOwnerPage> {
                 ? null
                 : _direccionAlternativaController.text.trim(),
             usuarioCreado: 'admin_${widget.personaId}',
+            fromChangeOwner: widget.fromChangeOwner,
           ),
         );
   }
@@ -141,6 +151,11 @@ class _AdminCreateOwnerPageState extends State<AdminCreateOwnerPage> {
             );
 
             if (mounted) {
+              if (widget.fromChangeOwner) {
+                // Volver al diálogo de cambio de propietario con los datos
+                Navigator.of(context).pop(state.owner);
+                return;
+              }
               Navigator.of(context).pushNamedAndRemoveUntil(
                 '/adminFacialEnrollment',
                 (route) => route.settings.name == '/adminOwners',

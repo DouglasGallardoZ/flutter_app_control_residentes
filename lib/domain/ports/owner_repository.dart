@@ -50,6 +50,7 @@ abstract class OwnerRepository {
     String? nacionalidad,
     String? direccionAlternativa,
     required String usuarioCreado,
+    bool fromChangeOwner = false,
   });
 
   /// Obtener propietario con sus cónyuges

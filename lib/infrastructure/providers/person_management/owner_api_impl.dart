@@ -66,6 +66,7 @@ class OwnerApiImpl implements OwnerApiPort {
     String? nacionalidad,
     String? direccionAlternativa,
     String? usuarioCreado,
+    bool fromChangeOwner = false,
   }) async {
     try {
       final requestBody = {
@@ -82,6 +83,7 @@ class OwnerApiImpl implements OwnerApiPort {
           'nacionalidad': nacionalidad,
         if (direccionAlternativa != null && direccionAlternativa.isNotEmpty)
           'direccion_alternativa': direccionAlternativa,
+        'from_change_owner': fromChangeOwner,
         'usuario_creado': usuarioCreado ?? 'admin_system',
       };
 

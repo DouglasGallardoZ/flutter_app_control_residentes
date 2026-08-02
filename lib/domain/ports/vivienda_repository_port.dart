@@ -56,4 +56,6 @@ abstract class ViviendaRepositoryPort {
   });
 
   Future<VillaDetalleEntity> getVillaDetalle(int viviendaId);
+
+  Future<Map<String, dynamic>?> buscarPersonaPorCedula(String cedula);
 }

@@ -20,6 +20,7 @@ class CreateOwnerUseCase {
     String? nacionalidad,
     String? direccionAlternativa,
     required String usuarioCreado,
+    bool fromChangeOwner = false,
   }) async {
     try {
       final response = await ownerRepository.createOwner(
@@ -35,6 +36,7 @@ class CreateOwnerUseCase {
         nacionalidad: nacionalidad,
         direccionAlternativa: direccionAlternativa,
         usuarioCreado: usuarioCreado,
+        fromChangeOwner: fromChangeOwner,
       );
       return response;
     } catch (e) {

@@ -147,4 +147,10 @@ class ViviendaRepositoryImpl
       motivo: motivo,
     );
   }
+
+  @override
+  Future<Map<String, dynamic>?> buscarPersonaPorCedula(
+      String cedula) async {
+    return await _api.buscarPersonaPorCedula(cedula);
+  }
 }

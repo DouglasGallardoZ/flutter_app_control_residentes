@@ -5,6 +5,9 @@ import '../../application/blocs/vivienda/vivienda_bloc.dart';
 import '../../application/blocs/owner/owner_bloc.dart';
 import '../../application/blocs/owner/owner_event.dart';
 import '../../domain/entities/vivienda_entity.dart';
+import '../../domain/ports/vivienda_repository_port.dart';
+import '../../injection.dart';
+import 'admin_create_owner_page.dart';
 import 'admin_villa_detalle_page.dart';
 
 class AdminManzanaVillasPage extends StatefulWidget {
@@ -93,31 +96,31 @@ class _AdminManzanaVillasPageState
 
   Future<void> _mostrarDialogoCambioPropietario(
       ViviendaEntity vivienda) async {
-    final ownerBloc = context.read<OwnerBloc>();
     final viviendaBloc = context.read<ViviendaBloc>();
-    ownerBloc.add(const LoadActiveOwners());
+    final viviendaRepo = sl<ViviendaRepositoryPort>();
 
-    final result = await showDialog<CambioPropietarioData>(
+    void recargar() {
+      if (mounted) {
+        viviendaBloc.add(LoadViviendas(manzana: widget.manzana));
+      }
+    }
+
+    await showDialog(
       context: context,
       builder: (ctx) => BlocProvider.value(
-        value: ownerBloc,
+        value: viviendaBloc,
         child: _ChangeOwnerDialog(
           viviendaId: vivienda.viviendaId,
           manzana: vivienda.manzana,
           villaNum: vivienda.villa,
+          propietarioActual: vivienda.propietarios.isNotEmpty
+              ? vivienda.propietarios.first.nombreCompleto
+              : null,
+          repository: viviendaRepo,
+          onOwnerChanged: recargar,
         ),
       ),
     );
-
-    if (!mounted) return;
-    if (result != null) {
-      viviendaBloc.add(CambiarPropietario(
-            viviendaId: result.viviendaId,
-            nuevoPropietarioId: result.nuevoPropietarioId,
-            tipo: result.tipo,
-            motivo: result.motivo,
-          ));
-    }
   }
 
   Future<void> _confirmarToggleEstado(
@@ -196,12 +199,8 @@ class _AdminManzanaVillasPageState
             );
             _recargar();
           } else if (state is PropietarioCambiado) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.mensaje),
-                backgroundColor: Colors.blue,
-              ),
-            );
+            // El diálogo ya muestra el SnackBar de éxito.
+            // Solo recargar la lista.
             _recargar();
           } else if (state is ViviendaError) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -450,11 +449,19 @@ class _ChangeOwnerDialog extends StatefulWidget {
   final int viviendaId;
   final String manzana;
   final String villaNum;
+  final String? propietarioActual;
+  final ViviendaRepositoryPort repository;
+  final VoidCallback onOwnerChanged;
+  final Map<String, dynamic>? personaPrecargada;
 
   const _ChangeOwnerDialog({
     required this.viviendaId,
     required this.manzana,
     required this.villaNum,
+    this.propietarioActual,
+    required this.repository,
+    required this.onOwnerChanged,
+    this.personaPrecargada,
   });
 
   @override
@@ -464,106 +471,353 @@ class _ChangeOwnerDialog extends StatefulWidget {
 
 class _ChangeOwnerDialogState
     extends State<_ChangeOwnerDialog> {
-  String _ownerId = '';
-  String _tipo = 'titular';
+  final _cedulaCtrl = TextEditingController();
   final _motivoCtrl = TextEditingController();
+  bool _buscando = false;
+  bool _asignando = false;
+  Map<String, dynamic>? _personaEncontrada;
+  String? _error;
+  String _tipo = 'titular';
   bool _confirmado = false;
 
   bool get _formValido =>
-      _ownerId.isNotEmpty &&
+      _personaEncontrada != null &&
       _motivoCtrl.text.trim().isNotEmpty &&
       _confirmado;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.personaPrecargada != null) {
+      _personaEncontrada = widget.personaPrecargada;
+      _cedulaCtrl.text =
+          _personaEncontrada!['identificacion']?.toString() ?? '';
+    }
+  }
+
+  @override
   void dispose() {
+    _cedulaCtrl.dispose();
     _motivoCtrl.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Cambiar Propietario'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Mz ${widget.manzana}, V ${widget.villaNum}',
-                style: TextStyle(color: Colors.grey)),
-            const SizedBox(height: 16),
-            TextField(
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'ID del nuevo propietario',
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (v) =>
-                  setState(() => _ownerId = v),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _tipo,
-              decoration: const InputDecoration(
-                  labelText: 'Tipo', border: OutlineInputBorder()),
-              items: const [
-                DropdownMenuItem(value: 'titular', child: Text('Titular')),
-                DropdownMenuItem(
-                    value: 'copropietario',
-                    child: Text('Copropietario')),
-              ],
-              onChanged: (v) =>
-                  setState(() => _tipo = v ?? 'titular'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _motivoCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Motivo del cambio *',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 2,
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 12),
-            CheckboxListTile(
-              value: _confirmado,
-              title:
-                  const Text('Confirmo el cambio de propietario'),
-              controlAffinity:
-                  ListTileControlAffinity.leading,
-              contentPadding: EdgeInsets.zero,
-              onChanged: (v) =>
-                  setState(() => _confirmado = v ?? false),
-            ),
-          ],
+  Future<void> _buscarPersona() async {
+    final cedula = _cedulaCtrl.text.trim();
+    if (cedula.length < 10) {
+      setState(() => _error = 'Ingrese una cédula válida (10 dígitos)');
+      return;
+    }
+    setState(() {
+      _buscando = true;
+      _error = null;
+      _personaEncontrada = null;
+    });
+    try {
+      final response = await widget.repository.buscarPersonaPorCedula(cedula);
+      if (!mounted) return;
+      setState(() {
+        _buscando = false;
+        _personaEncontrada = response;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _buscando = false;
+        _error = 'Error al buscar: ${e.toString().replaceAll('Exception: ', '')}';
+      });
+    }
+  }
+
+  Future<void> _registrarNuevoPropietario() async {
+    final cedula = _cedulaCtrl.text.trim();
+    Navigator.pop(context);
+
+    final nuevoPropietario =
+        await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AdminCreateOwnerPage(
+          personaId: 0,
+          identificacion: '',
+          cedula: cedula,
+          manzana: widget.manzana,
+          villa: widget.villaNum,
+          fromChangeOwner: true,
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+    );
+
+    if (nuevoPropietario != null && mounted) {
+      await showDialog(
+        context: context,
+        builder: (ctx) => BlocProvider.value(
+          value: context.read<ViviendaBloc>(),
+          child: _ChangeOwnerDialog(
+            viviendaId: widget.viviendaId,
+            manzana: widget.manzana,
+            villaNum: widget.villaNum,
+            propietarioActual: widget.propietarioActual,
+            personaPrecargada: nuevoPropietario,
+            repository: widget.repository,
+            onOwnerChanged: widget.onOwnerChanged,
+          ),
         ),
-        FilledButton(
-          onPressed: _formValido
-              ? () {
-                  Navigator.pop(
-                    context,
-                    CambioPropietarioData(
-                      viviendaId: widget.viviendaId,
-                      nuevoPropietarioId:
-                          int.tryParse(_ownerId) ?? 0,
-                      tipo: _tipo,
-                      motivo: _motivoCtrl.text.trim(),
+      );
+    }
+  }
+
+  Future<void> _asignarPropietario() async {
+    if (!_formValido || _asignando) return;
+    final personaId = _personaEncontrada!['persona_id'] ??
+        _personaEncontrada!['id'];
+    setState(() {
+      _asignando = true;
+      _error = null;
+    });
+
+    try {
+      await widget.repository.cambiarPropietario(
+        viviendaId: widget.viviendaId,
+        nuevoPropietarioId: personaId is int
+            ? personaId
+            : int.tryParse(personaId.toString()) ?? 0,
+        tipo: _tipo,
+        motivo: _motivoCtrl.text.trim(),
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Propietario asignado correctamente'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      widget.onOwnerChanged();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _asignando = false;
+        _error = e.toString().replaceAll('Exception: ', '');
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final mostrarResultado =
+        _personaEncontrada != null ||
+        (_cedulaCtrl.text.trim().length >= 10 &&
+            !_buscando &&
+            _error == null &&
+            widget.personaPrecargada == null);
+
+    return Dialog(
+      insetPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Cambiar Propietario',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                  );
-                }
-              : null,
-          style: FilledButton.styleFrom(
-              backgroundColor:
-                  const Color(0xFF04345C)),
-          child: const Text('Confirmar Cambio'),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              Text(
+                  'Manzana ${widget.manzana} - Villa ${widget.villaNum}',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              if (widget.propietarioActual != null) ...[
+                const SizedBox(height: 4),
+                Text('Actual: ${widget.propietarioActual}',
+                    style:
+                        TextStyle(color: Colors.grey[600], fontSize: 13)),
+              ],
+              const SizedBox(height: 20),
+
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _cedulaCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Identificación',
+                        hintText: '0912345678',
+                        border: const OutlineInputBorder(),
+                        prefixIcon:
+                            const Icon(Icons.badge_outlined),
+                        errorText: _error,
+                      ),
+                      onSubmitted: (_) => _buscarPersona(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: _buscando ? null : _buscarPersona,
+                      icon: _buscando
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white),
+                            )
+                          : const Icon(Icons.search),
+                      label: const Text('Buscar'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              if (_personaEncontrada != null) ...[
+                const Divider(),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: theme.primaryColor,
+                    child: const Icon(Icons.person,
+                        color: Colors.white),
+                  ),
+                  title: Text(
+                    '${_personaEncontrada!['nombres'] ?? ''} '
+                    '${_personaEncontrada!['apellidos'] ?? ''}'
+                        .trim(),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    '${_personaEncontrada!['identificacion'] ?? ''}'
+                    '${_personaEncontrada!['correo'] != null ? ' · ${_personaEncontrada!['correo']}' : ''}',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _tipo,
+                  decoration: const InputDecoration(
+                    labelText: 'Tipo',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                        value: 'titular', child: Text('Titular')),
+                    DropdownMenuItem(
+                        value: 'copropietario',
+                        child: Text('Copropietario')),
+                  ],
+                  onChanged: (v) =>
+                      setState(() => _tipo = v ?? 'titular'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _motivoCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Motivo del cambio *',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 12),
+                CheckboxListTile(
+                  value: _confirmado,
+                  onChanged: (v) =>
+                      setState(() => _confirmado = v ?? false),
+                  title: const Text(
+                      'Confirmo el cambio de propietario'),
+                  controlAffinity:
+                      ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
+
+              if (mostrarResultado &&
+                  _personaEncontrada == null &&
+                  widget.personaPrecargada == null) ...[
+                const Divider(),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.person_off,
+                          color: Colors.orange, size: 40),
+                      const SizedBox(height: 8),
+                      const Text('Persona no encontrada',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      const Text(
+                          'La cédula no está registrada en el sistema.',
+                          style: TextStyle(fontSize: 13)),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed:
+                              _registrarNuevoPropietario,
+                          icon: const Icon(Icons.person_add),
+                          label: const Text(
+                              'Registrar nuevo propietario'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancelar'),
+                  ),
+                  const SizedBox(width: 8),
+                  if (_personaEncontrada != null)
+                    ElevatedButton(
+                      onPressed: (_formValido && !_asignando)
+                          ? _asignarPropietario
+                          : null,
+                      child: _asignando
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Text('Asignar Propietario'),
+                    ),
+                ],
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
 }

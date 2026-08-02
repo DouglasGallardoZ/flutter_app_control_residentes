@@ -175,4 +175,19 @@ class ViviendaApi {
       throw Exception(detail ?? 'Error al cambiar propietario');
     }
   }
+
+  Future<Map<String, dynamic>?> buscarPersonaPorCedula(
+      String cedula) async {
+    try {
+      final response = await dio.get('/personas/buscar/$cedula');
+      final data = response.data;
+      if (data is Map && data['encontrada'] == true) {
+        return data['persona'] as Map<String, dynamic>?;
+      }
+      return null;
+    } on DioException catch (e) {
+      final detail = e.response?.data?['detail']?.toString();
+      throw Exception(detail ?? 'Error al buscar persona');
+    }
+  }
 }
