@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../domain/usecases/get_admin_metrics_usecase.dart';
 import '../../../domain/usecases/get_access_history_usecase.dart';
 import 'admin_dashboard_event.dart';
@@ -12,6 +13,7 @@ class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> 
   String _currentTimeFilter = 'today';
   String? _customFechaInicio;
   String? _customFechaFin;
+  bool _primeraCarga = true;
 
   AdminDashboardBloc(this.getAdminMetricsUseCase, this.getAccessHistoryUseCase)
       : super(const AdminDashboardInitial()) {
@@ -24,6 +26,13 @@ class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> 
   Future<void> _onLoadAdminMetrics(LoadAdminMetrics event, Emitter<AdminDashboardState> emit) async {
     emit(const AdminDashboardLoading());
     try {
+      if (_primeraCarga) {
+        _primeraCarga = false;
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          await user.getIdToken(true);
+        }
+      }
       final (fechaInicio, fechaFin) = _calculateDateRange(_currentTimeFilter, _customFechaInicio, _customFechaFin);
       final metrics = await getAdminMetricsUseCase(
         fechaInicio: fechaInicio,
@@ -36,7 +45,8 @@ class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> 
         customFechaFin: _customFechaFin,
       ));
     } catch (e) {
-      emit(AdminDashboardError('Error al cargar métricas: ${e.toString()}'));
+      final msg = e.toString().replaceAll('Exception: ', '');
+      emit(AdminDashboardError('Error al cargar métricas: $msg'));
     }
   }
 
@@ -54,7 +64,7 @@ class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> 
         customFechaFin: _customFechaFin,
       ));
     } catch (e) {
-      emit(AdminDashboardError('Error al actualizar métricas: ${e.toString()}'));
+      emit(AdminDashboardError('Error al actualizar métricas: ${e.toString().replaceAll('Exception: ', '')}'));
     }
   }
 

@@ -336,7 +336,11 @@ class _QrVisitPageState extends State<QrVisitPage> {
                   Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.accessHistory, (route) => false, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion});
                   break;
                 case 3:
-                  Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.members, (route) => false, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId});
+                  if (isFamilyMember) {
+                    Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.profile, (route) => false, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion});
+                  } else {
+                    Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.members, (route) => false, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion, 'residenceId': widget.residenceId});
+                  }
                   break;
                 case 4:
                   Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.profile, (route) => false, arguments: {'personaId': widget.personaId, 'identificacion': widget.identificacion});

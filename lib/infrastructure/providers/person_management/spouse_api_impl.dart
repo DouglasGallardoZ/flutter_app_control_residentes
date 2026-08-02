@@ -38,7 +38,7 @@ class SpouseApiImpl implements SpouseApiPort {
     try {
       final body = <String, dynamic>{
         'identificacion': identificacion,
-        'tipo_identificacion': tipoIdentificacion ?? 'cedula',
+        'tipo_identificacion': tipoIdentificacion ?? 'Cedula',
         'nombres': nombres,
         'apellidos': apellidos,
         'fecha_nacimiento': fechaNacimiento,

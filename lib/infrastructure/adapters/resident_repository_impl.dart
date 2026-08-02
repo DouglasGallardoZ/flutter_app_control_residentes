@@ -101,14 +101,15 @@ class ResidentRepositoryImpl implements ResidentRepository {
   }
 
   @override
-  Future<void> deleteResident(int personaId) async {
+  Future<void> deleteResident(int personaId, String motivo) async {
     try {
-      // Nota: deleteAccount no está en ResidentApiPort, usar accountManagementApi
-      // Por ahora mantener compatibilidad
-      throw UnimplementedError(
-          'deleteResident requiere AccountManagementApiPort');
+      await residentApi.deleteResident(
+        personaId,
+        motivo,
+        usuarioActualizado: 'admin_system',
+      );
     } catch (e) {
-      rethrow;
+      throw Exception('Error al eliminar residente: $e');
     }
   }
 

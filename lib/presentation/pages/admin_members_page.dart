@@ -85,64 +85,102 @@ class _AdminMembersPageState
     final confirmado =
         await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text(
-            'Desactivar Miembro'),
-        content: Column(
-          mainAxisSize:
-              MainAxisSize.min,
-          children: [
-            Text(
-                '¿Desactivar a $nombre? No podrá acceder a la vivienda.'),
-            const SizedBox(
-                height: 16),
-            TextField(
-              controller:
-                  motivoCtrl,
-              decoration:
-                  const InputDecoration(
-                labelText: 'Motivo',
-                border:
-                    OutlineInputBorder(),
+      builder: (ctx) =>
+          StatefulBuilder(
+        builder: (ctx,
+                setDialogState) =>
+            AlertDialog(
+          title: const Text(
+              'Desactivar Miembro'),
+          content: Column(
+            mainAxisSize:
+                MainAxisSize.min,
+            children: [
+              Text(
+                  '¿Desactivar a $nombre?'),
+              const SizedBox(
+                  height: 12),
+              Container(
+                padding:
+                    const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange
+                      .shade50,
+                  borderRadius:
+                      BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.info_outline,
+                        color: Colors.orange,
+                        size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'No podrá acceder al aplicativo.',
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.orange),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              maxLines: 2,
+              const SizedBox(
+                  height: 16),
+              TextField(
+                controller:
+                    motivoCtrl,
+                decoration:
+                    const InputDecoration(
+                  labelText: 'Motivo *',
+                  border:
+                      OutlineInputBorder(),
+                ),
+                maxLines: 2,
+                onChanged: (_) =>
+                    setDialogState(() {}),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(
+                      ctx, false),
+              child: const Text(
+                  'Cancelar'),
+            ),
+            FilledButton(
+              onPressed: motivoCtrl
+                      .text
+                      .trim()
+                      .isNotEmpty
+                  ? () => Navigator.pop(
+                      ctx, true)
+                  : null,
+              style: FilledButton
+                  .styleFrom(
+                      backgroundColor:
+                          Colors.orange),
+              child: const Text(
+                  'Desactivar'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, false),
-            child: const Text(
-                'Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, true),
-            style: FilledButton
-                .styleFrom(
-                    backgroundColor:
-                        Colors.orange),
-            child: const Text(
-                'Desactivar'),
-          ),
-        ],
       ),
     );
+    final motivo = motivoCtrl.text.trim();
+
     if (confirmado == true &&
         context.mounted) {
       context
           .read<MemberBloc>()
           .add(DeactivateMemberEvent(
         memberId: memberId,
-        reason: motivoCtrl
-            .text
-            .trim(),
+        reason: motivo,
       ));
     }
-    motivoCtrl.dispose();
   }
 
   Future<void> _confirmarReactivar(
@@ -160,64 +198,102 @@ class _AdminMembersPageState
     final confirmado =
         await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text(
-            'Reactivar Miembro'),
-        content: Column(
-          mainAxisSize:
-              MainAxisSize.min,
-          children: [
-            Text(
-                '¿Reactivar a $nombre?'),
-            const SizedBox(
-                height: 16),
-            TextField(
-              controller:
-                  motivoCtrl,
-              decoration:
-                  const InputDecoration(
-                labelText: 'Motivo',
-                border:
-                    OutlineInputBorder(),
+      builder: (ctx) =>
+          StatefulBuilder(
+        builder: (ctx,
+                setDialogState) =>
+            AlertDialog(
+          title: const Text(
+              'Reactivar Miembro'),
+          content: Column(
+            mainAxisSize:
+                MainAxisSize.min,
+            children: [
+              Text(
+                  '¿Reactivar a $nombre?'),
+              const SizedBox(
+                  height: 12),
+              Container(
+                padding:
+                    const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green
+                      .shade50,
+                  borderRadius:
+                      BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.check_circle_outline,
+                        color: Colors.green,
+                        size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'El miembro podrá acceder nuevamente.',
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.green),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              maxLines: 2,
+              const SizedBox(
+                  height: 16),
+              TextField(
+                controller:
+                    motivoCtrl,
+                decoration:
+                    const InputDecoration(
+                  labelText: 'Motivo *',
+                  border:
+                      OutlineInputBorder(),
+                ),
+                maxLines: 2,
+                onChanged: (_) =>
+                    setDialogState(() {}),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(
+                      ctx, false),
+              child: const Text(
+                  'Cancelar'),
+            ),
+            FilledButton(
+              onPressed: motivoCtrl
+                      .text
+                      .trim()
+                      .isNotEmpty
+                  ? () => Navigator.pop(
+                      ctx, true)
+                  : null,
+              style: FilledButton
+                  .styleFrom(
+                      backgroundColor:
+                          Colors.green),
+              child: const Text(
+                  'Reactivar'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, false),
-            child: const Text(
-                'Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, true),
-            style: FilledButton
-                .styleFrom(
-                    backgroundColor:
-                        Colors.green),
-            child: const Text(
-                'Reactivar'),
-          ),
-        ],
       ),
     );
+    final motivo = motivoCtrl.text.trim();
+
     if (confirmado == true &&
         context.mounted) {
       context
           .read<MemberBloc>()
           .add(ReactivateMemberEvent(
         memberId: memberId,
-        reason: motivoCtrl
-            .text
-            .trim(),
+        reason: motivo,
       ));
     }
-    motivoCtrl.dispose();
   }
 
   Future<void> _confirmarEliminar(
@@ -228,49 +304,152 @@ class _AdminMembersPageState
         '${member['nombres'] ?? ''} ${member['apellidos'] ?? ''}'
             .trim();
     final memberId =
-        member['miembro_vivienda_pk'] ??
+        member['miembro_id'] ??
+            member['miembro_vivienda_pk'] ??
             member['miembroId'] ??
             0;
-    final confirmado =
+    print('DEBUG: Eliminando miembro ID=$memberId');
+    final motivoCtrl =
+        TextEditingController();
+    var confirmado = false;
+
+    final result =
         await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        icon: const Icon(
-            Icons.warning_amber,
-            color: Colors.red,
-            size: 48),
-        title: const Text(
-            'Eliminar Miembro'),
-        content: Text(
-            '¿Eliminar permanentemente a $nombre? Esta acción no se puede deshacer.'),
-        actions: [
-          TextButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, false),
-            child: const Text(
-                'Cancelar'),
+      builder: (ctx) =>
+          StatefulBuilder(
+        builder: (ctx,
+                setDialogState) =>
+            AlertDialog(
+          title: Row(children: [
+            const Icon(
+                Icons.warning_amber,
+                color: Colors.red,
+                size: 28),
+            const SizedBox(
+                width: 8),
+            const Text(
+                'Eliminar Miembro'),
+          ]),
+          content:
+              SingleChildScrollView(
+            child: Column(
+              mainAxisSize:
+                  MainAxisSize.min,
+              crossAxisAlignment:
+                  CrossAxisAlignment
+                      .start,
+              children: [
+                Text(nombre,
+                    style: const TextStyle(
+                        fontWeight:
+                            FontWeight
+                                .bold)),
+                const SizedBox(
+                    height: 12),
+                Container(
+                  padding:
+                      const EdgeInsets
+                          .all(12),
+                  decoration:
+                      BoxDecoration(
+                    color: Colors
+                        .red
+                        .shade50,
+                    borderRadius:
+                        BorderRadius
+                            .circular(8),
+                    border: Border.all(
+                        color: Colors
+                            .red
+                            .shade200),
+                  ),
+                  child: const Text(
+                    'Esta acción es definitiva e irreversible.',
+                    style: TextStyle(
+                        color:
+                            Colors.red,
+                        fontSize: 13),
+                  ),
+                ),
+                const SizedBox(
+                    height: 16),
+                TextField(
+                  controller:
+                      motivoCtrl,
+                  decoration:
+                      const InputDecoration(
+                    labelText:
+                        'Motivo *',
+                    border:
+                        OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                  onChanged: (_) =>
+                      setDialogState(() {}),
+                ),
+                const SizedBox(
+                    height: 12),
+                CheckboxListTile(
+                  value: confirmado,
+                  onChanged: (v) {
+                    setDialogState(() =>
+                        confirmado =
+                            v ?? false);
+                  },
+                  title: const Text(
+                    'Confirmo que deseo eliminar permanentemente',
+                    style:
+                        TextStyle(
+                            fontSize: 14),
+                  ),
+                  controlAffinity:
+                      ListTileControlAffinity
+                          .leading,
+                  contentPadding:
+                      EdgeInsets.zero,
+                  activeColor:
+                      Colors.red,
+                ),
+              ],
+            ),
           ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, true),
-            style: FilledButton
-                .styleFrom(
-                    backgroundColor:
-                        Colors.red),
-            child: const Text(
-                'Eliminar'),
-          ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(
+                      ctx, false),
+              child: const Text(
+                  'Cancelar'),
+            ),
+            FilledButton(
+              onPressed: (motivoCtrl
+                              .text
+                              .trim()
+                              .isNotEmpty &&
+                          confirmado)
+                  ? () => Navigator.pop(
+                      ctx, true)
+                  : null,
+              style: FilledButton
+                  .styleFrom(
+                      backgroundColor:
+                          Colors.red),
+              child: const Text(
+                  'Eliminar Permanentemente'),
+            ),
+          ],
+        ),
       ),
     );
-    if (confirmado == true &&
+    final motivo = motivoCtrl.text.trim();
+
+    if (result == true &&
         context.mounted) {
       context
           .read<MemberBloc>()
           .add(DeleteMemberEvent(
-              memberId));
+              memberId, motivo));
     }
   }
 

@@ -150,11 +150,13 @@ class _AdminAccountsPageState
                 decoration:
                     const InputDecoration(
                   labelText:
-                      'Motivo',
+                      'Motivo *',
                   border:
                       OutlineInputBorder(),
                 ),
                 maxLines: 2,
+                onChanged: (_) =>
+                    setDialogState(() {}),
               ),
               const SizedBox(
                   height: 16),
@@ -193,9 +195,13 @@ class _AdminAccountsPageState
                   'Cancelar'),
             ),
             FilledButton(
-              onPressed: () =>
-                  Navigator.pop(
-                      ctx, true),
+              onPressed: motivoCtrl
+                      .text
+                      .trim()
+                      .isNotEmpty
+                  ? () => Navigator.pop(
+                      ctx, true)
+                  : null,
               style: FilledButton
                   .styleFrom(
                 backgroundColor: bloquear
@@ -213,6 +219,8 @@ class _AdminAccountsPageState
       ),
     );
 
+    final motivo = motivoCtrl.text.trim();
+
     if (confirmado == true &&
         context.mounted) {
       final accountId =
@@ -227,9 +235,7 @@ class _AdminAccountsPageState
               : int.tryParse(accountId
                       .toString()) ??
                   0,
-          reason: motivoCtrl
-              .text
-              .trim(),
+          reason: motivo,
           cascada: cascada,
         ));
       } else {
@@ -242,14 +248,11 @@ class _AdminAccountsPageState
               : int.tryParse(accountId
                       .toString()) ??
                   0,
-          reason: motivoCtrl
-              .text
-              .trim(),
+          reason: motivo,
           cascada: cascada,
         ));
       }
     }
-    motivoCtrl.dispose();
   }
 
   Future<void> _confirmarEliminar(
@@ -377,15 +380,17 @@ class _AdminAccountsPageState
       ),
     );
 
+    final motivo = motivoCtrl.text.trim();
+
     if (result == true && mounted) {
       final accountId = account['usuario_id'] ?? 0;
       context.read<AdminAccountBloc>().add(DeleteAccountEvent(
             accountId: accountId is int
                 ? accountId
                 : int.tryParse(accountId.toString()) ?? 0,
+            motivo: motivo,
           ));
     }
-    motivoCtrl.dispose();
   }
 
   Future<void> _resetPassword(
@@ -1134,18 +1139,18 @@ class _AccountDetailPage
                         EdgeInsets.zero,
                   ),
                 ),
-              const PopupMenuItem(
-                value: 'reset',
-                child: ListTile(
-                  leading: Icon(
-                      Icons.lock_reset,
-                      color: Colors.blue),
-                  title: Text(
-                      'Restablecer contraseña'),
-                  contentPadding:
-                      EdgeInsets.zero,
-                ),
-              ),
+              // const PopupMenuItem(
+              //   value: 'reset',
+              //   child: ListTile(
+              //     leading: Icon(
+              //         Icons.lock_reset,
+              //         color: Colors.blue),
+              //     title: Text(
+              //         'Restablecer contraseña'),
+              //     contentPadding:
+              //         EdgeInsets.zero,
+              //   ),
+              // ),
               const PopupMenuItem(
                 value: 'delete',
                 child: ListTile(

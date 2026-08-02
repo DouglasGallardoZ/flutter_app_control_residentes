@@ -107,11 +107,12 @@ class ReactivateResidentEvent extends ResidentEvent {
 /// Eliminar residente
 class DeleteResidentEvent extends ResidentEvent {
   final int personaId;
+  final String motivo;
 
-  const DeleteResidentEvent(this.personaId);
+  const DeleteResidentEvent(this.personaId, [this.motivo = '']);
 
   @override
-  List<Object?> get props => [personaId];
+  List<Object?> get props => [personaId, motivo];
 }
 
 /// Obtener accesos de vivienda

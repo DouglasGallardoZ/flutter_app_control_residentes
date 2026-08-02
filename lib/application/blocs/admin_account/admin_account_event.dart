@@ -61,11 +61,12 @@ class UnblockAccountEvent extends AdminAccountEvent {
 
 class DeleteAccountEvent extends AdminAccountEvent {
   final int accountId;
+  final String motivo;
 
-  const DeleteAccountEvent({required this.accountId});
+  const DeleteAccountEvent({required this.accountId, this.motivo = ''});
 
   @override
-  List<Object?> get props => [accountId];
+  List<Object?> get props => [accountId, motivo];
 }
 
 class ResetPasswordEvent extends AdminAccountEvent {

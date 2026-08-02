@@ -5,7 +5,7 @@ class DeleteAccountUseCase {
 
   DeleteAccountUseCase(this.repository);
 
-  Future<void> call({required int accountId}) {
-    return repository.deleteAccount(accountId);
+  Future<void> call({required int accountId, String motivo = ''}) {
+    return repository.deleteAccount(accountId, motivo);
   }
 }

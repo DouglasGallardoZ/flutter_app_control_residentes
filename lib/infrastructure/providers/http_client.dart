@@ -25,7 +25,7 @@ class ApiHttpClient {
           final user = firebaseAuth.currentUser;
           if (user != null) {
             try {
-              final idToken = await user.getIdToken(true);
+              final idToken = await user.getIdToken();
               options.headers['Authorization'] = 'Bearer $idToken';
             } catch (e) {
               print('Error obteniendo token Firebase: $e');

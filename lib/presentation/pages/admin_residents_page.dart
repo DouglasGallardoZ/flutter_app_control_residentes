@@ -83,57 +83,112 @@ class _AdminResidentsPageState
     final confirmado =
         await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(bloquear
-            ? 'Desactivar Residente'
-            : 'Reactivar Residente'),
-        content: Column(
-          mainAxisSize:
-              MainAxisSize.min,
-          children: [
-            Text(bloquear
-                ? '¿Desactivar a $nombre? No podrá generar QR ni acceder.'
-                : '¿Reactivar a $nombre?'),
-            const SizedBox(
-                height: 16),
-            TextField(
-              controller:
-                  motivoCtrl,
-              decoration:
-                  const InputDecoration(
-                labelText: 'Motivo',
-                border:
-                    OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(bloquear
+              ? 'Desactivar Residente'
+              : 'Reactivar Residente'),
+          content: Column(
+            mainAxisSize:
+                MainAxisSize.min,
+            children: [
+              Text(bloquear
+                  ? '¿Desactivar a $nombre?'
+                  : '¿Reactivar a $nombre?'),
+              const SizedBox(
+                  height: 12),
+              Container(
+                padding:
+                    const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: bloquear
+                      ? Colors.orange
+                          .shade50
+                      : Colors.green
+                          .shade50,
+                  borderRadius:
+                      BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      bloquear
+                          ? Icons
+                              .info_outline
+                          : Icons
+                              .check_circle_outline,
+                      color: bloquear
+                          ? Colors.orange
+                          : Colors.green,
+                      size: 20,
+                    ),
+                    const SizedBox(
+                        width: 8),
+                    Expanded(
+                      child: Text(
+                        bloquear
+                            ? 'No podrá acceder al aplicativo.'
+                            : 'El residente podrá acceder nuevamente.',
+                        style:
+                             TextStyle(
+                                fontSize: 13,
+                                color: bloquear
+                                ? Colors.orange
+                                : Colors.green),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              maxLines: 2,
+              const SizedBox(
+                  height: 16),
+              TextField(
+                controller:
+                    motivoCtrl,
+                decoration:
+                    const InputDecoration(
+                  labelText: 'Motivo *',
+                  border:
+                      OutlineInputBorder(),
+                ),
+                maxLines: 2,
+                onChanged: (_) =>
+                    setDialogState(() {}),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(
+                      ctx, false),
+              child: const Text(
+                  'Cancelar'),
+            ),
+            FilledButton(
+              onPressed: motivoCtrl
+                      .text
+                      .trim()
+                      .isNotEmpty
+                  ? () => Navigator.pop(
+                      ctx, true)
+                  : null,
+              style: FilledButton
+                  .styleFrom(
+                backgroundColor: bloquear
+                    ? Colors.orange
+                    : Colors.green,
+              ),
+              child: Text(bloquear
+                  ? 'Desactivar'
+                  : 'Reactivar'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, false),
-            child: const Text(
-                'Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, true),
-            style: FilledButton
-                .styleFrom(
-              backgroundColor: bloquear
-                  ? Colors.orange
-                  : Colors.green,
-            ),
-            child: Text(bloquear
-                ? 'Desactivar'
-                : 'Reactivar'),
-          ),
-        ],
       ),
     );
+    final motivo = motivoCtrl.text.trim();
+
     if (confirmado == true &&
         context.mounted) {
       final personaId = resident[
@@ -147,22 +202,17 @@ class _AdminResidentsPageState
             .read<ResidentBloc>()
             .add(DeactivateResidentEvent(
               personaId: personaId,
-              reason: motivoCtrl
-                  .text
-                  .trim(),
+              reason: motivo,
             ));
       } else {
         context
             .read<ResidentBloc>()
             .add(ReactivateResidentEvent(
               personaId: personaId,
-              reason: motivoCtrl
-                  .text
-                  .trim(),
+              reason: motivo,
             ));
       }
     }
-    motivoCtrl.dispose();
   }
 
   Future<void> _confirmarEliminar(
@@ -172,41 +222,142 @@ class _AdminResidentsPageState
     final nombre =
         '${resident['nombres'] ?? ''} ${resident['apellidos'] ?? ''}'
             .trim();
-    final confirmado =
+    final motivoCtrl =
+        TextEditingController();
+    var confirmado = false;
+
+    final result =
         await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        icon: const Icon(
-            Icons.warning_amber,
-            color: Colors.red,
-            size: 48),
-        title: const Text(
-            'Eliminar Residente'),
-        content: Text(
-            '¿Eliminar permanentemente a $nombre? Esta acción no se puede deshacer.'),
-        actions: [
-          TextButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, false),
-            child: const Text(
-                'Cancelar'),
+      builder: (ctx) =>
+          StatefulBuilder(
+        builder: (ctx,
+                setDialogState) =>
+            AlertDialog(
+          title: Row(children: [
+            const Icon(
+                Icons.warning_amber,
+                color: Colors.red,
+                size: 28),
+            const SizedBox(
+                width: 8),
+            const Text(
+                'Eliminar Residente'),
+          ]),
+          content:
+              SingleChildScrollView(
+            child: Column(
+              mainAxisSize:
+                  MainAxisSize.min,
+              crossAxisAlignment:
+                  CrossAxisAlignment
+                      .start,
+              children: [
+                Text(nombre,
+                    style: const TextStyle(
+                        fontWeight:
+                            FontWeight
+                                .bold)),
+                const SizedBox(
+                    height: 12),
+                Container(
+                  padding:
+                      const EdgeInsets
+                          .all(12),
+                  decoration:
+                      BoxDecoration(
+                    color: Colors
+                        .red
+                        .shade50,
+                    borderRadius:
+                        BorderRadius
+                            .circular(8),
+                    border: Border.all(
+                        color: Colors
+                            .red
+                            .shade200),
+                  ),
+                  child: const Text(
+                    'Esta acción es definitiva e irreversible.',
+                    style: TextStyle(
+                        color:
+                            Colors.red,
+                        fontSize: 13),
+                  ),
+                ),
+                const SizedBox(
+                    height: 16),
+                TextField(
+                  controller:
+                      motivoCtrl,
+                  decoration:
+                      const InputDecoration(
+                    labelText:
+                        'Motivo *',
+                    border:
+                        OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                  onChanged: (_) =>
+                      setDialogState(() {}),
+                ),
+                const SizedBox(
+                    height: 12),
+                CheckboxListTile(
+                  value: confirmado,
+                  onChanged: (v) {
+                    setDialogState(() =>
+                        confirmado =
+                            v ?? false);
+                  },
+                  title: const Text(
+                    'Confirmo que deseo eliminar permanentemente',
+                    style:
+                        TextStyle(
+                            fontSize: 14),
+                  ),
+                  controlAffinity:
+                      ListTileControlAffinity
+                          .leading,
+                  contentPadding:
+                      EdgeInsets.zero,
+                  activeColor:
+                      Colors.red,
+                ),
+              ],
+            ),
           ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(
-                    ctx, true),
-            style: FilledButton
-                .styleFrom(
-                    backgroundColor:
-                        Colors.red),
-            child: const Text(
-                'Eliminar'),
-          ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(
+                      ctx, false),
+              child: const Text(
+                  'Cancelar'),
+            ),
+            FilledButton(
+              onPressed: (motivoCtrl
+                              .text
+                              .trim()
+                              .isNotEmpty &&
+                          confirmado)
+                  ? () => Navigator.pop(
+                      ctx, true)
+                  : null,
+              style: FilledButton
+                  .styleFrom(
+                      backgroundColor:
+                          Colors.red),
+              child: const Text(
+                  'Eliminar Permanentemente'),
+            ),
+          ],
+        ),
       ),
     );
-    if (confirmado == true &&
+    final motivo = motivoCtrl.text.trim();
+
+    if (result == true &&
         context.mounted) {
       final personaId = resident[
               'persona_id'] ??
@@ -217,7 +368,7 @@ class _AdminResidentsPageState
       context
           .read<ResidentBloc>()
           .add(DeleteResidentEvent(
-              personaId));
+              personaId, motivo));
     }
   }
 

@@ -120,7 +120,8 @@ class AdminAccountBloc extends Bloc<AdminAccountEvent, AdminAccountState> {
     Emitter emit,
   ) async {
     try {
-      await deleteAccountUseCase(accountId: event.accountId);
+      await deleteAccountUseCase(
+          accountId: event.accountId, motivo: event.motivo);
       emit(AccountDeleted(message: 'Cuenta eliminada correctamente'));
       
       // Auto-refresh

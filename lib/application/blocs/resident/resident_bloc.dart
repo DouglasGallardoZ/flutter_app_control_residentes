@@ -141,7 +141,7 @@ class ResidentBloc extends Bloc<ResidentEvent, ResidentState> {
     Emitter<ResidentState> emit,
   ) async {
     try {
-      await deleteResidentUseCase(event.personaId);
+      await deleteResidentUseCase(event.personaId, event.motivo);
       emit(const ResidentDeleted('Residente eliminado correctamente'));
     } catch (e) {
       emit(ResidentError(

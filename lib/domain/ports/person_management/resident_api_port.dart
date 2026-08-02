@@ -83,4 +83,16 @@ abstract class ResidentApiPort {
     String reason, {
     String usuarioActualizado = 'admin_system',
   });
+
+  /// Eliminar un residente
+  ///
+  /// @param residenteId ID del residente
+  /// @param reason Motivo de eliminación
+  /// @param usuarioActualizado Usuario que realiza la eliminación
+  /// @return Map con resultado de la eliminación
+  Future<Map<String, dynamic>> deleteResident(
+    int residenteId,
+    String reason, {
+    String usuarioActualizado = 'admin_system',
+  });
 }

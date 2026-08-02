@@ -5,7 +5,7 @@ class DeleteResidentUseCase {
 
   DeleteResidentUseCase(this.repository);
 
-  Future<void> call(int residentId) async {
-    return repository.deleteResident(residentId);
+  Future<void> call(int residentId, String motivo) async {
+    return repository.deleteResident(residentId, motivo);
   }
 }

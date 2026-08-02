@@ -35,7 +35,8 @@ class AdminAccountRepositoryImpl implements AdminAccountRepository {
   }
 
   @override
-  Future<void> deleteAccount(int accountId) async {
-    await accountManagementApi.deleteAccount(accountId);
+  Future<void> deleteAccount(int accountId, String motivo) async {
+    await accountManagementApi.deleteAccount(
+        accountId, reason: motivo);
   }
 }

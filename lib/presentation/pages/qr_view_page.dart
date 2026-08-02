@@ -57,7 +57,13 @@ class QrViewPage extends StatelessWidget {
             case 3:
               final pid3 = maybePersonaId;
               final idn3 = maybeIdentificacion;
-              if (pid3 != null && idn3 != null) Navigator.of(context).pushNamedAndRemoveUntil('/members', (route) => false, arguments: {'personaId': pid3, 'identificacion': idn3});
+              if (pid3 != null && idn3 != null) {
+                if (isFamilyMember) {
+                  Navigator.of(context).pushNamedAndRemoveUntil('/profile', (route) => false, arguments: {'personaId': pid3, 'identificacion': idn3});
+                } else {
+                  Navigator.of(context).pushNamedAndRemoveUntil('/members', (route) => false, arguments: {'personaId': pid3, 'identificacion': idn3});
+                }
+              }
               break;
             case 4:
               final pid4 = maybePersonaId;

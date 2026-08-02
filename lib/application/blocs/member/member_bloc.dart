@@ -154,7 +154,7 @@ class MemberBloc extends Bloc<MemberEvent, MemberState> {
     Emitter<MemberState> emit,
   ) async {
     try {
-      await deleteMemberUseCase(event.memberId);
+      await deleteMemberUseCase(event.memberId, event.motivo);
       emit(MemberDeleted(message: 'Miembro eliminado correctamente'));
       // Auto-refresh: si tenemos una búsqueda activa, recargar
       if (state is MembersByLocationLoaded) {

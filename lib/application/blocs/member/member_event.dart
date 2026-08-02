@@ -80,11 +80,12 @@ class DesbloquearMiembroEvent extends MemberEvent {
 /// Eliminar un miembro
 class DeleteMemberEvent extends MemberEvent {
   final int memberId;
+  final String motivo;
 
-  const DeleteMemberEvent(this.memberId);
+  const DeleteMemberEvent(this.memberId, [this.motivo = '']);
 
   @override
-  List<Object?> get props => [memberId];
+  List<Object?> get props => [memberId, motivo];
 }
 
 /// Crear/agregar un nuevo miembro de familia

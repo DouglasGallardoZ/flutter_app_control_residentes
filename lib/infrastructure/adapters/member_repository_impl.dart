@@ -50,12 +50,9 @@ class MemberRepositoryImpl implements MemberRepository {
   }
 
   @override
-  Future<void> deleteMember(int memberId) async {
-    if (accountManagementApi == null) {
-      throw Exception(
-          'AccountManagementApi no está disponible para eliminar miembros');
-    }
-    await accountManagementApi!.deleteAccount(memberId);
+  Future<void> deleteMember(int memberId, [String motivo = '']) async {
+    await familyMemberApi.deleteMember(memberId,
+        reason: motivo.isNotEmpty ? motivo : 'Eliminación de miembro');
   }
 
   @override

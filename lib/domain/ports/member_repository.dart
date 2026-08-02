@@ -18,7 +18,7 @@ abstract class MemberRepository {
   Future<void> desbloquearMiembro({required int memberId, required String reason});
 
   /// Eliminar un miembro
-  Future<void> deleteMember(int memberId);
+  Future<void> deleteMember(int memberId, [String motivo = '']);
 
   /// Agregar/crear un miembro de familia
   Future<Map<String, dynamic>> addMember({

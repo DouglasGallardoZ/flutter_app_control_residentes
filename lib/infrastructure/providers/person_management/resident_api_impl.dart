@@ -141,5 +141,24 @@ class ResidentApiImpl implements ResidentApiPort {
     }
   }
 
-
+  @override
+  Future<Map<String, dynamic>> deleteResident(
+    int residenteId,
+    String reason, {
+    String usuarioActualizado = 'admin_system',
+  }) async {
+    try {
+      final response = await dio.delete(
+        '/residentes/$residenteId',
+        data: {
+          'motivo': reason,
+          'usuario_actualizado': usuarioActualizado,
+          'fecha_actualizado': DateTime.now().toIso8601String(),
+        },
+      );
+      return response.data ?? {};
+    } catch (e) {
+      throw Exception(ApiErrorHandler.manejar(e));
+    }
+  }
 }

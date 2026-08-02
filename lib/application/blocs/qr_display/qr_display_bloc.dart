@@ -69,7 +69,7 @@ class QrDisplayBloc extends Bloc<QrDisplayEvent, QrDisplayState> {
           break;
         case 3:
           emit(NavigationRequested(
-            '/members',
+            userData.isFamilyMember ? '/profile' : '/members',
             arguments: {
               'personaId': int.tryParse(userData.userId) ?? 0,
               'identificacion': userData.identificacion,
