@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/usecases/login_usecase.dart';
 import '../../../domain/usecases/logout_usecase.dart';
@@ -44,6 +45,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           email: event.email,
           password: event.password,
         );
+
+        if (_accesoWebRestringido(session.rol)) {
+          _isLoggingOut = true;
+          try {
+            await authProvider.logout();
+          } catch (_) {}
+          _isLoggingOut = false;
+          emit(AuthRestrictedWeb());
+          return;
+        }
+
         emit(AuthSuccess(session));
       } catch (ex) {
         String errorMessage = _extractErrorMessage(ex);
@@ -75,6 +87,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
           final account = await accountRepo.getById(uid);
           if (account != null) {
+            if (_accesoWebRestringido(account.rol)) {
+              _isLoggingOut = true;
+              try {
+                await authProvider.logout();
+              } catch (_) {}
+              _isLoggingOut = false;
+              emit(AuthRestrictedWeb());
+              return;
+            }
+
             final idToken =
                 await getIdToken.execute(forceRefresh: false);
 
@@ -140,6 +162,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           ' AUTH SYNC: usuario autenticado detectado (${user.uid}) -> despachando CheckAuthStatus');
       if (!isClosed) add(CheckAuthStatus());
     });
+  }
+
+  bool _accesoWebRestringido(String rol) {
+    if (!kIsWeb) return false;
+    final rolLower = rol.toLowerCase();
+    return rolLower != 'admin' && rolLower != 'administrador';
   }
 
   String _extractErrorMessage(Object ex) {

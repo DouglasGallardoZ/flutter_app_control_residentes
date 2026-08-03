@@ -195,6 +195,14 @@ class _LoginPageState extends State<LoginPage> {
                           backgroundColor: Colors.red,
                         ),
                       );
+                    } else if (state is AuthRestrictedWeb) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(
+                          content: Text(state.message),
+                          backgroundColor: Colors.orange,
+                          duration: const Duration(seconds: 5),
+                        ),
+                      );
                     }
                   },
                   builder: (ctx, state) {
@@ -294,22 +302,24 @@ class _LoginPageState extends State<LoginPage> {
                           const SizedBox(height: 24),
                           const Divider(),
                           const SizedBox(height: 16),
-                          Text(
-                            '¿No tienes cuenta?',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                      Navigator.of(context)
-                                          .pushNamed('/registerOption');
-                                    },
-                              icon: const Icon(Icons.person_add),
-                              label: const Text('Crear Cuenta'),
+                          if (!kIsWeb)
+                            Text(
+                              '¿No tienes cuenta?',
+                              style: Theme.of(context).textTheme.bodyMedium,
                             ),
-                          ),
+                          const SizedBox(height: 12),
+                          if (!kIsWeb)
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                        Navigator.of(context)
+                                            .pushNamed('/registerOption');
+                                      },
+                                icon: const Icon(Icons.person_add),
+                                label: const Text('Crear Cuenta'),
+                              ),
+                            ),
                         ],
                         ),
                       ),

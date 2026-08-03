@@ -46,6 +46,15 @@ class AuthFailure extends AuthState {
   AuthFailure(this.message);
 }
 
+/// Acceso web restringido a administradores.
+class AuthRestrictedWeb extends AuthState {
+  final String message;
+
+  AuthRestrictedWeb({
+    this.message = 'El acceso web está reservado para administradores. Usa la app móvil.',
+  });
+}
+
 class UserCreated extends AuthState {
   final String uid;
   final String email;

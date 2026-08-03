@@ -1,7 +1,30 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
-class RegisterOptionPage extends StatelessWidget {
+class RegisterOptionPage extends StatefulWidget {
   const RegisterOptionPage({super.key});
+
+  @override
+  State<RegisterOptionPage> createState() => _RegisterOptionPageState();
+}
+
+class _RegisterOptionPageState extends State<RegisterOptionPage> {
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'El registro solo está disponible en la app móvil'),
+          ),
+        );
+        Navigator.of(context).pop();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
