@@ -41,7 +41,7 @@ class _CredentialsResidentePageState extends State<CredentialsResidentePage> {
     final correo = widget.prospecto.correo;
     if (correo != null && correo.isNotEmpty) {
       emailCtrl.text = correo;
-      _isEmailReadOnly = true;
+      _isEmailReadOnly = false;
     } else {
       _isEmailReadOnly = false;
     }

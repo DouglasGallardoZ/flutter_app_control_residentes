@@ -27,8 +27,9 @@ class AdminScaffold extends StatelessWidget {
     switch (routeName) {
       case '/adminDashboard':
         return 0;
-      case '/adminAccessHistory':
-        return 1;
+      // TODO: Restaurar cuando se implemente el módulo de historial
+      // case '/adminAccessHistory':
+      //   return 1;
       case '/adminUsers':
       case '/adminResidents':
       case '/adminOwners':
@@ -38,13 +39,13 @@ class AdminScaffold extends StatelessWidget {
       case '/adminCreateOwner':
       case '/adminCreateMember':
       case '/adminFacialEnrollment':
-        return 2;
+        return 1;
       case '/adminProfile':
-        return 3;
+        return 2;
       case '/adminNotificaciones':
-        return 4;
+        return 3;
       case '/adminViviendas':
-        return 5;
+        return 4;
       default:
         return 0;
     }
@@ -56,11 +57,12 @@ class AdminScaffold extends StatelessWidget {
       selectedIcon: Icon(Icons.dashboard),
       label: 'Dashboard',
     ),
-    NavigationDestination(
-      icon: Icon(Icons.history_outlined),
-      selectedIcon: Icon(Icons.history),
-      label: 'Historial',
-    ),
+    // TODO: Restaurar cuando se implemente el módulo de historial
+    // NavigationDestination(
+    //   icon: Icon(Icons.history_outlined),
+    //   selectedIcon: Icon(Icons.history),
+    //   label: 'Historial',
+    // ),
     NavigationDestination(
       icon: Icon(Icons.people_outlined),
       selectedIcon: Icon(Icons.people),
@@ -89,11 +91,12 @@ class AdminScaffold extends StatelessWidget {
       selectedIcon: Icon(Icons.dashboard),
       label: Text('Dashboard'),
     ),
-    NavigationRailDestination(
-      icon: Icon(Icons.history_outlined),
-      selectedIcon: Icon(Icons.history),
-      label: Text('Historial'),
-    ),
+    // TODO: Restaurar cuando se implemente el módulo de historial
+    // NavigationRailDestination(
+    //   icon: Icon(Icons.history_outlined),
+    //   selectedIcon: Icon(Icons.history),
+    //   label: Text('Historial'),
+    // ),
     NavigationRailDestination(
       icon: Icon(Icons.people_outlined),
       selectedIcon: Icon(Icons.people),
@@ -118,11 +121,12 @@ class AdminScaffold extends StatelessWidget {
 
   static const _drawerItems = [
     (Icons.dashboard, 'Dashboard', 0),
-    (Icons.history, 'Historial', 1),
-    (Icons.people, 'Usuarios', 2),
-    (Icons.person, 'Perfil', 3),
-    (Icons.notifications, 'Notificaciones', 4),
-    (Icons.home_work, 'Viviendas', 5),
+    // TODO: Restaurar cuando se implemente el módulo de historial
+    // (Icons.history, 'Historial', 1),
+    (Icons.people, 'Usuarios', 1),
+    (Icons.person, 'Perfil', 2),
+    (Icons.notifications, 'Notificaciones', 3),
+    (Icons.home_work, 'Viviendas', 4),
   ];
 
   Widget _buildDrawer(int calculatedIndex, BuildContext context) {

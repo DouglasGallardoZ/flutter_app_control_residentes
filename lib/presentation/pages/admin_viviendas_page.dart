@@ -203,12 +203,13 @@ class _AdminViviendasPageState
         },
       ),
       onTabSelected: (i) {
-        if (i == 5) return;
+        if (i == 4) return;
         WidgetsBinding.instance
             .addPostFrameCallback((_) {
           final routes = [
             '/adminDashboard',
-            '/adminAccessHistory',
+            // TODO: Restaurar cuando se implemente el módulo de historial
+            // '/adminAccessHistory',
             '/adminUsers',
             '/adminProfile',
             '/adminNotificaciones',

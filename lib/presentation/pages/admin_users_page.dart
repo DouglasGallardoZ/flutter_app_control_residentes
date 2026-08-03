@@ -22,11 +22,12 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
       title: 'Gestión de Usuarios',
       routeName: '/adminUsers',
       onTabSelected: (index) {
-        if (index == 2) return;
+        if (index == 1) return;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final routes = [
             '/adminDashboard',
-            '/adminAccessHistory',
+            // TODO: Restaurar cuando se implemente el módulo de historial
+            // '/adminAccessHistory',
             null,
             '/adminProfile',
             '/adminNotificaciones',

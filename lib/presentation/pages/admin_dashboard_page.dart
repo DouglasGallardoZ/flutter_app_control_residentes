@@ -79,7 +79,8 @@ class _AdminDashboardPageState
             .addPostFrameCallback((_) {
           final routes = [
             null,
-            '/adminAccessHistory',
+            // TODO: Restaurar cuando se implemente el módulo de historial
+            // '/adminAccessHistory',
             '/adminUsers',
             '/adminProfile',
             '/adminNotificaciones',

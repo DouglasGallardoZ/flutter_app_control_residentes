@@ -106,12 +106,13 @@ class _AdminProfilePageState
         },
       ),
       onTabSelected: (i) {
-        if (i == 3) return;
+        if (i == 2) return;
         WidgetsBinding.instance
             .addPostFrameCallback((_) {
           final routes = [
             '/adminDashboard',
-            '/adminAccessHistory',
+            // TODO: Restaurar cuando se implemente el módulo de historial
+            // '/adminAccessHistory',
             '/adminUsers',
             null,
             '/adminNotificaciones',

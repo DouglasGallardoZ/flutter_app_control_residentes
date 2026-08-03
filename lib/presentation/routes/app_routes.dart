@@ -11,7 +11,8 @@ import '../pages/qr_visit_page.dart';
 import '../pages/access_history_page.dart';
 import '../pages/profile_page.dart';
 import '../pages/admin_dashboard_page.dart';
-import '../pages/admin_access_history_page.dart';
+// TODO: Restaurar cuando se implemente el módulo de historial
+// import '../pages/admin_access_history_page.dart';
 import '../pages/admin_profile_page.dart';
 import '../pages/admin_users_page.dart';
 import '../pages/admin_residents_page.dart';
@@ -72,7 +73,8 @@ class AppRoutes {
   static const String members = '/members';
 
   static const String adminDashboard = '/adminDashboard';
-  static const String adminAccessHistory = '/adminAccessHistory';
+  // TODO: Restaurar cuando se implemente el módulo de historial
+  // static const String adminAccessHistory = '/adminAccessHistory';
   static const String adminUsers = '/adminUsers';
   static const String adminResidents = '/adminResidents';
   static const String adminOwners = '/adminOwners';
@@ -348,12 +350,13 @@ class AppRoutes {
         return _fadeRoute(AdminDashboardPage(personaId: personaId, identificacion: identificacion), settings: settings);
       }
 
-      case adminAccessHistory: {
-        final args = settings.arguments as Map<String, dynamic>?;
-        final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
-        final identificacion = args?['identificacion'] as String? ?? '';
-        return _fadeRoute(AdminAccessHistoryPage(personaId: personaId, identificacion: identificacion), settings: settings);
-      }
+      // TODO: Restaurar cuando se implemente el módulo de historial
+      // case adminAccessHistory: {
+      //   final args = settings.arguments as Map<String, dynamic>?;
+      //   final personaId = int.tryParse(args?['personaId']?.toString() ?? '') ?? 0;
+      //   final identificacion = args?['identificacion'] as String? ?? '';
+      //   return _fadeRoute(AdminAccessHistoryPage(personaId: personaId, identificacion: identificacion), settings: settings);
+      // }
 
       case adminUsers: {
         final args = settings.arguments as Map<String, dynamic>?;
