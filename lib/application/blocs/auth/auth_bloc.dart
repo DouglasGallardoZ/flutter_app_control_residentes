@@ -54,14 +54,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LogoutRequested>((event, emit) async {
       _isLoggingOut = true;
       try {
-        sl<CameraPort>().dispose();
         await logout.execute();
         emit(AuthInitial());
       } catch (ex) {
         emit(AuthFailure(
             'Error al cerrar sesión: ${ex.toString()}'));
       } finally {
-        await Future.delayed(const Duration(milliseconds: 2000));
         _isLoggingOut = false;
       }
     });
@@ -95,8 +93,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
         emit(AuthInitial());
       } catch (ex) {
-        emit(AuthFailure(
-            'Error al restaurar sesión. Por favor, inicie nuevamente.'));
+        try {
+          await authProvider.logout();
+        } catch (_) {}
+        emit(AuthInitial());
       }
     });
 

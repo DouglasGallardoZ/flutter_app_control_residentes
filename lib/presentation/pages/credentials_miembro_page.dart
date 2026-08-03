@@ -94,7 +94,7 @@ class _CredentialsMiembroPageState extends State<CredentialsMiembroPage> {
                 ),
               );
 
-              context.read<AuthBloc>().add(CheckAuthStatus());
+              context.read<AuthBloc>().add(LogoutRequested());
 
               Navigator.of(context).pushNamedAndRemoveUntil(
                 '/login',
