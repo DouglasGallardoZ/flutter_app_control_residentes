@@ -389,7 +389,9 @@ class _AdminNotificacionesPageState
                                         },
                                         title: Text(d.nombreCompleto, style: const TextStyle(fontWeight: FontWeight.w500)),
                                         subtitle: Text(
-                                          '${d.tipo == 'residente' ? 'Residente' : 'Miembro'}${d.manzana != null ? ' · Mz ${d.manzana}' : ''}${d.villa != null ? ', V ${d.villa}' : ''}',
+                                          '${d.tipo == 'residente' ? 'Residente' : d.tipo == 'propietario' ? 'Propietario' : 'Miembro'}'
+                                          '${d.manzana != null ? ' · Mz ${d.manzana}' : ''}'
+                                          '${d.villa != null ? ', V ${d.villa}' : ''}',
                                           style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                                         ),
                                         dense: true,
