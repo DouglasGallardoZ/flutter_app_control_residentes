@@ -188,14 +188,14 @@ final sl = GetIt.instance;
 
 Future<void> inject() async {
   final String apiBaseUrl = kIsWeb 
-    ? 'http://localhost:8080/api/v1' 
+    ? 'https://control-residentes-backend-api.onrender.com/api/v1' 
     // : 'http://10.0.2.2:8080/api/v1';
-    : 'http://192.168.1.25:8080/api/v1';
+    : 'https://control-residentes-backend-api.onrender.com/api/v1';
 
   final String biometryBaseUrl = kIsWeb 
-      ? 'http://localhost:8000/api/v1' 
+      ? 'http://35.197.107.21:8000/api/v1' 
       // : 'http://10.0.2.2:8000/api/v1';
-      : 'http://192.168.1.25:8000/api/v1';
+      : 'http://35.197.107.21:8000/api/v1';
 
   // Firebase
   final firebaseAuth = FirebaseAuth.instance;
